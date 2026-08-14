@@ -10,6 +10,28 @@ Test intelligence platform compatible with the `allure-results` data format.
 TestHistory accepts existing `allure-results`, stores raw artifacts, normalizes test data, and
 builds a richer, more convenient test history than a static Allure report.
 
+## Screenshots
+
+The screenshots below are generated from repository-owned synthetic fixtures. The complete UI
+evidence set, including dialogs and settings screens, is documented in
+[docs/screenshots/README.md](docs/screenshots/README.md).
+
+### Launch results
+
+![Launch results with filters, test details, execution steps, and metadata](docs/screenshots/final/launch-results.png)
+
+### Test case history
+
+![Selected test case with execution history and linked metadata](docs/screenshots/final/selected-test-case.png)
+
+### Dashboard
+
+![Dashboard with THQL widgets and status distribution](docs/screenshots/final/dashboard.png)
+
+### Project integrations
+
+![Project integration settings with link providers](docs/screenshots/final/settings-integrations.png)
+
 The product UI is intentionally focused on the core surfaces targeted for the first milestone:
 
 - active screens: Projects, Launches, Test cases, Defects, Dashboard, Analytics;
