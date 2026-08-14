@@ -1,0 +1,85 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: testhistory-db-migrate
+  namespace: testhistory
+  annotations:
+    testhistory.io/purpose: "one-shot PostgreSQL schema migration before API rollout"
+    testhistory.io/runbook: "docs/operations.md#migrations"
+    testhistory.io/hook-phase: "pre-rollout"
+    testhistory.io/hook-blocks: "testhistory-api,testhistory-worker"
+    testhistory.io/audit-event: "testhistory.migration.complete"
+    testhistory.io/security-audit-sink: "stdout-json"
+    testhistory.io/probe-classification: "migration.one-shot"
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: testhistory-db-migrate
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: testhistory-api:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: testhistory-runtime
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: DATABASE_URL
+          command:
+            - node
+            - --input-type=module
+            - -e
+            - |
+              const {
+                createPostgresPersistence,
+                redactPostgresConnectionString,
+                resolvePostgresPersistenceConfig
+              } = await import("./apps/api/dist/persistence/postgres.js");
+
+              const config = resolvePostgresPersistenceConfig(process.env);
+              if (config === undefined) {
+                throw new Error("DATABASE_URL or TESTHISTORY_DATABASE_URL is required for migrations");
+              }
+
+              const persistence = await createPostgresPersistence(config);
+              try {
+                const health = await persistence.health();
+                console.log(JSON.stringify({
+                  event: "testhistory.migration.complete",
+                  driver: health.driver,
+                  migrated: health.migrated,
+                  migrationVersion: health.migrationVersion,
+                  schema: config.schema,
+                  database: redactPostgresConnectionString(config.connectionString)
+                }));
+              } finally {
+                await persistence.close();
+              }
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL

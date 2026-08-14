@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: testhistory-rabbitmq-data
+  namespace: testhistory
+  annotations:
+    testhistory.io/overlay: "prod-template"
+    testhistory.io/parameter.storage-class: "replace-with-production-storage-class"
+    testhistory.io/parameter.storage-size: "20Gi"
+spec:
+  storageClassName: replace-with-production-storage-class
+  resources:
+    requests:
+      storage: 20Gi

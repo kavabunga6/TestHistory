@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testhistory.local/schemas/allure-result.schema.json",
+  "title": "AllureResult",
+  "type": "object",
+  "required": ["uuid", "name"],
+  "additionalProperties": true,
+  "properties": {
+    "uuid": { "type": "string", "minLength": 1 },
+    "historyId": { "type": "string" },
+    "testCaseId": { "type": "string" },
+    "fullName": { "type": "string" },
+    "name": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["failed", "broken", "passed", "skipped", "unknown"]
+    },
+    "stage": {
+      "type": "string",
+      "enum": ["scheduled", "running", "finished", "pending", "interrupted"]
+    },
+    "start": { "type": "number" },
+    "stop": { "type": "number" }
+  }
+}

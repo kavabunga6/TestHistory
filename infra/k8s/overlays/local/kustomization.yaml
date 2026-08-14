@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: testhistory-api
+    newName: testhistory-api
+    newTag: local
+  - name: testhistory-worker
+    newName: testhistory-worker
+    newTag: local
+  - name: testhistory-mcp
+    newName: testhistory-mcp
+    newTag: local
+  - name: testhistory-web
+    newName: testhistory-web
+    newTag: local
+patches:
+  - path: ingress-local.yaml
+  - path: storage-local.yaml

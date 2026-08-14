@@ -1,0 +1,708 @@
+.defects-reference-screen {
+  --defects-reference-list-width: 420px;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 40px minmax(0, 1fr);
+  overflow: hidden;
+  overflow-anchor: none;
+  background: #ffffff;
+  color: #172033;
+  font-size: 14px;
+}
+
+.defects-reference-screen *,
+.defects-reference-screen *::before,
+.defects-reference-screen *::after {
+  box-sizing: border-box;
+}
+
+.defects-reference-crumbs {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #d7e1ee;
+  padding: 0 20px;
+  background: #ffffff;
+  color: #748094;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.defects-reference-crumbs strong,
+.defects-reference-crumbs span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.defects-reference-crumbs strong {
+  color: #172033;
+}
+
+.defects-reference-workspace {
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns:
+    minmax(360px, var(--defects-reference-list-width)) 9px
+    minmax(0, 1fr);
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.defects-reference-list-panel,
+.defects-reference-detail-panel {
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.defects-reference-list-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.defects-reference-splitter {
+  position: relative;
+  z-index: 8;
+  width: 9px;
+  min-width: 9px;
+  height: auto;
+  min-height: 100%;
+  align-self: stretch;
+  border: 0;
+  border-right: 1px solid #d9dee8;
+  border-left: 1px solid transparent;
+  padding: 0;
+  background: #ffffff;
+  cursor: col-resize;
+}
+
+.defects-reference-splitter::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+  content: "";
+}
+
+.defects-reference-splitter:hover,
+.defects-reference-splitter:focus-visible,
+.defects-reference-screen.is-resizing .defects-reference-splitter {
+  background: #f4f8ff;
+  outline: 0;
+}
+
+.defects-reference-splitter:hover::before,
+.defects-reference-splitter:focus-visible::before,
+.defects-reference-screen.is-resizing .defects-reference-splitter::before {
+  background: #2f68d8;
+}
+
+.defects-reference-is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.defects-reference-header {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e8edf3;
+  padding: 16px 20px 10px;
+}
+
+.defects-reference-header h1 {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #172033;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.defects-reference-count {
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 7px;
+  background: #eef2f7;
+  color: #526172;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.defects-reference-list-panel .thql-search {
+  margin: 0 20px 14px;
+}
+
+.defects-reference-list-panel .thql-search__field {
+  border-color: #cbd5e1;
+  border-radius: 6px;
+}
+
+.defects-reference-list {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border-top: 1px solid #e8edf3;
+}
+
+.defects-reference-footer {
+  border-top: 1px solid #e8edf3;
+  padding: 10px 16px;
+  color: #526172;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.defects-reference-row {
+  width: 100%;
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid #e8edf3;
+  padding: 14px 20px;
+  background: #ffffff;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.defects-reference-row:hover {
+  background: #f8fafc;
+}
+
+.defects-reference-row.selected {
+  background: #e8f1ff;
+  box-shadow: inset 3px 0 #2563eb;
+}
+
+.defects-reference-row:focus-visible,
+.defects-reference-detail-actions .danger:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 2px #2563eb;
+}
+
+.defects-reference-status {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 7px;
+  background: #f7f9fc;
+  color: #526172;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.defects-reference-status.open {
+  background: #fff5f4;
+  color: #c83b33;
+}
+
+.defects-reference-status.closed {
+  background: #f0faf2;
+  color: #23873a;
+}
+
+.defects-reference-row-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.defects-reference-row-copy strong {
+  min-width: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #172033;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.defects-reference-row-copy small {
+  min-width: 0;
+  overflow: hidden;
+  color: #526172;
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.defects-reference-list-empty,
+.defects-reference-empty-state {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: #748094;
+  text-align: center;
+}
+
+.defects-reference-list-empty svg,
+.defects-reference-empty-state svg {
+  color: #8c98a8;
+}
+
+.defects-reference-list-empty strong,
+.defects-reference-empty-state strong {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.defects-reference-list-empty span {
+  max-width: 300px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.defects-reference-detail-panel {
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 24px 24px;
+}
+
+.defects-reference-detail-panel.empty {
+  display: grid;
+  place-items: center;
+}
+
+.defects-reference-empty-state {
+  min-width: min(360px, 100%);
+}
+
+.defects-reference-detail-header {
+  min-width: 0;
+  min-height: 76px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e8edf3;
+  padding: 20px 0 18px;
+}
+
+.defects-reference-detail-title {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 5px 8px;
+}
+
+.defects-reference-detail-title .defects-reference-status {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.defects-reference-detail-title-copy {
+  display: contents;
+}
+
+.defects-reference-detail-title-copy > small {
+  min-width: 0;
+  overflow: hidden;
+  color: #748094;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.defects-reference-detail-title h2 {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  color: #172033;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.defects-reference-detail-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.defects-reference-detail-actions .danger {
+  min-width: 0;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #f0c9c6;
+  border-radius: 6px;
+  padding: 0 11px;
+  background: #ffffff;
+  color: #b42318;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.defects-reference-detail-actions .danger:hover {
+  background: #fff5f5;
+}
+
+.defects-reference-detail-actions .danger svg {
+  flex: 0 0 auto;
+}
+
+.defects-reference-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  margin: 16px 0;
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.defects-reference-detail-meta div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  border-right: 1px solid #e8edf3;
+  padding: 14px 16px;
+}
+
+.defects-reference-detail-meta div:last-child {
+  border-right: 0;
+}
+
+.defects-reference-detail-meta dt,
+.defects-reference-detail-meta dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.defects-reference-detail-meta dt {
+  color: #748094;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.defects-reference-detail-meta dd {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.defects-reference-detail-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+
+.defects-reference-section {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.defects-reference-section.wide {
+  grid-column: 1 / -1;
+}
+
+.defects-reference-section > header {
+  min-width: 0;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e8edf3;
+  padding: 0 16px;
+  background: #f8fafc;
+}
+
+.defects-reference-section h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.defects-reference-section p {
+  margin: 0;
+  min-height: 56px;
+  padding: 16px;
+  color: #526172;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.defects-reference-simple-list {
+  display: grid;
+}
+
+.defects-reference-simple-list > a {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(76px, 0.18fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  border-bottom: 1px solid #e8edf3;
+  padding: 12px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.defects-reference-simple-list > a:last-child {
+  border-bottom: 0;
+}
+
+.defects-reference-simple-list > a:hover,
+.defects-reference-simple-list > a:focus-visible {
+  background: #f4f8ff;
+  outline: 0;
+}
+
+.defects-reference-simple-list small,
+.defects-reference-simple-list strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.defects-reference-simple-list small {
+  color: #748094;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.defects-reference-simple-list strong {
+  color: #155ca2;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.defects-reference-result-list {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.defects-reference-result-head,
+.defects-reference-result-row {
+  min-width: 640px;
+  display: grid;
+  grid-template-columns: minmax(82px, 0.15fr) minmax(190px, 1fr) minmax(150px, 0.45fr) 86px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.defects-reference-result-head {
+  min-height: 38px;
+  color: #526172;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.defects-reference-result-head span:last-child {
+  text-align: right;
+}
+
+.defects-reference-result-row {
+  border-top: 1px solid #e8edf3;
+}
+
+.defects-reference-result-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+.defects-reference-result-row:hover,
+.defects-reference-result-row:focus-visible {
+  background: #f4f8ff;
+  outline: 0;
+}
+
+.defects-reference-result-row > span:not(.defects-reference-result-status) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.defects-reference-result-list strong,
+.defects-reference-result-list small,
+.defects-reference-result-list time {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.defects-reference-result-list strong {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.defects-reference-result-list small,
+.defects-reference-result-list time {
+  color: #526172;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.defects-reference-result-list time {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.defects-reference-result-status {
+  width: fit-content;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 8px;
+  background: #f7f9fc;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.defects-reference-result-status.passed {
+  background: #f0faf2;
+  color: #23873a;
+}
+
+.defects-reference-result-status.failed {
+  background: #fff5f4;
+  color: #c83b33;
+}
+
+.defects-reference-result-status.broken {
+  background: #fff8ef;
+  color: #c57420;
+}
+
+@media (max-width: 980px) {
+  .defects-reference-screen {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .defects-reference-workspace {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .defects-reference-splitter {
+    display: none;
+  }
+
+  .defects-reference-list-panel {
+    height: auto;
+    min-height: 420px;
+  }
+
+  .defects-reference-detail-panel {
+    height: auto;
+    min-height: 320px;
+    overflow: visible;
+  }
+
+  .defects-reference-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .defects-reference-section.wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .defects-reference-detail-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .defects-reference-detail-meta div {
+    border-right: 0;
+    border-bottom: 1px solid #e8edf3;
+  }
+
+  .defects-reference-detail-meta div:last-child {
+    border-bottom: 0;
+  }
+
+  .defects-reference-detail-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .defects-reference-detail-actions .danger {
+    min-height: 40px;
+  }
+
+  .defects-reference-list-panel .thql-search__chip,
+  .defects-reference-list-panel .thql-search__manage,
+  .defects-reference-list-panel .thql-search__icon-button {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .defects-reference-simple-list > a {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

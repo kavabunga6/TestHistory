@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testhistory-runtime
+  namespace: testhistory
+data:
+  NODE_ENV: "production"
+  API_PORT: "8080"
+  TESTHISTORY_API_URL: "http://testhistory-api:8080"
+  TESTHISTORY_API_UPSTREAM: "http://testhistory-api:8080"
+  TESTHISTORY_WEB_PUBLIC_URL: "https://replace-with-testhistory-hostname"
+  TESTHISTORY_API_PUBLIC_URL: "https://replace-with-testhistory-hostname"
+  AUTH_MODE: "oidc-placeholder"
+  AUTH_AUDIT_ENABLED: "true"
+  AUTH_AUDIT_SINK: "stdout-json"
+  AUTH_AUDIT_REDACTION: "strict"
+  AUTH_PROBE_MODE: "anonymous-health-only"
+  SECURITY_AUDIT_ENABLED: "true"
+  SECURITY_AUDIT_SINK: "stdout-json"
+  SECURITY_AUDIT_STREAM: "security-audit"
+  SECURITY_AUDIT_REDACTION: "strict"
+  SECURITY_AUDIT_RETENTION_DAYS: "365"
+  SECURITY_AUDIT_PROBE_EVENT: "security.audit.probe"
+  OIDC_ISSUER_URL: "replace-with-private-oidc-issuer-url"
+  OIDC_JWKS_URL: "replace-with-private-oidc-jwks-url"
+  PRIVATE_NPM_REGISTRY: "replace-with-private-npm-registry-url"
+  MIGRATION_STRATEGY: "pre-rollout-job"
+  MIGRATION_LOCK_NAME: "testhistory-db-migrate"
+  S3_ENDPOINT: "replace-with-private-s3-endpoint"
+  S3_BUCKET: "testhistory-artifacts"
+  S3_REGION: "us-east-1"
+  CLICKHOUSE_URL: "replace-with-private-clickhouse-url"
+  OPENSEARCH_URL: "replace-with-private-opensearch-url"
+  RABBITMQ_DEFAULT_VHOST: "testhistory"
+  WORKER_HEARTBEAT_MS: "30000"
+  UPLOAD_MAX_CONCURRENCY: "8"
+  UPLOAD_CHUNK_BYTES: "8388608"
+  ARTIFACT_RETENTION_DAYS: "90"
+  ARTIFACT_COMPRESSION_MIN_BYTES: "1024"
+  ARTIFACT_MAX_BYTES: "536870912"
+  UPLOAD_SESSION_MAX_BYTES: "1073741824"
+  UPLOAD_MAX_CHUNKS: "10000"
+  UPLOAD_SESSION_TTL_MINUTES: "60"
+  ARTIFACT_CLEANUP_GRACE_DAYS: "7"
+  ARTIFACT_CLEANUP_BATCH_SIZE: "1000"
+  ARTIFACT_CLEANUP_BATCH_INTERVAL_MINUTES: "5"
+  UPLOAD_METADATA_SOURCE: "result"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: testhistory-runtime
+  namespace: testhistory
+type: Opaque
+stringData:
+  DATABASE_URL: "replace-with-postgresql-url"
+  REDIS_URL: "replace-with-redis-url"
+  RABBITMQ_URL: "replace-with-rabbitmq-url"
+  S3_ACCESS_KEY_ID: "replace-with-s3-access-key-id"
+  S3_SECRET_ACCESS_KEY: "replace-with-s3-secret-access-key"
+  RABBITMQ_DEFAULT_USER: "replace-with-rabbitmq-user"
+  RABBITMQ_DEFAULT_PASS: "replace-with-rabbitmq-password"
+  OIDC_CLIENT_ID: "replace-with-oidc-client-id"
+  OIDC_CLIENT_SECRET: "replace-with-oidc-client-secret"
+  AUTH_SESSION_SIGNING_KEY: "replace-with-auth-session-signing-key"
+  AUTH_PROBE_TOKEN: "replace-with-auth-probe-token"
+  TESTHISTORY_BOOTSTRAP_ADMIN_EMAIL: "replace-with-bootstrap-admin-email"
+  TESTHISTORY_BOOTSTRAP_ADMIN_PASSWORD: "replace-with-bootstrap-admin-password"
+  TESTHISTORY_WORKER_TOKEN: "replace-with-worker-api-token"
+  SECURITY_AUDIT_SIGNING_KEY: "replace-with-security-audit-signing-key"
+  SECURITY_AUDIT_SINK_TOKEN: "replace-with-security-audit-sink-token"

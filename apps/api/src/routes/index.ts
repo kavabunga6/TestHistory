@@ -1,0 +1,47 @@
+import type { FastifyInstance } from "fastify";
+import type { AppStore } from "../store.js";
+import { registerAnalyticsRoutes } from "./analytics.js";
+import { registerArtifactRoutes } from "./artifacts.js";
+import { registerAuthRoutes } from "./auth.js";
+import { registerDashboardRoutes } from "./dashboards.js";
+import { registerDefectRoutes } from "./defects.js";
+import { registerLaunchRoutes } from "./launches.js";
+import { registerLaunchComparisonRoutes } from "./launchComparison.js";
+import { registerMcpRoutes } from "./mcp.js";
+import { registerMutationAuthGuard } from "./mutation-auth-guard.js";
+import { registerProjectRoutes } from "./projects.js";
+import { registerRequestAuthGuard } from "./request-auth-guard.js";
+import { registerSecurityAuditRoutes } from "./security-audit.js";
+import { registerSystemRoutes } from "./system.js";
+import { registerTestCaseRoutes } from "./test-cases.js";
+import { registerThqlFilterRoutes } from "./thql-filters.js";
+import { registerUploadRoutes } from "./uploads.js";
+import { registerWorkerAuthGuard } from "./worker-auth-guard.js";
+import { registerAutomationRoutes } from "./automation.js";
+import { registerCiIntegrationRoutes } from "./ciIntegrations.js";
+import { registerOutboundIntegrationRoutes } from "./outboundIntegrations.js";
+import { registerEnterpriseAccessRoutes } from "./enterpriseAccess.js";
+
+export async function registerApiRoutes(app: FastifyInstance, store: AppStore) {
+  await registerRequestAuthGuard(app, store);
+  await registerWorkerAuthGuard(app);
+  await registerSystemRoutes(app, store);
+  await registerAuthRoutes(app, store);
+  await registerMutationAuthGuard(app, store);
+  await registerProjectRoutes(app, store);
+  await registerLaunchRoutes(app, store);
+  await registerLaunchComparisonRoutes(app, store);
+  await registerUploadRoutes(app, store);
+  await registerArtifactRoutes(app, store);
+  await registerTestCaseRoutes(app, store);
+  await registerAutomationRoutes(app, store);
+  await registerCiIntegrationRoutes(app, store);
+  await registerOutboundIntegrationRoutes(app, store);
+  await registerEnterpriseAccessRoutes(app, store);
+  await registerDefectRoutes(app, store);
+  await registerAnalyticsRoutes(app, store);
+  await registerThqlFilterRoutes(app, store);
+  await registerDashboardRoutes(app, store);
+  await registerSecurityAuditRoutes(app, store);
+  await registerMcpRoutes(app);
+}

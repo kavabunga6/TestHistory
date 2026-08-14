@@ -1,0 +1,21 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: testhistory-worker
+  namespace: testhistory
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: testhistory-worker
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: testhistory-web
+  namespace: testhistory
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: testhistory-web

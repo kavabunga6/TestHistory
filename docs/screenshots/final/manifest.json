@@ -1,0 +1,185 @@
+{
+  "generatedAt": "2026-08-08T09:35:01.077Z",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "count": 25,
+  "files": [
+    {
+      "file": "auth-login.png",
+      "hash": "#launch",
+      "bytes": 48310,
+      "auth": false,
+      "dialog": false
+    },
+    {
+      "file": "projects.png",
+      "hash": "#projects",
+      "bytes": 52816,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "dashboard.png",
+      "hash": "#dashboard",
+      "bytes": 84570,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "launches.png",
+      "hash": "#launch",
+      "bytes": 56994,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "launch-detail.png",
+      "hash": "#launch/L-1289",
+      "bytes": 97696,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "launch-results.png",
+      "hash": "#launch/L-1289/results",
+      "bytes": 132187,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "launch-result-history.png",
+      "hash": "#launch/L-1289/result/PAY-1042/history",
+      "bytes": 111183,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "launch-result-defects.png",
+      "hash": "#launch/L-1289/result/PAY-1042/defects",
+      "bytes": 101346,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "selected-test-case.png",
+      "hash": "#case/PAY-1042/overview",
+      "bytes": 129385,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "selected-test-case-history.png",
+      "hash": "#case/PAY-1042/history",
+      "bytes": 99778,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "selected-test-case-defects.png",
+      "hash": "#case/PAY-1042/defects",
+      "bytes": 85911,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "defects.png",
+      "hash": "#defects/PAY-337",
+      "bytes": 94572,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "analytics.png",
+      "hash": "#analytics",
+      "bytes": 106381,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "dialog-dashboard-widget-delete.png",
+      "hash": "#dashboard",
+      "bytes": 81536,
+      "auth": true,
+      "dialog": true
+    },
+    {
+      "file": "settings-access.png",
+      "hash": "#settings/access",
+      "bytes": 69658,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "settings-tokens.png",
+      "hash": "#settings/tokens",
+      "bytes": 93858,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "settings-integrations.png",
+      "hash": "#settings/integrations",
+      "bytes": 75677,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "settings-retention.png",
+      "hash": "#settings/retention",
+      "bytes": 85902,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "settings-fields.png",
+      "hash": "#settings/fields",
+      "bytes": 67238,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "dialog-role-matrix.png",
+      "hash": "#settings/access",
+      "bytes": 92035,
+      "auth": true,
+      "dialog": true
+    },
+    {
+      "file": "dialog-member-edit.png",
+      "hash": "#settings/access",
+      "bytes": 82544,
+      "auth": true,
+      "dialog": true
+    },
+    {
+      "file": "dialog-integration-edit.png",
+      "hash": "#settings/integrations",
+      "bytes": 107849,
+      "auth": true,
+      "dialog": true
+    },
+    {
+      "file": "dialog-api-token.png",
+      "hash": "#settings/tokens",
+      "bytes": 130376,
+      "auth": true,
+      "dialog": true
+    },
+    {
+      "file": "dialog-quarantine.png",
+      "hash": "#launch/L-1289/result/PAY-1042",
+      "bytes": 139008,
+      "auth": true,
+      "dialog": true
+    },
+    {
+      "file": "dialog-delete-launch.png",
+      "hash": "#launch/L-1289",
+      "bytes": 112756,
+      "auth": true,
+      "dialog": true
+    }
+  ]
+}

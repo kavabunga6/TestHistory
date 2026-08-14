@@ -1,0 +1,80 @@
+{
+  "viewport": { "width": 1440, "height": 1000 },
+  "files": [
+    { "name": "auth-login", "hash": "#launch", "auth": false, "dialog": false },
+    { "name": "projects", "hash": "#projects", "auth": true, "dialog": false },
+    { "name": "dashboard", "hash": "#dashboard", "auth": true, "dialog": false },
+    { "name": "launches", "hash": "#launch", "auth": true, "dialog": false },
+    { "name": "launch-detail", "hash": "#launch/L-1289", "auth": true, "dialog": false },
+    { "name": "launch-results", "hash": "#launch/L-1289/results", "auth": true, "dialog": false },
+    {
+      "name": "launch-result-history",
+      "hash": "#launch/L-1289/result/PAY-1042/history",
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "name": "launch-result-defects",
+      "hash": "#launch/L-1289/result/PAY-1042/defects",
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "name": "selected-test-case",
+      "hash": "#case/PAY-1042/overview",
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "name": "selected-test-case-history",
+      "hash": "#case/PAY-1042/history",
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "name": "selected-test-case-defects",
+      "hash": "#case/PAY-1042/defects",
+      "auth": true,
+      "dialog": false
+    },
+    { "name": "defects", "hash": "#defects/PAY-337", "auth": true, "dialog": false },
+    { "name": "analytics", "hash": "#analytics", "auth": true, "dialog": false },
+    {
+      "name": "dialog-dashboard-widget-delete",
+      "hash": "#dashboard",
+      "auth": true,
+      "dialog": true
+    },
+    { "name": "settings-access", "hash": "#settings/access", "auth": true, "dialog": false },
+    { "name": "settings-tokens", "hash": "#settings/tokens", "auth": true, "dialog": false },
+    {
+      "name": "settings-integrations",
+      "hash": "#settings/integrations",
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "name": "settings-retention",
+      "hash": "#settings/retention",
+      "auth": true,
+      "dialog": false
+    },
+    { "name": "settings-fields", "hash": "#settings/fields", "auth": true, "dialog": false },
+    { "name": "dialog-role-matrix", "hash": "#settings/access", "auth": true, "dialog": true },
+    { "name": "dialog-member-edit", "hash": "#settings/access", "auth": true, "dialog": true },
+    {
+      "name": "dialog-integration-edit",
+      "hash": "#settings/integrations",
+      "auth": true,
+      "dialog": true
+    },
+    { "name": "dialog-api-token", "hash": "#settings/tokens", "auth": true, "dialog": true },
+    {
+      "name": "dialog-quarantine",
+      "hash": "#launch/L-1289/result/PAY-1042",
+      "auth": true,
+      "dialog": true
+    },
+    { "name": "dialog-delete-launch", "hash": "#launch/L-1289", "auth": true, "dialog": true }
+  ]
+}

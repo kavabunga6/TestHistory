@@ -1,0 +1,47 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: testhistory
+  namespace: testhistory
+  annotations:
+    testhistory.io/overlay: "local"
+    testhistory.io/parameter.host: "testhistory.local"
+    testhistory.io/parameter.tls-secret: "testhistory-local-tls"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - testhistory.local
+      secretName: testhistory-local-tls
+  rules:
+    - host: testhistory.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: testhistory-api
+                port:
+                  number: 8080
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: testhistory-api
+                port:
+                  number: 8080
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: testhistory-api
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: testhistory-web
+                port:
+                  number: 80

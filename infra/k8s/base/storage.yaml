@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: testhistory-rabbitmq-data
+  namespace: testhistory
+  annotations:
+    testhistory.io/parameter.storage-class: "replace-with-cluster-storage-class"
+    testhistory.io/parameter.storage-size: "10Gi"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: replace-with-cluster-storage-class
+  resources:
+    requests:
+      storage: 10Gi

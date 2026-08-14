@@ -1,0 +1,29 @@
+node_modules/
+dist/
+dist-types/
+coverage/
+.turbo/
+.vite/
+.tmp/
+.codex-local/
+.testhistory/
+.env
+.env.*
+!.env.example
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+.tmp-*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.idea/
+.gradle/
+build/
+**/build/
+local.properties
+
+# Local real test artifacts can contain screenshots, logs, XML dumps, tokens, and PII.
+# Do not copy Downloads/Telegram artifacts into the repo; this ignore only catches known result dirs.
+allure-results/
+**/allure-results/

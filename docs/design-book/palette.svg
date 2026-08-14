@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="300" viewBox="0 0 1120 300" role="img" aria-labelledby="title desc">
+  <title id="title">TestHistory canonical UI palette</title>
+  <desc id="desc">Primary, semantic, text, border, and surface colors from the TestHistory design book.</desc>
+  <rect width="1120" height="300" rx="18" fill="#f4f7fb"/>
+  <g font-family="Inter, Segoe UI, sans-serif">
+    <text x="32" y="38" fill="#172033" font-size="20" font-weight="700">TestHistory UI palette</text>
+    <g transform="translate(32 62)">
+      <g transform="translate(0 0)"><rect width="160" height="72" rx="10" fill="#2563eb"/><text x="12" y="94" fill="#172033" font-size="13" font-weight="700">Accent</text><text x="12" y="112" fill="#526172" font-size="12">#2563EB</text></g>
+      <g transform="translate(176 0)"><rect width="160" height="72" rx="10" fill="#43a047"/><text x="12" y="94" fill="#172033" font-size="13" font-weight="700">Passed</text><text x="12" y="112" fill="#526172" font-size="12">#43A047</text></g>
+      <g transform="translate(352 0)"><rect width="160" height="72" rx="10" fill="#dc574d"/><text x="12" y="94" fill="#172033" font-size="13" font-weight="700">Failed</text><text x="12" y="112" fill="#526172" font-size="12">#DC574D</text></g>
+      <g transform="translate(528 0)"><rect width="160" height="72" rx="10" fill="#e5a24a"/><text x="12" y="94" fill="#172033" font-size="13" font-weight="700">Broken</text><text x="12" y="112" fill="#526172" font-size="12">#E5A24A</text></g>
+      <g transform="translate(704 0)"><rect width="160" height="72" rx="10" fill="#8c98a8"/><text x="12" y="94" fill="#172033" font-size="13" font-weight="700">Skipped</text><text x="12" y="112" fill="#526172" font-size="12">#8C98A8</text></g>
+      <g transform="translate(880 0)"><rect width="160" height="72" rx="10" fill="#172033"/><text x="12" y="94" fill="#172033" font-size="13" font-weight="700">Ink</text><text x="12" y="112" fill="#526172" font-size="12">#172033</text></g>
+    </g>
+    <g transform="translate(32 206)">
+      <g transform="translate(0 0)"><rect width="160" height="48" rx="10" fill="#526172"/><text x="12" y="68" fill="#172033" font-size="13" font-weight="700">Muted</text><text x="12" y="86" fill="#526172" font-size="12">#526172</text></g>
+      <g transform="translate(176 0)"><rect width="160" height="48" rx="10" fill="#d7e1ee"/><text x="12" y="68" fill="#172033" font-size="13" font-weight="700">Border</text><text x="12" y="86" fill="#526172" font-size="12">#D7E1EE</text></g>
+      <g transform="translate(352 0)"><rect width="160" height="48" rx="10" fill="#e8edf3"/><text x="12" y="68" fill="#172033" font-size="13" font-weight="700">Divider</text><text x="12" y="86" fill="#526172" font-size="12">#E8EDF3</text></g>
+      <g transform="translate(528 0)"><rect width="160" height="48" rx="10" fill="#f4f7fb" stroke="#d7e1ee"/><text x="12" y="68" fill="#172033" font-size="13" font-weight="700">Canvas</text><text x="12" y="86" fill="#526172" font-size="12">#F4F7FB</text></g>
+      <g transform="translate(704 0)"><rect width="160" height="48" rx="10" fill="#ffffff" stroke="#d7e1ee"/><text x="12" y="68" fill="#172033" font-size="13" font-weight="700">Surface</text><text x="12" y="86" fill="#526172" font-size="12">#FFFFFF</text></g>
+      <g transform="translate(880 0)"><rect width="160" height="48" rx="10" fill="#e8f1ff"/><text x="12" y="68" fill="#172033" font-size="13" font-weight="700">Accent soft</text><text x="12" y="86" fill="#526172" font-size="12">#E8F1FF</text></g>
+    </g>
+  </g>
+</svg>

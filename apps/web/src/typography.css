@@ -1,0 +1,185 @@
+:root {
+  --th-font-title: 24px;
+  --th-font-heading: 16px;
+  --th-font-body: 14px;
+  --th-font-meta: 12px;
+  --th-font-title-delta: calc(var(--th-font-title) - 24px);
+  --th-font-heading-delta: calc(var(--th-font-heading) - 16px);
+  --th-font-body-delta: calc(var(--th-font-body) - 14px);
+  --th-font-meta-delta: calc(var(--th-font-meta) - 12px);
+}
+
+/*
+ * User typography is an accessibility override. The important declarations are
+ * deliberate: component-local legacy sizes must not win over a saved profile.
+ */
+html[data-testhistory-typography="enabled"] body,
+html[data-testhistory-typography="enabled"] body * {
+  font-size: var(--th-font-body) !important;
+}
+
+/* Interactive labels belong to the body-text category. */
+html[data-testhistory-typography="enabled"] body :is(button, input, select, textarea) {
+  font-size: var(--th-font-body) !important;
+}
+
+html[data-testhistory-typography="enabled"] body h1,
+html[data-testhistory-typography="enabled"] body h1 *,
+html[data-testhistory-typography="enabled"] body .typography-role-title,
+html[data-testhistory-typography="enabled"] body .launches-reference-result-heading > strong,
+html[data-testhistory-typography="enabled"] body .typography-dialog__header h2,
+html[data-testhistory-typography="enabled"] body .project-settings__dialog h2,
+html[data-testhistory-typography="enabled"] body .confirm-delete-dialog h2,
+html[data-testhistory-typography="enabled"] body .quarantine-dialog h2,
+html[data-testhistory-typography="enabled"] body [class*="page-title"],
+html[data-testhistory-typography="enabled"] body [class*="screen-title"] {
+  font-size: var(--th-font-title) !important;
+}
+
+html[data-testhistory-typography="enabled"] body :is(h2, h3, h4, h5, h6, legend),
+html[data-testhistory-typography="enabled"] body :is(h2, h3, h4, h5, h6, legend) *,
+html[data-testhistory-typography="enabled"] body .typography-role-heading,
+html[data-testhistory-typography="enabled"] body .brand strong,
+html[data-testhistory-typography="enabled"] body [class*="heading"] > strong,
+html[data-testhistory-typography="enabled"] body [class*="section-title"],
+html[data-testhistory-typography="enabled"] body [class*="panel-title"],
+html[data-testhistory-typography="enabled"] body [class*="card-title"],
+html[data-testhistory-typography="enabled"]
+  body
+  :is(
+    .automation-tabs,
+    .tabs,
+    .detail-tabs,
+    .case-detail-tabs,
+    .defect-detail-tabs,
+    .launches-reference-tabs,
+    .launches-reference-result-tabs,
+    .project-settings__tabs,
+    .tc-detail-reference-tabs,
+    .auth-login__switch
+  ),
+html[data-testhistory-typography="enabled"]
+  body
+  :is(
+    .automation-tabs,
+    .tabs,
+    .detail-tabs,
+    .case-detail-tabs,
+    .defect-detail-tabs,
+    .launches-reference-tabs,
+    .launches-reference-result-tabs,
+    .project-settings__tabs,
+    .tc-detail-reference-tabs,
+    .auth-login__switch
+  )
+  * {
+  font-size: var(--th-font-heading) !important;
+}
+
+html[data-testhistory-typography="enabled"] body .launches-reference-result-heading > strong,
+html[data-testhistory-typography="enabled"] body .typography-role-title,
+html[data-testhistory-typography="enabled"] body .typography-dialog__header h2,
+html[data-testhistory-typography="enabled"] body .project-settings__dialog h2,
+html[data-testhistory-typography="enabled"] body .confirm-delete-dialog h2,
+html[data-testhistory-typography="enabled"] body .quarantine-dialog h2 {
+  font-size: var(--th-font-title) !important;
+}
+
+html[data-testhistory-typography="enabled"] body .typography-role-body {
+  font-size: var(--th-font-body) !important;
+}
+
+/* KPI values are data rather than headings. Tab counters are overridden by the meta role below. */
+html[data-testhistory-typography="enabled"] body .project-settings__summary-item strong,
+html[data-testhistory-typography="enabled"] body [class*="metric"] > strong,
+html[data-testhistory-typography="enabled"] body [class*="metric"] > em {
+  font-size: var(--th-font-body) !important;
+}
+
+html[data-testhistory-typography="enabled"] body .launches-reference-overview-donut-center strong {
+  font-size: calc(var(--th-font-body) + 12px) !important;
+}
+
+html[data-testhistory-typography="enabled"] body :is(small, caption, time, th, em),
+html[data-testhistory-typography="enabled"] body :is(small, caption, time, th, em) *,
+html[data-testhistory-typography="enabled"] body .typography-role-meta,
+html[data-testhistory-typography="enabled"] body .nav-caption,
+html[data-testhistory-typography="enabled"] body .project-settings__eyebrow,
+html[data-testhistory-typography="enabled"] body .project-settings__api-status,
+html[data-testhistory-typography="enabled"] body .project-settings__summary-item span,
+html[data-testhistory-typography="enabled"] body .launches-reference-compact-results-head,
+html[data-testhistory-typography="enabled"] body .launches-reference-variables-head,
+html[data-testhistory-typography="enabled"] body [class*="__meta"],
+html[data-testhistory-typography="enabled"] body [class*="-meta"],
+html[data-testhistory-typography="enabled"] body [class*="__caption"],
+html[data-testhistory-typography="enabled"] body [class*="-caption"],
+html[data-testhistory-typography="enabled"] body [class*="__badge"],
+html[data-testhistory-typography="enabled"] body [class*="-badge"],
+html[data-testhistory-typography="enabled"] body [class*="__chip"],
+html[data-testhistory-typography="enabled"] body [class*="-chip"],
+html[data-testhistory-typography="enabled"] body [class*="__counter"],
+html[data-testhistory-typography="enabled"] body [class*="-counter"],
+html[data-testhistory-typography="enabled"] body [class*="__count"],
+html[data-testhistory-typography="enabled"] body [class*="-count"],
+html[data-testhistory-typography="enabled"] body [class*="__duration"],
+html[data-testhistory-typography="enabled"] body [class*="-duration"],
+html[data-testhistory-typography="enabled"] body [class*="__hint"],
+html[data-testhistory-typography="enabled"] body [class*="-hint"],
+html[data-testhistory-typography="enabled"] body [class*="__note"],
+html[data-testhistory-typography="enabled"] body [class*="-note"],
+html[data-testhistory-typography="enabled"] body [class*="__table-head"],
+html[data-testhistory-typography="enabled"] body [class*="-table-head"],
+html[data-testhistory-typography="enabled"] body [class*="__table-head"] *,
+html[data-testhistory-typography="enabled"] body [class*="-table-head"] * {
+  font-size: var(--th-font-meta) !important;
+}
+
+/*
+ * Text-dependent geometry follows the selected typography profile. Icon-only
+ * controls intentionally keep their fixed square size.
+ */
+html[data-testhistory-typography="enabled"] body button:not(:has(> svg:only-child)) {
+  height: auto !important;
+}
+
+html[data-testhistory-typography="enabled"] body .brand {
+  min-height: calc(42px + var(--th-font-heading-delta));
+}
+
+html[data-testhistory-typography="enabled"] body .nav-link {
+  min-height: calc(38px + var(--th-font-body-delta));
+}
+
+html[data-testhistory-typography="enabled"] body .auth-panel input,
+html[data-testhistory-typography="enabled"] body .auth-panel__switch button,
+html[data-testhistory-typography="enabled"] body .auth-panel__button {
+  height: auto;
+  min-height: calc(32px + var(--th-font-body-delta) + var(--th-font-meta-delta));
+}
+
+html[data-testhistory-typography="enabled"] body .automation-tabs,
+html[data-testhistory-typography="enabled"] body .automation-tabs button {
+  min-height: calc(48px + var(--th-font-heading-delta));
+}
+
+html[data-testhistory-typography="enabled"] body :is(.tabs, .detail-tabs),
+html[data-testhistory-typography="enabled"] body :is(.tabs, .detail-tabs) button {
+  min-height: calc(42px + var(--th-font-heading-delta));
+}
+
+html[data-testhistory-typography="enabled"] body .search-field {
+  height: auto;
+  min-height: calc(40px + var(--th-font-body-delta));
+}
+
+html[data-testhistory-typography="enabled"] body :is(.case-item, .case-item button) {
+  min-height: calc(54px + var(--th-font-body-delta) + var(--th-font-meta-delta));
+}
+
+html[data-testhistory-typography="enabled"] body :is(.step, .worker-row, .result-row) {
+  min-height: calc(42px + var(--th-font-body-delta) + var(--th-font-meta-delta));
+}
+
+html[data-testhistory-typography="enabled"] body :is(.analytics-list article, .defect-row) {
+  min-height: calc(50px + var(--th-font-body-delta) + var(--th-font-meta-delta));
+}

@@ -1,0 +1,65 @@
+name: Docker
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  TESTHISTORY_PRIVATE_NPM_REGISTRY: https://npm.pkg.github.com
+
+jobs:
+  docker:
+    name: Build container images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: testhistory-api
+            dockerfile: apps/api/Dockerfile
+          - image: testhistory-worker
+            dockerfile: apps/worker/Dockerfile
+          - image: testhistory-web
+            dockerfile: apps/web/Dockerfile
+          - image: testhistory-mcp
+            dockerfile: apps/mcp/Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ github.sha }}
+          build-args: |
+            TESTHISTORY_PRIVATE_NPM_REGISTRY=${{ env.TESTHISTORY_PRIVATE_NPM_REGISTRY }}
+          secrets: |
+            npm_token=${{ secrets.TESTHISTORY_NPM_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

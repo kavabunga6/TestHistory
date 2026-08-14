@@ -1,0 +1,21 @@
+{
+  "name": "@testhistory/worker",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@testhistory/artifacts": "0.1.0",
+    "@testhistory/contracts": "0.1.0",
+    "@testhistory/domain": "0.1.0",
+    "tsx": "^4.19.4"
+  }
+}

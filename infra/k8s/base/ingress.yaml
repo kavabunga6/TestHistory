@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: testhistory
+  namespace: testhistory
+  annotations:
+    testhistory.io/parameter.host: "replace-with-testhistory-hostname"
+    testhistory.io/parameter.tls-secret: "replace-with-tls-secret-name"
+spec:
+  ingressClassName: replace-with-ingress-class
+  tls:
+    - hosts:
+        - replace-with-testhistory-hostname
+      secretName: replace-with-tls-secret-name
+  rules:
+    - host: replace-with-testhistory-hostname
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: testhistory-api
+                port:
+                  number: 8080
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: testhistory-api
+                port:
+                  number: 8080
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: testhistory-api
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: testhistory-web
+                port:
+                  number: 80

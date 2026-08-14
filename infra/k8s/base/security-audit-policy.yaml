@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testhistory-security-audit-policy
+  namespace: testhistory
+  annotations:
+    testhistory.io/runbook: "docs/operations.md#security-audit-retention-and-export-policy"
+    testhistory.io/audit-policy-state: "placeholder-only"
+data:
+  SECURITY_AUDIT_RETENTION_POLICY: "bounded-placeholder"
+  SECURITY_AUDIT_RETENTION_MIN_DAYS: "90"
+  SECURITY_AUDIT_RETENTION_DAYS: "365"
+  SECURITY_AUDIT_RETENTION_MAX_DAYS: "2555"
+  SECURITY_AUDIT_RETENTION_DELETE_MODE: "preview-before-delete"
+  SECURITY_AUDIT_EXPORT_ENABLED: "false"
+  SECURITY_AUDIT_EXPORT_PROVIDER: "replace-with-audit-export-provider"
+  SECURITY_AUDIT_EXPORT_DESTINATION: "replace-with-audit-export-destination"
+  SECURITY_AUDIT_EXPORT_PREFIX: "security-audit/replace-with-environment"
+  SECURITY_AUDIT_EXPORT_FORMAT: "jsonl-redacted"
+  SECURITY_AUDIT_EXPORT_APPROVAL: "manual-approved"
+  SECURITY_AUDIT_EXPORT_SECRET_REF: "testhistory-security-audit-export"
+  SECURITY_AUDIT_EXPORT_SIGNING: "required-when-enabled"
+  SECURITY_AUDIT_EXPORT_PAYLOAD_CLASS: "metadata-only-redacted"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_STATES: "requested,evaluated,approved,denied,cancelled,expired"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MODE: "placeholder-state-only"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_METADATA: "provider-neutral-redacted"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_RUNTIME_ACTION: "none-placeholder-only"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_SAMPLE_REQUEST_ID: "replace-with-audit-export-request-id"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_REPLAY_PROBES: "requested,evaluated,approved,denied,cancelled,expired"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_REPLAY_MODE: "deterministic-read-only-placeholder"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_REPLAY_SCOPE: "project-and-actor-placeholder"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_REPLAY_SAMPLE_ACTOR_ID: "replace-with-audit-export-actor-id"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_REPLAY_SAMPLE_PROJECT_ID: "replace-with-audit-export-project-id"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_INVARIANT_PROBES: "deterministic,recomputable,append-only,project-scope,actor-scope,provider-neutral,secret-free,read-only"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_INVARIANT_MODE: "read-model-contract-only"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_INVARIANT_ROUTE: "/api/v1/projects/{projectId}/security/audit/export/lifecycle/replay/invariants"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_INVARIANT_SAMPLE_LIMIT: "10"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_INVARIANT_SAMPLE_CURSOR: "replace-with-audit-export-invariant-cursor"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_MODE: "materialized-read-model-contract-only"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_ROUTE: "/api/v1/projects/{projectId}/security/audit/export/lifecycle/replay/invariants/materialized"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_MARKER: "security-audit-export-lifecycle-replay-invariant-materialized-read"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_BOUNDARY: "worker-compatible-security-audit-export-lifecycle-replay-invariant-materialized-read"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_MUTATION_BOUNDARY: "api-materialized-read-only-no-export-provider-mutation"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_SURFACE: "existing-api-mcp-read-model-only"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_EXECUTABLE_ENDPOINTS: "none-executable-provider-endpoints"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_SECRET_MOUNTS: "api-mcp-none-worker-placeholder-only"
+  SECURITY_AUDIT_EXPORT_LIFECYCLE_MATERIALIZED_INVARIANT_SIGNED_URLS: "none"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: testhistory-security-audit-export
+  namespace: testhistory
+  annotations:
+    testhistory.io/runbook: "docs/operations.md#security-audit-retention-and-export-policy"
+    testhistory.io/audit-policy-state: "placeholder-only"
+type: Opaque
+stringData:
+  SECURITY_AUDIT_EXPORT_ENDPOINT: "replace-with-security-audit-export-endpoint"
+  SECURITY_AUDIT_EXPORT_CLIENT_ID: "replace-with-security-audit-export-client-id"
+  SECURITY_AUDIT_EXPORT_CLIENT_SECRET: "replace-with-security-audit-export-client-secret"
+  SECURITY_AUDIT_EXPORT_TOKEN: "replace-with-security-audit-export-token"
+  SECURITY_AUDIT_EXPORT_ENCRYPTION_KEY: "replace-with-security-audit-export-encryption-key"

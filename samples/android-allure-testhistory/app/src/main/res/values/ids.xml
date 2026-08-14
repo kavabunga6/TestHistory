@@ -1,0 +1,8 @@
+<resources>
+    <item name="username_input" type="id" />
+    <item name="login_button" type="id" />
+    <item name="checkout_button" type="id" />
+    <item name="status_text" type="id" />
+    <item name="cart_count_text" type="id" />
+    <item name="title_text" type="id" />
+</resources>

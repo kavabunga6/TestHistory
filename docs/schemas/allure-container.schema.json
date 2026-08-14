@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testhistory.local/schemas/allure-container.schema.json",
+  "title": "AllureContainer",
+  "type": "object",
+  "required": ["uuid"],
+  "additionalProperties": true,
+  "properties": {
+    "uuid": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
+    "children": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "start": { "type": "number" },
+    "stop": { "type": "number" }
+  }
+}

@@ -1,0 +1,640 @@
+.thql-search {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  margin: 0 22px 10px;
+}
+
+.thql-search__field {
+  min-width: 0;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #526172;
+  font-size: 13px;
+}
+
+.thql-search__field:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.thql-search__field svg {
+  flex: 0 0 auto;
+}
+
+.thql-search__field input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #172033;
+  font: inherit;
+}
+
+.thql-search__field input::placeholder {
+  color: #748094;
+  opacity: 1;
+}
+
+.thql-search__filters {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  gap: 6px;
+}
+
+.thql-search__filter-actions {
+  min-width: 0;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.tc-detail-reference-list-panel > .thql-search {
+  gap: 12px;
+  margin: 4px 22px 18px;
+}
+
+.tc-detail-reference-list-panel > .thql-search .thql-search__field {
+  min-height: calc(44px + var(--th-font-body-delta));
+}
+
+.tc-detail-reference-list-panel > .thql-search .thql-search__filters {
+  row-gap: 10px;
+}
+
+.tc-detail-reference-list-panel > .thql-search .thql-search__chip,
+.tc-detail-reference-list-panel > .thql-search .thql-search__manage,
+.tc-detail-reference-list-panel > .thql-search .thql-search__icon-button {
+  min-height: calc(32px + var(--th-font-body-delta));
+}
+
+.thql-search__chip,
+.thql-search__manage,
+.thql-search__icon-button {
+  min-width: 0;
+  min-height: 28px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #d7e1ee;
+  border-radius: 999px;
+  padding: 0 9px;
+  background: #f8fafc;
+  color: #303642;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.thql-search__chip:hover,
+.thql-search__manage:hover,
+.thql-search__icon-button:hover {
+  background: #f1f5f9;
+}
+
+.thql-search__chip:focus-visible,
+.thql-search__manage:focus-visible,
+.thql-search__icon-button:focus-visible,
+.thql-search__menu button:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.thql-search__chip {
+  max-width: 142px;
+  border-color: var(--thql-chip-border, #d7e1ee);
+  background: var(--thql-chip-bg, #f8fafc);
+  color: var(--thql-chip-color, #303642);
+}
+
+.thql-search__chip.active {
+  border-color: var(--thql-chip-active-border, #1d4ed8);
+  background: var(--thql-chip-active-bg, #2563eb);
+  color: var(--thql-chip-active-color, #ffffff);
+  box-shadow: 0 0 0 2px var(--thql-chip-active-ring, rgb(37 99 235 / 18%));
+}
+
+.thql-search__chip--global,
+.thql-search__chip--project,
+.thql-search__chip--personal {
+  --thql-chip-bg: #f8fafc;
+  --thql-chip-border: #d7e1ee;
+  --thql-chip-color: #303642;
+  --thql-chip-active-bg: #2563eb;
+  --thql-chip-active-border: #1d4ed8;
+  --thql-chip-active-color: #ffffff;
+  --thql-chip-active-ring: rgb(37 99 235 / 18%);
+}
+
+.thql-search__chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thql-search__icon-button,
+.thql-search__manage {
+  width: 32px;
+  padding: 0;
+}
+
+.thql-search__overflow {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.thql-search__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 240px;
+  overflow: hidden;
+  border: 1px solid #d7e1ee;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 38px rgb(15 23 42 / 18%);
+}
+
+.thql-search__menu button {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid #e8edf3;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #303642;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.thql-search__menu button:last-child {
+  border-bottom: 0;
+}
+
+.thql-search__menu button:hover {
+  background: #f8fafc;
+}
+
+.thql-search__menu button.active {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: inset 3px 0 #1d4ed8;
+}
+
+.thql-search__validation {
+  width: fit-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.thql-search__validation.ok {
+  background: #f0faf2;
+  color: #23873a;
+}
+
+.thql-search__validation.error {
+  background: #fff5f4;
+  color: #c83b33;
+}
+
+.thql-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(15 23 42 / 48%);
+}
+
+.thql-dialog {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgb(15 23 42 / 18%);
+  color: #303642;
+}
+
+.thql-dialog > header,
+.thql-dialog > footer {
+  min-width: 0;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #ffffff;
+}
+
+.thql-dialog > header {
+  border-bottom: 1px solid #e8edf3;
+}
+
+.thql-dialog > footer {
+  justify-content: flex-end;
+  border-top: 1px solid #e8edf3;
+  background: #f8fafc;
+}
+
+.thql-dialog__heading,
+.thql-dialog__section-heading {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.thql-dialog h2,
+.thql-dialog h3,
+.thql-dialog p {
+  margin: 0;
+}
+
+.thql-dialog h2 {
+  color: #172033;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.thql-dialog__heading p,
+.thql-dialog__section-heading span {
+  color: #526172;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.thql-dialog h3 {
+  color: #172033;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.thql-dialog button {
+  min-width: 0;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #303642;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.thql-dialog button:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.thql-dialog button:focus-visible,
+.thql-dialog input:focus-visible,
+.thql-dialog select:focus-visible {
+  outline: 0;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.thql-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.thql-dialog > footer button {
+  min-width: 96px;
+}
+
+.thql-dialog > footer button.primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.thql-dialog > footer button.primary:hover {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+}
+
+.thql-dialog__close {
+  width: 36px;
+  min-height: 36px !important;
+  flex: 0 0 auto;
+  padding: 0 !important;
+  color: #526172 !important;
+}
+
+.thql-dialog__body {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  background: #ffffff;
+}
+
+.thql-dialog__section {
+  min-width: 0;
+}
+
+.thql-dialog__filter-list {
+  min-width: 0;
+  display: grid;
+  overflow: hidden;
+  margin-top: 12px;
+  border: 1px solid #d7e1ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.thql-dialog__filter-row {
+  min-width: 0;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px 36px;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e8edf3;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.thql-dialog__filter-row:hover {
+  background: #f8fafc;
+}
+
+.thql-dialog__filter-row:last-child {
+  border-bottom: 0;
+}
+
+.thql-dialog__filter-row > label {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.thql-dialog__filter-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  justify-self: center;
+  margin: 0;
+  accent-color: #2563eb;
+}
+
+.thql-dialog__filter-main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.thql-dialog__filter-main strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thql-dialog__filter-main small {
+  min-width: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #526172;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.thql-dialog__scope {
+  min-width: 0;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d7e1ee;
+  border-radius: 999px;
+  padding: 0 8px;
+  background: #f8fafc;
+  color: #526172;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.thql-dialog__delete-filter {
+  width: 36px;
+  min-height: 36px !important;
+  border-color: #f0c9c6 !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  color: #b42318 !important;
+}
+
+.thql-dialog__delete-filter:hover {
+  background: #fff5f5 !important;
+}
+
+.thql-dialog__delete-spacer {
+  width: 36px;
+  height: 36px;
+}
+
+.thql-dialog__empty {
+  padding: 20px;
+  color: #526172;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.thql-dialog__create-filter {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.thql-dialog__create-filter label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.thql-dialog__create-filter label > span {
+  color: #526172;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.thql-dialog__create-filter input,
+.thql-dialog__create-filter select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #172033;
+  font: inherit;
+  font-size: 13px;
+}
+
+.thql-dialog__create-filter select {
+  appearance: none;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23526172' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+}
+
+.thql-dialog__query-field {
+  grid-column: 1;
+}
+
+.thql-dialog__query-field input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.thql-dialog__save-filter {
+  align-self: end;
+  min-height: 40px !important;
+  border-color: #aebdce !important;
+  color: #1d4ed8 !important;
+}
+
+.thql-dialog__save-filter:hover:not(:disabled) {
+  background: #e8f1ff !important;
+}
+
+@media (max-width: 720px) {
+  .thql-dialog-backdrop {
+    padding: 8px;
+  }
+
+  .thql-dialog {
+    width: 100%;
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .thql-dialog > header,
+  .thql-dialog > footer,
+  .thql-dialog__body {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .thql-dialog__body {
+    gap: 20px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .thql-dialog__filter-row {
+    grid-template-columns: minmax(0, 1fr) 36px;
+  }
+
+  .thql-dialog__scope {
+    grid-column: 1;
+    justify-self: start;
+    margin-left: 34px;
+  }
+
+  .thql-dialog__delete-filter,
+  .thql-dialog__delete-spacer {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .thql-dialog__create-filter {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .thql-dialog__query-field {
+    grid-column: auto;
+  }
+
+  .thql-dialog__save-filter {
+    width: 100%;
+  }
+
+  .thql-dialog > footer button {
+    min-height: 40px;
+    flex: 1;
+  }
+}
+
+@media (max-width: 420px) {
+  .thql-dialog > header {
+    align-items: flex-start;
+  }
+
+  .thql-dialog__filter-row {
+    padding: 10px;
+  }
+}

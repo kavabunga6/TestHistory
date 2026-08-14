@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testhistory-api
+  namespace: testhistory
+spec:
+  # Active/active API replicas are not supported while the hydrated read model
+  # remains process-local. This boundary is enforced by the readiness smoke.
+  replicas: 1
+  template:
+    spec:
+      serviceAccountName: testhistory-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testhistory-worker
+  namespace: testhistory
+spec:
+  replicas: 2
+  template:
+    spec:
+      serviceAccountName: testhistory-worker
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testhistory-web
+  namespace: testhistory
+spec:
+  replicas: 3
+  template:
+    spec:
+      serviceAccountName: testhistory-web

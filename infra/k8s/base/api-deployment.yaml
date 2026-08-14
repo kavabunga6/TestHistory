@@ -1,0 +1,175 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testhistory-api
+  namespace: testhistory
+  annotations:
+    testhistory.io/requires-migration-job: "testhistory-db-migrate"
+    testhistory.io/runbook: "docs/operations.md#migrations"
+    testhistory.io/dependency-endpoints: "private-only"
+    testhistory.io/auth-boundary: "oidc-placeholder"
+    testhistory.io/auth-probe-credential: "none-health-only"
+    testhistory.io/audit-redaction: "strict"
+    testhistory.io/security-audit-sink: "stdout-json"
+    testhistory.io/security-audit-events: "security.audit.read,security.audit.denied,auth.probe.accepted,auth.probe.denied"
+    testhistory.io/security-audit-export-materialized-invariant-read: "provider-neutral-secret-free"
+    testhistory.io/security-audit-export-materialized-secret-mount: "none"
+    testhistory.io/security-audit-export-provider-endpoints: "none"
+    testhistory.io/attachment-preview-retention-descriptor: "dry-run-redacted"
+    testhistory.io/attachment-preview-retention-secret-mount: "none"
+    testhistory.io/attachment-preview-retention-provider-endpoints: "none"
+    testhistory.io/probe-classification: "security.audit.probe"
+spec:
+  # The hydrated API read model is process-local. Keep one replica until
+  # repository-first reads or explicit cross-replica invalidation are implemented.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testhistory-api
+  template:
+    metadata:
+      labels:
+        app: testhistory-api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: testhistory-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: testhistory-runtime
+            - configMapRef:
+                name: testhistory-security-audit-policy
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: REDIS_URL
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: RABBITMQ_URL
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: S3_ACCESS_KEY_ID
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: S3_SECRET_ACCESS_KEY
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: OIDC_CLIENT_ID
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: OIDC_CLIENT_SECRET
+            - name: AUTH_SESSION_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: AUTH_SESSION_SIGNING_KEY
+            - name: TESTHISTORY_BOOTSTRAP_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: TESTHISTORY_BOOTSTRAP_ADMIN_EMAIL
+            - name: TESTHISTORY_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: TESTHISTORY_BOOTSTRAP_ADMIN_PASSWORD
+            - name: TESTHISTORY_WORKER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: TESTHISTORY_WORKER_TOKEN
+            - name: SECURITY_AUDIT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: SECURITY_AUDIT_SIGNING_KEY
+            - name: SECURITY_AUDIT_SINK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: SECURITY_AUDIT_SINK_TOKEN
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: X-TestHistory-Probe
+                  value: startup
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: X-TestHistory-Probe
+                  value: readiness
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: X-TestHistory-Probe
+                  value: liveness
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testhistory-api
+  namespace: testhistory
+spec:
+  selector:
+    app: testhistory-api
+  ports:
+    - port: 8080
+      targetPort: 8080

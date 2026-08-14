@@ -1,0 +1,8 @@
+.gradle/
+build/
+**/build/
+local.properties
+allure-results/
+artifacts/
+*.apk
+*.ap_

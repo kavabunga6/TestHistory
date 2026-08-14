@@ -1,0 +1,30 @@
+{
+  "name": "@testhistory/api",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --watch-path=src --import tsx src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1106.0",
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.1",
+    "@testhistory/allure-parser": "0.1.0",
+    "@testhistory/artifacts": "0.1.0",
+    "@testhistory/contracts": "0.1.0",
+    "@testhistory/domain": "0.1.0",
+    "fastify": "^5.11.2",
+    "pg": "^8.22.0",
+    "tsx": "^4.23.9"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
+  }
+}

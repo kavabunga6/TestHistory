@@ -1,0 +1,66 @@
+variables:
+  GIT_STRATEGY: "none"
+  GITLAB_API_BASE_URL: "http://192.168.1.46:8929/api/v4"
+  ANDROID_CI_IMAGE: "ghcr.io/cirruslabs/android-sdk:35"
+  GRADLE_HOME_DIR: "/cache/gradle-dist"
+  GRADLE_USER_HOME: "/root/.gradle"
+  NODE_HOME_DIR: "/cache/node-dist"
+  ANDROID_AVD_HOME: "$CI_PROJECT_DIR/.android/avd"
+  TESTHISTORY_UPLOAD_CHUNK_BYTES: "4194304"
+
+cache:
+  key: "$CI_PROJECT_NAME-android-tools"
+  paths:
+    - .gradle-dist/
+    - .gradle-user-home/
+    - .node-dist/
+    - .android/avd/
+  policy: pull-push
+
+.source_from_api: &source_from_api
+  - 'curl --fail --location --header "PRIVATE-TOKEN: $GITLAB_DOWNLOAD_TOKEN" "$GITLAB_API_BASE_URL/projects/$CI_PROJECT_ID/repository/archive.tar.gz?sha=$CI_COMMIT_SHA" --output source.tar.gz && tar -xzf source.tar.gz --strip-components=1'
+
+validate_android_sample:
+  image: $ANDROID_CI_IMAGE
+  before_script:
+    - *source_from_api
+  script:
+    - 'test -f settings.gradle.kts'
+    - 'test -f build.gradle.kts'
+    - 'test -f app/build.gradle.kts'
+    - 'test -f app/src/main/AndroidManifest.xml'
+    - 'test -f scripts/upload-to-testhistory.mjs'
+    - 'test -f scripts/ci-node.sh'
+    - 'test -f scripts/ci-run-pipeline.sh'
+    - 'test -f scripts/attach-run-video.mjs'
+    - 'test -f app/src/androidTest/java/com/testhistory/sample/SampleAppSteps.java'
+    - 'test -f app/src/androidTest/java/com/testhistory/sample/StateRegressionTest.java'
+    - 'test -f app/src/androidTest/java/com/testhistory/sample/FailureShowcaseTest.java'
+    - 'test -f app/src/androidTest/java/com/testhistory/sample/evidence/AllureEvidenceRule.java'
+    - 'grep -R "AllureEvidenceRule" app/src/androidTest/java/com/testhistory/sample'
+    - 'grep -R "screenrecord" scripts/ci-run-android.sh'
+    - 'grep -R "Full test run video" scripts/attach-run-video.mjs'
+    - 'grep -R "Intentional broken test" app/src/androidTest/java/com/testhistory/sample'
+    - 'test "$(grep -R "@Test" app/src/androidTest/java/com/testhistory/sample | wc -l | tr -d " ")" -ge 27'
+    - 'grep -R "uploads/chunked" scripts/upload-to-testhistory.mjs'
+    - 'grep -R "upload-to-testhistory" README.md'
+
+android_device_test_upload:
+  image: $ANDROID_CI_IMAGE
+  when: manual
+  allow_failure: true
+  variables:
+    REQUIRE_KVM: "true"
+  before_script:
+    - *source_from_api
+  script:
+    - 'sh scripts/ci-run-pipeline.sh'
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - allure-results/
+      - android-instrumentation.log
+      - app/build/reports/androidTests/
+      - app/build/outputs/androidTest-results/
+      - testhistory-evidence.tar.gz

@@ -1,0 +1,358 @@
+// Synthetic Allure seed data is intentionally static so generated histories stay reproducible.
+export const caseCatalog = [
+  {
+    id: "auth-login",
+    testCaseId: "SYN-AUTH-001",
+    name: "Synthetic: successful login",
+    fullName: "synthetic.web.auth.LoginSpec.successfulLogin",
+    owner: "Platform QA",
+    severity: "critical",
+    layer: "web",
+    feature: "Authentication",
+    story: "Password sign in",
+    component: "auth",
+    service: "identity",
+    scenario: "happy-path",
+    tms: "TMS-AUTH-001",
+    testKey: "AUTH-TC-001",
+    issue: "AUTH-101",
+    links: ["story", "tms", "spec"],
+    tags: ["smoke", "auth", "stable"],
+    baseDuration: 1400,
+    statuses: [
+      "passed",
+      "passed",
+      "passed",
+      "failed",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "passed"
+    ]
+  },
+  {
+    id: "checkout-card",
+    testCaseId: "SYN-PAY-002",
+    name: "Synthetic: card checkout",
+    fullName: "synthetic.web.checkout.CheckoutSpec.cardPayment",
+    owner: "Payments QA",
+    severity: "blocker",
+    layer: "web",
+    feature: "Checkout",
+    story: "Card payment",
+    component: "checkout",
+    service: "payments",
+    scenario: "purchase",
+    tms: "TMS-PAY-002",
+    testKey: "PAY-TC-002",
+    issue: "PAY-337",
+    links: ["story", "issue", "tms", "runbook"],
+    tags: ["checkout", "payment", "regression"],
+    baseDuration: 3200,
+    statuses: [
+      "failed",
+      "failed",
+      "passed",
+      "passed",
+      "broken",
+      "passed",
+      "passed",
+      "failed",
+      "passed",
+      "passed"
+    ]
+  },
+  {
+    id: "profile-avatar",
+    testCaseId: "SYN-USER-003",
+    name: "Synthetic: avatar upload",
+    fullName: "synthetic.web.profile.ProfileSpec.avatarUpload",
+    owner: "Accounts QA",
+    severity: "normal",
+    layer: "web",
+    feature: "Profile",
+    story: "Avatar management",
+    component: "profile",
+    service: "accounts",
+    scenario: "media-upload",
+    tms: "TMS-USER-003",
+    testKey: "USER-TC-003",
+    issue: "USER-221",
+    links: ["story", "issue", "spec"],
+    tags: ["profile", "media"],
+    baseDuration: 2300,
+    statuses: [
+      "passed",
+      "broken",
+      "broken",
+      "passed",
+      "passed",
+      "passed",
+      "skipped",
+      "passed",
+      "passed",
+      "passed"
+    ]
+  },
+  {
+    id: "reports-export",
+    testCaseId: "SYN-REP-004",
+    name: "Synthetic: report export",
+    fullName: "synthetic.web.reports.ReportSpec.exportCsv",
+    owner: "Analytics QA",
+    severity: "minor",
+    layer: "web",
+    feature: "Reports",
+    story: "CSV export",
+    component: "reports",
+    service: "analytics",
+    scenario: "export",
+    tms: "TMS-REP-004",
+    testKey: "REP-TC-004",
+    issue: "REP-404",
+    links: ["story", "tms"],
+    tags: ["reports", "feature-flag"],
+    baseDuration: 900,
+    statuses: [
+      "skipped",
+      "skipped",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "skipped",
+      "passed"
+    ]
+  },
+  {
+    id: "catalog-search",
+    testCaseId: "SYN-CAT-005",
+    name: "Synthetic: catalog search filters",
+    fullName: "synthetic.web.catalog.CatalogSpec.searchFilters",
+    owner: "Catalog QA",
+    severity: "normal",
+    layer: "web",
+    feature: "Catalog",
+    story: "Filter search results",
+    component: "catalog",
+    service: "search",
+    scenario: "faceted-search",
+    tms: "TMS-CAT-005",
+    testKey: "CAT-TC-005",
+    issue: "CAT-88",
+    links: ["story", "spec"],
+    tags: ["catalog", "search", "stable"],
+    baseDuration: 1800,
+    statuses: [
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "failed",
+      "failed",
+      "passed",
+      "passed",
+      "passed"
+    ]
+  },
+  {
+    id: "notifications-email",
+    testCaseId: "SYN-NOT-006",
+    name: "Synthetic: email notification preferences",
+    fullName: "synthetic.web.notifications.NotificationSpec.emailPreferences",
+    owner: "Engagement QA",
+    severity: "normal",
+    layer: "api",
+    feature: "Notifications",
+    story: "Email preferences",
+    component: "notifications",
+    service: "messaging",
+    scenario: "settings",
+    tms: "TMS-NOT-006",
+    testKey: "NOT-TC-006",
+    issue: "NOT-19",
+    links: ["story", "issue", "runbook"],
+    tags: ["notifications", "api"],
+    baseDuration: 1250,
+    statuses: [
+      "passed",
+      "passed",
+      "skipped",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "broken",
+      "passed",
+      "passed"
+    ]
+  },
+  {
+    id: "admin-permissions",
+    testCaseId: "SYN-ADM-007",
+    name: "Synthetic: admin permission audit",
+    fullName: "synthetic.web.admin.AdminSpec.permissionAudit",
+    owner: "Security QA",
+    severity: "critical",
+    layer: "web",
+    feature: "Administration",
+    story: "Permission audit",
+    component: "admin",
+    service: "access-control",
+    scenario: "audit",
+    tms: "TMS-ADM-007",
+    testKey: "ADM-TC-007",
+    issue: "ADM-52",
+    links: ["story", "issue", "tms", "spec"],
+    tags: ["admin", "security", "audit"],
+    baseDuration: 2600,
+    statuses: [
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "failed",
+      "failed",
+      "passed",
+      "passed",
+      "passed",
+      "passed"
+    ]
+  },
+  {
+    id: "mobile-deeplink",
+    testCaseId: "SYN-MOB-008",
+    name: "Synthetic: mobile deep link",
+    fullName: "synthetic.mobile.navigation.DeepLinkSpec.openOrder",
+    owner: "Mobile QA",
+    severity: "normal",
+    layer: "mobile",
+    feature: "Navigation",
+    story: "Open order deep link",
+    component: "mobile-shell",
+    service: "routing",
+    scenario: "deeplink",
+    tms: "TMS-MOB-008",
+    testKey: "MOB-TC-008",
+    issue: "MOB-73",
+    links: ["story", "issue"],
+    tags: ["mobile", "navigation"],
+    baseDuration: 2100,
+    statuses: [
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+      "broken",
+      "broken",
+      "passed",
+      "passed"
+    ]
+  }
+];
+
+export const launchPlans = [
+  {
+    branch: "main",
+    cases: ["auth-login", "checkout-card", "profile-avatar", "reports-export", "catalog-search"]
+  },
+  {
+    branch: "main",
+    cases: [
+      "auth-login",
+      "checkout-card",
+      "profile-avatar",
+      "reports-export",
+      "notifications-email"
+    ]
+  },
+  {
+    branch: "main",
+    cases: [
+      "auth-login",
+      "checkout-card",
+      "profile-avatar",
+      "reports-export",
+      "catalog-search",
+      "admin-permissions"
+    ]
+  },
+  {
+    branch: "release/1.4",
+    cases: [
+      "auth-login",
+      "checkout-card",
+      "reports-export",
+      "catalog-search",
+      "notifications-email"
+    ]
+  },
+  {
+    branch: "release/1.4",
+    cases: ["auth-login", "checkout-card", "profile-avatar", "catalog-search", "admin-permissions"]
+  },
+  {
+    branch: "release/1.4",
+    cases: [
+      "auth-login",
+      "checkout-card",
+      "profile-avatar",
+      "reports-export",
+      "catalog-search",
+      "admin-permissions"
+    ]
+  },
+  {
+    branch: "main",
+    cases: [
+      "auth-login",
+      "profile-avatar",
+      "reports-export",
+      "catalog-search",
+      "notifications-email",
+      "mobile-deeplink"
+    ]
+  },
+  {
+    branch: "main",
+    cases: [
+      "auth-login",
+      "checkout-card",
+      "profile-avatar",
+      "catalog-search",
+      "notifications-email",
+      "mobile-deeplink"
+    ]
+  },
+  {
+    branch: "main",
+    cases: [
+      "auth-login",
+      "checkout-card",
+      "reports-export",
+      "catalog-search",
+      "admin-permissions",
+      "mobile-deeplink"
+    ]
+  },
+  {
+    branch: "main",
+    cases: [
+      "auth-login",
+      "checkout-card",
+      "profile-avatar",
+      "reports-export",
+      "catalog-search",
+      "notifications-email",
+      "admin-permissions",
+      "mobile-deeplink"
+    ]
+  }
+];

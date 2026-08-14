@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - autoscaling-prod.yaml
+  - availability-prod.yaml
+  - network-prod.yaml
+  - service-accounts-prod.yaml
+images:
+  - name: testhistory-api
+    newName: ghcr.io/replace-owner/testhistory-api
+    newTag: replace-prod-immutable-tag
+  - name: testhistory-worker
+    newName: ghcr.io/replace-owner/testhistory-worker
+    newTag: replace-prod-immutable-tag
+  - name: testhistory-mcp
+    newName: ghcr.io/replace-owner/testhistory-mcp
+    newTag: replace-prod-immutable-tag
+  - name: testhistory-web
+    newName: ghcr.io/replace-owner/testhistory-web
+    newTag: replace-prod-immutable-tag
+patches:
+  - path: ingress-prod.yaml
+  - path: storage-prod.yaml
+  - path: workload-prod.yaml

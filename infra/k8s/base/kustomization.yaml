@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - runtime-config.yaml
+  - security-audit-policy.yaml
+  - attachment-preview-retention-policy.yaml
+  - storage.yaml
+  - rabbitmq-deployment.yaml
+  - minio-bucket-job.yaml
+  - db-migration-job.yaml
+  - api-deployment.yaml
+  - worker-deployment.yaml
+  - mcp-deployment.yaml
+  - web-deployment.yaml
+  - ingress.yaml
+images:
+  - name: testhistory-api
+    newName: ghcr.io/replace-owner/testhistory-api
+    newTag: replace-tag
+  - name: testhistory-worker
+    newName: ghcr.io/replace-owner/testhistory-worker
+    newTag: replace-tag
+  - name: testhistory-mcp
+    newName: ghcr.io/replace-owner/testhistory-mcp
+    newTag: replace-tag
+  - name: testhistory-web
+    newName: ghcr.io/replace-owner/testhistory-web
+    newTag: replace-tag

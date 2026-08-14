@@ -1,0 +1,474 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+    inputs:
+      load_soak_results:
+        description: "Load/soak result count"
+        required: false
+        default: "10000"
+      load_soak_uploaders:
+        description: "Parallel load/soak uploaders"
+        required: false
+        default: "10"
+      load_soak_batch_size:
+        description: "Result files per chunked upload session"
+        required: false
+        default: "250"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  TESTHISTORY_PRIVATE_NPM_REGISTRY: https://npm.pkg.github.com
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sensitive artifact guard
+        run: npm run guard:sensitive
+
+      - name: Lint
+        run: npm run lint
+
+  check:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check
+        run: npm run check
+
+  security-audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Critical dependency audit
+        run: npm run security:audit
+
+  api-smoke:
+    name: API smoke
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke API
+        run: npm run smoke:api
+
+  openapi-contract:
+    name: OpenAPI contract
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: OpenAPI runtime/static parity
+        run: npm run openapi:check
+
+  upload-close-ui-smoke:
+    name: Upload close UI smoke
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build API
+        run: npm run build -w @testhistory/contracts && npm run build -w @testhistory/artifacts && npm run build -w @testhistory/allure-parser && npm run build -w @testhistory/domain && npm run build -w @testhistory/api
+
+      - name: Upload close UI smoke
+        run: npm run smoke:upload-close-ui
+
+  ui-screenshot-evidence:
+    name: UI screenshot evidence
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium chromium-headless-shell
+
+      - name: UI design contract
+        run: npm run guard:ui-design
+
+      - name: Button overflow guard
+        run: npm run guard:button-overflow
+
+      - name: UI interaction guard
+        run: npm run guard:ui-interactions
+
+      - name: Capture UI screenshots
+        run: npm run screenshots:capture
+
+      - name: Upload screenshot artifact (best effort)
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshot-evidence
+          path: docs/screenshots/final/*
+          if-no-files-found: error
+          retention-days: 1
+
+  enterprise-performance-smoke:
+    name: Enterprise performance smoke
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Enterprise performance smoke
+        run: npm run smoke:perf
+
+  load-soak-evidence:
+    name: Load soak evidence
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Capture load soak evidence
+        run: npm run load:soak -- --results="${{ inputs.load_soak_results }}" --uploaders="${{ inputs.load_soak_uploaders }}" --batch-size="${{ inputs.load_soak_batch_size }}"
+
+      - name: Upload load soak artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-soak-evidence
+          path: .tmp/performance/load-soak-evidence.json
+          if-no-files-found: error
+
+  quality-gate-smoke:
+    name: Quality gate smoke
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Quality gate smoke
+        run: npm run smoke:quality-gate
+
+  k8s-readiness:
+    name: Kubernetes readiness smoke
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Kubernetes validate wrapper
+        env:
+          TESTHISTORY_K8S_REQUIRE_KUBECTL: "1"
+        run: npm run k8s:validate:all
+
+  operations-contract:
+    name: Operations contract
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Configure private npm registry
+        shell: bash
+        env:
+          TESTHISTORY_NPM_TOKEN: ${{ secrets.TESTHISTORY_NPM_TOKEN }}
+        run: |
+          if [ -n "$TESTHISTORY_NPM_TOKEN" ]; then
+            npm config set @testhistory:registry "$TESTHISTORY_PRIVATE_NPM_REGISTRY"
+            npm config set //npm.pkg.github.com/:_authToken "$TESTHISTORY_NPM_TOKEN"
+          else
+            echo "No private npm token configured; using public dependency install path."
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: YAML operations and deployment docs format
+        run: npx prettier --check docs/api.md docs/kubernetes-deployment.md docs/local-development.md docs/operations.md docs/screenshots/README.md .github/workflows infra/k8s scripts
+
+      - name: Deployment wrapper help contract
+        run: npm run docker:help && npm run k8s:help
+
+      - name: Release evidence contract
+        run: npm run release:evidence:check
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Kubernetes operations readiness smoke
+        env:
+          TESTHISTORY_K8S_REQUIRE_KUBECTL: "1"
+        run: npm run k8s:validate:all
+
+      - name: Sensitive artifact guard
+        run: npm run guard:sensitive
+
+      - name: Diff whitespace guard
+        run: git diff --check -- infra/k8s .github/workflows docs/operations.md docs/screenshots/README.md scripts

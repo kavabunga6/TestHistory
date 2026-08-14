@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testhistory-web
+  namespace: testhistory
+  annotations:
+    testhistory.io/requires-api-rollout: "testhistory-api"
+    testhistory.io/runbook: "docs/operations.md#migrations"
+    testhistory.io/auth-boundary: "browser-session-shell"
+    testhistory.io/auth-probe-credential: "none-health-only"
+    testhistory.io/audit-redaction: "strict"
+    testhistory.io/probe-classification: "web.health.static-shell"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: testhistory-web
+  template:
+    metadata:
+      labels:
+        app: testhistory-web
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: testhistory-web:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: TESTHISTORY_API_UPSTREAM
+              valueFrom:
+                configMapKeyRef:
+                  name: testhistory-runtime
+                  key: TESTHISTORY_API_UPSTREAM
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+              httpHeaders:
+                - name: X-TestHistory-Probe
+                  value: startup
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+              httpHeaders:
+                - name: X-TestHistory-Probe
+                  value: readiness
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              httpHeaders:
+                - name: X-TestHistory-Probe
+                  value: liveness
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testhistory-web
+  namespace: testhistory
+spec:
+  selector:
+    app: testhistory-web
+  ports:
+    - port: 80
+      targetPort: 80

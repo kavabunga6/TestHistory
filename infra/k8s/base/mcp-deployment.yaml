@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testhistory-mcp
+  namespace: testhistory
+  annotations:
+    testhistory.io/requires-api-rollout: "testhistory-api"
+    testhistory.io/runbook: "docs/operations.md#migrations"
+    testhistory.io/auth-boundary: "read-only-mcp"
+    testhistory.io/auth-probe-credential: "synthetic-stdin-only"
+    testhistory.io/audit-redaction: "strict"
+    testhistory.io/security-audit-sink: "stdout-json"
+    testhistory.io/security-audit-events: "security.audit.mcp.read,security.audit.mcp.denied"
+    testhistory.io/security-audit-export-materialized-invariant-read: "provider-neutral-secret-free"
+    testhistory.io/security-audit-export-materialized-secret-mount: "none"
+    testhistory.io/security-audit-export-provider-endpoints: "none"
+    testhistory.io/attachment-preview-retention-descriptor: "dry-run-redacted"
+    testhistory.io/attachment-preview-retention-secret-mount: "none"
+    testhistory.io/attachment-preview-retention-provider-endpoints: "none"
+    testhistory.io/probe-classification: "mcp.health.synthetic-json-rpc"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testhistory-mcp
+  template:
+    metadata:
+      labels:
+        app: testhistory-mcp
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mcp
+          image: testhistory-mcp:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: testhistory-runtime
+            - configMapRef:
+                name: testhistory-security-audit-policy
+          env:
+            - name: AUTH_PROBE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: AUTH_PROBE_TOKEN
+            - name: SECURITY_AUDIT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: SECURITY_AUDIT_SIGNING_KEY
+            - name: SECURITY_AUDIT_SINK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: testhistory-runtime
+                  key: SECURITY_AUDIT_SINK_TOKEN
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"testhistory.health","arguments":{}}}' \
+                    | node apps/mcp/dist/server.js \
+                    | grep -q testhistory-mcp
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"testhistory.health","arguments":{}}}' \
+                    | node apps/mcp/dist/server.js \
+                    | grep -q testhistory-mcp
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - cat /proc/1/comm | grep -q node
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
