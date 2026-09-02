@@ -20,7 +20,7 @@
     "@testhistory/artifacts": "0.1.0",
     "@testhistory/contracts": "0.1.0",
     "@testhistory/domain": "0.1.0",
-    "fastify": "^5.11.2",
+    "fastify": "^5.12.1",
     "pg": "^8.22.0",
     "tsx": "^4.23.9"
   },
