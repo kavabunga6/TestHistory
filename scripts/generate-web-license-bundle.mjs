@@ -14,31 +14,46 @@ const pending = Object.keys(webPackage.dependencies ?? {}).map((name) => ({
   parentPath: ""
 }));
 const selected = new Map();
+const visited = new Set();
 
 while (pending.length > 0) {
   const dependency = pending.shift();
   const packagePath = resolvePackagePath(dependency.name, dependency.parentPath);
-  if (!packagePath || selected.has(packagePath)) {
+  if (!packagePath || visited.has(packagePath)) {
+    continue;
+  }
+  visited.add(packagePath);
+
+  const metadata = packageEntries[packagePath];
+  if (!metadata) {
+    throw new Error("Cannot resolve distributable dependency " + dependency.name);
+  }
+
+  if (metadata.link === true) {
+    const workspaceMetadata = packageEntries[metadata.resolved];
+    if (!workspaceMetadata) {
+      throw new Error("Cannot resolve workspace dependency " + dependency.name);
+    }
+    enqueueDependencies(workspaceMetadata, packagePath);
     continue;
   }
 
-  const metadata = packageEntries[packagePath];
-  if (!metadata || metadata.link === true) {
-    throw new Error(`Cannot resolve distributable dependency ${dependency.name}`);
-  }
-
   selected.set(packagePath, metadata);
+  enqueueDependencies(metadata, packagePath);
+}
+
+function enqueueDependencies(metadata, parentPath) {
   for (const name of Object.keys(metadata.dependencies ?? {})) {
-    pending.push({ name, parentPath: packagePath });
+    pending.push({ name, parentPath });
   }
   for (const name of Object.keys(metadata.optionalDependencies ?? {})) {
-    if (resolvePackagePath(name, packagePath)) {
-      pending.push({ name, parentPath: packagePath });
+    if (resolvePackagePath(name, parentPath)) {
+      pending.push({ name, parentPath });
     }
   }
   for (const name of Object.keys(metadata.peerDependencies ?? {})) {
-    if (resolvePackagePath(name, packagePath)) {
-      pending.push({ name, parentPath: packagePath });
+    if (resolvePackagePath(name, parentPath)) {
+      pending.push({ name, parentPath });
     }
   }
 }

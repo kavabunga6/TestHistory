@@ -39,7 +39,7 @@ before writing screenshots. The command also writes `final/manifest.json` with t
 dialog flag, and byte size for every PNG. CI captures the full deep set below and uploads the whole
 `docs/screenshots/final/*` directory as an artifact; local capture requires Chrome or Playwright
 Chromium. The capture script tries the installed Google Chrome channel first, then Playwright's
-Chromium and any available Chromium executable in the local cache. If local browser download is
+headless shell or a regular Chromium executable from the local cache. If local browser download is
 blocked, use the CI `ui-screenshot-evidence` artifact.
 
 | File                           | Screen             | Evidence purpose                                                                  |

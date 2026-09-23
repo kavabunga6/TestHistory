@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "prebuild": "npm run build -w @testhistory/contracts",
     "build": "tsc -p tsconfig.json --noEmit && vite build && node ../../scripts/generate-web-license-bundle.mjs",
     "dev": "vite --host 0.0.0.0",
     "preview": "vite preview --host 0.0.0.0",
@@ -12,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@testhistory/contracts": "0.1.0",
     "@fontsource/inter": "^5.3.0",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
