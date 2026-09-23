@@ -51,6 +51,7 @@ import {
   buildAttachmentFileIndex,
   enrichResultAttachmentPreviews
 } from "./uploadAttachmentPreviews.js";
+import { uploadResultReference } from "./uploadResultReferences.js";
 
 export function validateJsonBatchUploadSize(
   files: Array<{ path: string; content: string }>
@@ -97,6 +98,7 @@ export async function processUploadJob(
       body: {
         job: serializeUploadJob(job),
         status: buildJobIngestionStatus(store, job),
+        results: job.results ?? [],
         idempotent: true
       }
     };
@@ -208,6 +210,7 @@ export async function processUploadJob(
     };
   } catch (error) {
     job.status = "failed";
+    job.results = [];
     delete job.lease;
     job.errors.push({
       path: "__worker__",
@@ -268,6 +271,7 @@ export async function importFiles(
   job.duplicateResults = 0;
   job.storedArtifacts = 0;
   job.errors = [];
+  job.results = [];
   job.updatedAt = now;
   store.uploadJobs.set(job.id, job);
   if (store.driver === "postgres") {
@@ -275,6 +279,7 @@ export async function importFiles(
   }
 
   const imported = [];
+  const knownResultUuids = new Set(launch.results.map((result) => result.uuid));
   const duplicateFileIndexes = new Set<number>();
   const compatibilityFiles: CompatibilityFileImport[] = [];
   const attachmentFilesByPath = buildAttachmentFileIndex(files);
@@ -317,9 +322,13 @@ export async function importFiles(
       attachmentFilesByPath,
       launch.id
     );
-    if (hasResultSource(launch, file.path, normalized.uuid)) {
+    if (
+      knownResultUuids.has(normalized.uuid) ||
+      hasResultSource(launch, file.path, normalized.uuid)
+    ) {
       job.duplicateResults += 1;
       duplicateFileIndexes.add(index);
+      job.results.push(uploadResultReference(launch.id, file.path, normalized.uuid, "duplicate"));
       compatibilityFiles.push({
         path: file.path,
         kind: "result",
@@ -332,8 +341,10 @@ export async function importFiles(
     }
 
     launch.results.push(normalized);
+    knownResultUuids.add(normalized.uuid);
     markResultSource(launch, file.path, normalized.uuid);
     job.importedResults += 1;
+    job.results.push(uploadResultReference(launch.id, file.path, normalized.uuid, "imported"));
     imported.push({ path: file.path, uuid: normalized.uuid, warnings: parsed.warnings });
     compatibilityFiles.push({
       path: file.path,
@@ -443,6 +454,7 @@ export async function importFiles(
   return {
     job,
     imported,
+    results: job.results,
     compatibilityFiles,
     artifacts,
     checksumDuplicates: serializeArtifactChecksumDuplicates(

@@ -34,7 +34,6 @@ import {
 } from "./testExports.js";
 import { buildDefectSummaries, filterDefects } from "./referenceScreens/DefectsReferenceScreen.js";
 import { LaunchesReferenceScreen } from "./referenceScreens/LaunchesReferenceScreen.js";
-import { filterProjects, projects } from "./referenceScreens/ProjectsReferenceScreen.js";
 import {
   apiStates,
   archiveFixtureReadyApiState,
@@ -79,9 +78,9 @@ describe("analytics and defects surface readiness", () => {
 
     expect(markup).toContain("dashboard-reference-screen");
     expect(text).toContain("Дашборды");
-    expect(text).toContain("Успешность среза");
+    expect(text).toContain("Успешность запуска");
     expect(text).toContain("Распределение статусов");
-    expect(text).toContain("Медленные и рисковые тесты");
+    expect(text).toContain("Самые долгие тесты");
     expect(text).toContain("THQL");
     expect(buttonContaining(markup, "Добавить виджет")).toBeDefined();
     expect(buttonContaining(markup, "Добавить первый виджет")).toBeUndefined();
@@ -202,11 +201,13 @@ describe("analytics and defects surface readiness", () => {
 
     expect(defectsMarkup).not.toContain("defects-reference-tabs");
     expect(defectsMarkup).not.toContain("defects-reference-filter-chips");
-    expect(defectsText).toContain("Описание");
+    expect(defectsText).not.toContain("Описание не задано");
     expect(defectsText).toContain("Запуски");
     expect(defectsText).toContain("Тест-кейсы");
     expect(defectsText).toContain("Результаты тестов");
-    expect(defectsText).toContain("Правила автоматизации");
+    expect(defectsText).not.toContain("Правила автоматизации");
+    expect(defectsText).not.toContain("Создатель:");
+    expect(defectsText.indexOf("Результаты тестов")).toBeLessThan(defectsText.indexOf("Запуск 1"));
 
     expect(filterDefects(defects, "PAY-337", "all").map((defect) => defect.id)).toEqual([
       "PAY-337"
@@ -730,7 +731,7 @@ describe("analytics and defects surface readiness", () => {
     expect(markup).not.toContain("BASE_CHECK_IMAGE_");
     expect(markup).not.toContain("Не замьючены");
     expect(searchField).toContain('aria-label="THQL поиск тест-кейсов"');
-    expect(searchField).toContain("status in");
+    expect(searchField).toContain("Название тест-кейса или THQL запрос");
     expect(searchField).toContain('value=""');
     expect(searchField).not.toContain("disabled");
   });
@@ -742,7 +743,7 @@ describe("analytics and defects surface readiness", () => {
 
     expect(markup).toContain("analytics-reference-screen");
     expect(text).toContain("Аналитика");
-    expect(text).toContain("10 000 результатов");
+    expect(text).toContain("Показано 10 000 из 10 000 загруженных результатов");
     expect(text).toContain("Успешность 25%");
     expect(text).toContain("Открытые риски 5 000");
     expect(text).toContain("Показано 50 из 10 000");

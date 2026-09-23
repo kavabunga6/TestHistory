@@ -1,37 +1,38 @@
 import { useEffect, useState } from "react";
 
 import {
-  demoProjectSettings,
   loadIntegrationLinkProvidersFromApi,
   type IntegrationLinkProvider
 } from "./projectSettings.js";
 
-export function useIntegrationLinkProviders(): IntegrationLinkProvider[] {
+export function useIntegrationLinkProviders(projectId?: string): IntegrationLinkProvider[] {
   const [providers, setProviders] = useState<IntegrationLinkProvider[]>([]);
-  const localDemoProviders = import.meta.env.DEV
-    ? demoProjectSettings.integrationProviders.filter((item) => item.enabled)
-    : [];
 
   useEffect(() => {
     let active = true;
+    setProviders([]);
+    if (projectId === undefined) {
+      return () => {
+        active = false;
+      };
+    }
 
-    void loadIntegrationLinkProvidersFromApi()
+    void loadIntegrationLinkProvidersFromApi(projectId)
       .then((items) => {
         if (active) {
-          const enabledItems = items.filter((item) => item.enabled);
-          setProviders(enabledItems.length > 0 ? enabledItems : localDemoProviders);
+          setProviders(items.filter((item) => item.enabled));
         }
       })
       .catch(() => {
         if (active) {
-          setProviders(localDemoProviders);
+          setProviders([]);
         }
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [projectId]);
 
   return providers;
 }

@@ -1,54 +1,36 @@
-import {
-  AlertCircle,
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  Image,
-  LockKeyhole,
-  Paperclip
-} from "lucide-react";
-import { useEffect, useState, type CSSProperties } from "react";
+import { AlertCircle, LockKeyhole } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import type {
-  ResultAttachment,
-  ScenarioStep,
-  TestCaseHistoryPoint,
-  TestResult
-} from "../m1Workspace.js";
+import type { TestResult } from "../m1Workspace.js";
 import { resolveIssueTrackerLink } from "../projectSettings.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
-import { getCurrentRunAttempts } from "../resultHistory.js";
-import { shouldExpandScenarioStep } from "../scenarioStepTree.js";
-import {
-  AttachmentDownloadButton,
-  AttachmentPreview as AttachmentInlinePreview,
-  AttachmentViewerButton
-} from "../AttachmentViewer.js";
 import {
   formatHistoryDate,
-  formatHistoryRailLabel,
   formatSeverity,
   formatStatus,
-  isExternalUrl,
-  uniqueStrings
+  isExternalUrl
 } from "./LaunchesReferenceFormatters.js";
 import {
-  collectAttachments,
   getActiveDefectValues,
   getDefectCreator,
   getDefectValues,
-  getHistoryPoints,
-  getQuarantineMeta,
   getQuarantineSummary,
-  getQuarantineTitle,
   isResultQuarantined,
   parseResultReportTab,
-  resolveHistoryResultId,
-  resultReportTabs,
   type ResultReportTab
 } from "./LaunchesReferenceModel.js";
+import { ResultDiagnostics } from "./LaunchesResultDiagnostics.js";
+import { ResultAttachmentsTab } from "./LaunchesResultAttachments.js";
+import { ResultFieldsTab, ResultQuarantineTab } from "./LaunchesResultDetailsTabs.js";
+import { formatResultDuration } from "./LaunchesResultDuration.js";
+import { HistoryRail, ResultHistoryTab, ResultRetriesTab } from "./LaunchesResultHistory.js";
+import { ScenarioSection } from "./LaunchesResultScenario.js";
+import { ResultTabs } from "./LaunchesResultTabs.js";
 import { StatusIcon } from "./LaunchesStatusIcon.js";
 
+import "./LaunchesResultReport.css";
+import "./LaunchesResultReportPolish.css";
+import "./LaunchesResultDiagnostics.css";
 export function ResultReport({
   integrationProviders = [],
   onFilterByTag,
@@ -74,6 +56,9 @@ export function ResultReport({
     parseResultReportTab(routeTab)
   );
   const isQuarantined = isResultQuarantined(result);
+  const quarantineActionHint = isQuarantined
+    ? "Вернуть только этот результат из карантина. Он снова будет учитываться в аналитике."
+    : "Поместить только этот результат в карантин. Он перестанет учитываться в аналитике.";
   useEffect(() => {
     setActiveResultTab(parseResultReportTab(routeTab));
   }, [result.id, routeTab]);
@@ -83,7 +68,6 @@ export function ResultReport({
       onOpenTab?.("overview");
     }
   }, [activeResultTab, isQuarantined, onOpenTab]);
-
   return (
     <section
       className="launches-reference-result-report"
@@ -91,64 +75,45 @@ export function ResultReport({
     >
       <div className="launches-reference-result-title">
         <div className="launches-reference-result-heading">
-          <small>{result.suite}</small>
-          <strong>{result.name}</strong>
-          <div className="launches-reference-result-state-row">
-            <span className={`launches-reference-result-status-pill ${result.status}`}>
+          <div className="launches-reference-result-identity-row">
+            <small title={result.suite}>{result.suite}</small>
+            {onToggleMuteResult !== undefined ? (
+              <button
+                className={`launches-reference-result-action ${isQuarantined ? "is-muted" : ""}`}
+                type="button"
+                aria-description={quarantineActionHint}
+                title={quarantineActionHint}
+                onClick={() => onToggleMuteResult(result.id)}
+              >
+                <LockKeyhole size={15} />
+                <span>{isQuarantined ? "Вернуть" : "В карантин"}</span>
+              </button>
+            ) : null}
+          </div>
+          <div className="launches-reference-result-headline">
+            <span
+              className={`launches-reference-result-status-pill typography-role-meta ${result.status}`}
+            >
               <StatusIcon status={result.status} />
               {formatStatus(result.status)}
             </span>
-            <span className="launches-reference-result-duration">{result.duration}</span>
-            <span className="launches-reference-result-context-pill">Слой: {result.layer}</span>
-            <span className="launches-reference-result-context-pill">
-              Серьезность: {formatSeverity(result.severity)}
+            <strong className="typography-role-title">{result.name}</strong>
+            <span className="launches-reference-result-duration">
+              {formatResultDuration(result.duration)}
             </span>
           </div>
         </div>
-        {onToggleMuteResult !== undefined ? (
-          <button
-            className={`launches-reference-result-action ${isQuarantined ? "is-muted" : ""}`}
-            type="button"
-            title={
-              isQuarantined
-                ? "Вернуть результат из карантина в аналитику"
-                : "Перенести результат в карантин и исключить из аналитики"
-            }
-            onClick={() => onToggleMuteResult(result.id)}
-          >
-            <LockKeyhole size={15} />
-            <span>{isQuarantined ? "Вернуть" : "В карантин"}</span>
-          </button>
-        ) : null}
       </div>
 
-      <nav className="launches-reference-result-tabs" aria-label="Вкладки результата теста">
-        {resultReportTabs.map((tab) => {
-          const count = tab.count?.(result);
-          const disabled = tab.id === "quarantine" && !isQuarantined;
-
-          return (
-            <button
-              className={activeResultTab === tab.id && !disabled ? "active" : ""}
-              disabled={disabled}
-              key={tab.id}
-              type="button"
-              aria-current={activeResultTab === tab.id && !disabled ? "page" : undefined}
-              onClick={() => {
-                if (!disabled) {
-                  setActiveResultTab(tab.id);
-                  onOpenTab?.(tab.id);
-                }
-              }}
-            >
-              {tab.label}
-              {count !== undefined && count > 0 ? (
-                <span className="typography-role-meta">{count.toLocaleString("ru-RU")}</span>
-              ) : null}
-            </button>
-          );
-        })}
-      </nav>
+      <ResultTabs
+        activeTab={activeResultTab}
+        isQuarantined={isQuarantined}
+        result={result}
+        onSelectTab={(tab) => {
+          setActiveResultTab(tab);
+          onOpenTab?.(tab);
+        }}
+      />
 
       {activeResultTab === "overview" ? (
         <ResultOverviewTab
@@ -191,15 +156,20 @@ function ResultOverviewTab({
   return (
     <div className="launches-reference-result-overview">
       <div className="launches-reference-result-main">
-        {result.trace !== undefined ? <TraceDetails result={result} /> : null}
+        {result.trace !== undefined || result.status === "failed" || result.status === "broken" ? (
+          <ResultDiagnostics key={result.id} result={result} />
+        ) : null}
         <ScenarioSection result={result} />
       </div>
       <aside className="launches-reference-result-rail">
+        <RailSection
+          title="Данные результата"
+          values={[`Слой: ${result.layer}`, `Серьезность: ${formatSeverity(result.severity)}`]}
+        />
         <section>
           <h4>История результатов</h4>
           <HistoryRail result={result} results={results} onSelectResult={onSelectResult} />
         </section>
-        <RailSection title="Длительность" values={[result.duration]} />
         <RailSection title="Теги" values={result.tags} onSelectValue={onFilterByTag} />
         <RailSection
           title="Параметры"
@@ -229,104 +199,48 @@ function ResultOverviewTab({
   );
 }
 
-function ScenarioSection({ result }: { result: TestResult }) {
-  return (
-    <details className="launches-reference-mini-section" open>
-      <summary>
-        <h4>Выполняемый сценарий</h4>
-        <ChevronDown size={16} />
-      </summary>
-      {result.steps.length === 0 ? (
-        <p className="launches-reference-muted">Шаги не переданы.</p>
-      ) : (
-        <ScenarioStepTree steps={result.steps} />
-      )}
-    </details>
-  );
-}
-
-function ResultHistoryTab({
-  onSelectResult,
-  result,
-  results
+function RailSection({
+  onSelectValue,
+  title,
+  values
 }: {
-  onSelectResult: ((id: string) => void) | undefined;
-  result: TestResult;
-  results: TestResult[];
+  onSelectValue?: ((value: string) => void) | undefined;
+  title: string;
+  values: Array<string | { label: string; url: string }>;
 }) {
-  const historyPoints = getHistoryPoints(result);
+  if (values.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="launches-reference-result-tab-panel">
-      <section>
-        <h4>История результатов</h4>
-        <p className="launches-reference-history-note">
-          Здесь показан один итоговый результат теста для каждого запуска.
-        </p>
-        <HistoryList
-          result={result}
-          results={results}
-          points={historyPoints}
-          onSelectResult={onSelectResult}
-        />
-      </section>
-    </div>
+    <section>
+      <h4>{title}</h4>
+      <div className="launches-reference-value-list">
+        {values.map((value) => {
+          const label = typeof value === "string" ? value : value.label;
+          const url = typeof value === "string" ? value : value.url;
+          if (isExternalUrl(url)) {
+            return (
+              <a href={url} key={`${label}-${url}`} rel="noreferrer" target="_blank">
+                {label}
+              </a>
+            );
+          }
+          if (onSelectValue !== undefined) {
+            return (
+              <button key={label} type="button" onClick={() => onSelectValue(label)}>
+                {label}
+              </button>
+            );
+          }
+          return <span key={label}>{label}</span>;
+        })}
+      </div>
+    </section>
   );
 }
 
-function ResultRetriesTab({ result }: { result: TestResult }) {
-  return (
-    <div className="launches-reference-result-tab-panel">
-      <section>
-        <h4>Перезапуски</h4>
-        <p className="launches-reference-history-note">
-          Попытки относятся только к текущему запуску. Итоговой считается последняя попытка.
-        </p>
-        <RetryAttemptsSection result={result} />
-      </section>
-    </div>
-  );
-}
-
-function ResultAttachmentsTab({ result }: { result: TestResult }) {
-  const attachments = collectAttachments(result);
-
-  return (
-    <div className="launches-reference-result-tab-panel">
-      <section>
-        <h4>Вложения</h4>
-        {attachments.length === 0 ? (
-          <p className="launches-reference-muted">Вложений нет.</p>
-        ) : (
-          <AttachmentList attachments={attachments} />
-        )}
-      </section>
-    </div>
-  );
-}
-
-function ResultQuarantineTab({ result }: { result: TestResult }) {
-  const quarantineTitle = getQuarantineTitle(result);
-  const quarantineMeta = getQuarantineMeta(result);
-
-  return (
-    <div className="launches-reference-result-tab-panel">
-      <section>
-        <h4>Карантин</h4>
-        {result.muted || result.defectMute ? (
-          <div className="launches-reference-quarantine">
-            <strong>{quarantineTitle}</strong>
-            <span>{quarantineMeta}</span>
-          </div>
-        ) : (
-          <p className="launches-reference-muted">Карантинные правила не применяются.</p>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function ResultDefectsTab({
+export function ResultDefectsTab({
   onUnlinkResultDefect,
   result
 }: {
@@ -377,438 +291,6 @@ function ResultDefectsTab({
           </div>
         ) : null}
       </section>
-    </div>
-  );
-}
-
-function ResultFieldsTab({ result }: { result: TestResult }) {
-  return (
-    <div className="launches-reference-result-tab-panel">
-      <section>
-        <h4>Поля и связи</h4>
-        <ResultAttributes result={result} />
-      </section>
-    </div>
-  );
-}
-
-function HistoryRail({
-  onSelectResult,
-  result,
-  results
-}: {
-  onSelectResult: ((id: string) => void) | undefined;
-  result: TestResult;
-  results: TestResult[];
-}) {
-  const points = getHistoryPoints(result).slice(0, 7);
-
-  if (points.length === 0) {
-    return <p className="launches-reference-muted">История пока пустая.</p>;
-  }
-
-  return (
-    <div className="launches-reference-history-rail" aria-label="Последние запуски теста">
-      {points.map((point, index) => (
-        <button
-          key={`${point.resultUuid}-${index}`}
-          type="button"
-          disabled={onSelectResult === undefined}
-          aria-label={`${formatStatus(point.status)}, ${point.launchName}, ${formatHistoryRailLabel(point)}, ${point.duration}`}
-          title={
-            onSelectResult === undefined
-              ? "Навигация к результату недоступна в этом контексте"
-              : point.launchName
-          }
-          onClick={() => onSelectResult?.(resolveHistoryResultId(results, result, point))}
-        >
-          <span className={`launches-reference-history-status ${point.status}`}>
-            {formatStatus(point.status)}
-          </span>
-          <span className="launches-reference-history-date">{formatHistoryRailLabel(point)}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function RetryAttemptsSection({ result }: { result: TestResult }) {
-  const attempts = getCurrentRunAttempts(result);
-
-  if (attempts.length <= 1) {
-    return <p className="launches-reference-muted">В текущем запуске перезапусков не было.</p>;
-  }
-
-  return (
-    <div className="launches-reference-attempts" aria-label="Попытки текущего запуска">
-      <h5>Попытки текущего запуска</h5>
-      <div className="launches-reference-attempt-list">
-        {attempts.map((attempt) => (
-          <article className={attempt.final ? "is-final" : ""} key={attempt.attempt}>
-            <span className={`launches-reference-status-mark ${attempt.status}`}>
-              <StatusIcon status={attempt.status} />
-            </span>
-            <div>
-              <strong>
-                Попытка {attempt.attempt}
-                {attempt.final ? " · итоговый результат" : ""}
-              </strong>
-              <small>
-                {formatStatus(attempt.status)}
-                {attempt.startedAt ? ` · ${formatHistoryDate(attempt.startedAt)}` : ""}
-                {attempt.message ? ` · ${attempt.message}` : ""}
-              </small>
-            </div>
-            <em>{attempt.duration}</em>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function HistoryList({
-  onSelectResult,
-  points,
-  result,
-  results
-}: {
-  onSelectResult: ((id: string) => void) | undefined;
-  points: TestCaseHistoryPoint[];
-  result: TestResult;
-  results: TestResult[];
-}) {
-  if (points.length === 0) {
-    return <p className="launches-reference-muted">История пока пустая.</p>;
-  }
-
-  return (
-    <div className="launches-reference-history-table" aria-label="История запусков теста">
-      <div className="launches-reference-history-table-head" aria-hidden="true">
-        <span>Статус</span>
-        <span>Запуск</span>
-        <span>Длительность</span>
-      </div>
-      {points.map((point, index) => (
-        <button
-          key={`${point.resultUuid}-${index}`}
-          type="button"
-          disabled={onSelectResult === undefined}
-          title={
-            onSelectResult === undefined
-              ? "Навигация к результату недоступна в этом контексте"
-              : undefined
-          }
-          onClick={() => onSelectResult?.(resolveHistoryResultId(results, result, point))}
-        >
-          <span className={`launches-reference-status-mark ${point.status}`}>
-            <StatusIcon status={point.status} />
-          </span>
-          <span className="launches-reference-history-copy">
-            <strong>{point.launchName}</strong>
-            <small>
-              {formatStatus(point.status)}
-              {point.startedAt ? ` · ${formatHistoryDate(point.startedAt)}` : ""}
-              {point.flaky ? " · нестабилен" : ""}
-            </small>
-          </span>
-          <em>{point.duration}</em>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function RailSection({
-  onSelectValue,
-  title,
-  values
-}: {
-  onSelectValue?: ((value: string) => void) | undefined;
-  title: string;
-  values: Array<string | { label: string; url: string }>;
-}) {
-  if (values.length === 0) {
-    return null;
-  }
-
-  return (
-    <section>
-      <h4>{title}</h4>
-      <div className="launches-reference-value-list">
-        {values.map((value) => {
-          const label = typeof value === "string" ? value : value.label;
-          const url = typeof value === "string" ? value : value.url;
-          if (isExternalUrl(url)) {
-            return (
-              <a href={url} key={`${label}-${url}`} rel="noreferrer" target="_blank">
-                {label}
-              </a>
-            );
-          }
-          if (onSelectValue !== undefined) {
-            return (
-              <button key={label} type="button" onClick={() => onSelectValue(label)}>
-                {label}
-              </button>
-            );
-          }
-          return <span key={label}>{label}</span>;
-        })}
-      </div>
-    </section>
-  );
-}
-
-function TraceDetails({ result }: { result: TestResult }) {
-  if (result.trace === undefined) {
-    return null;
-  }
-
-  return (
-    <details className="launches-reference-trace">
-      <summary>
-        <span className="launches-reference-trace-summary-copy">
-          <span className={`launches-reference-trace-status ${result.status}`}>
-            {formatStatus(result.status)}
-          </span>
-          <strong>{result.trace.message}</strong>
-        </span>
-        <span className="launches-reference-trace-disclosure">
-          Стек вызовов
-          <ChevronDown size={16} />
-        </span>
-      </summary>
-      <div className="launches-reference-trace-stack">
-        {result.trace.stack.map((line, index) => (
-          <code key={`${index}-${line}`}>{line}</code>
-        ))}
-      </div>
-    </details>
-  );
-}
-
-function ScenarioStepTree({
-  depth = 0,
-  parentPath = "",
-  steps
-}: {
-  depth?: number;
-  parentPath?: string;
-  steps: ScenarioStep[];
-}) {
-  return (
-    <ol className="launches-reference-step-tree">
-      {steps.map((step, index) => {
-        const path = parentPath ? `${parentPath}.${index + 1}` : `${index + 1}`;
-        return (
-          <ScenarioStepNode depth={depth} key={`${path}-${step.name}`} path={path} step={step} />
-        );
-      })}
-    </ol>
-  );
-}
-
-function ScenarioStepNode({
-  depth,
-  path,
-  step
-}: {
-  depth: number;
-  path: string;
-  step: ScenarioStep;
-}) {
-  const childSteps = step.steps ?? [];
-  const attachments = step.attachments ?? [];
-  const expandable = childSteps.length > 0 || attachments.length > 0;
-  const [expanded, setExpanded] = useState(() => shouldExpandScenarioStep(step));
-  const depthStyle = { "--launches-step-indent": `${depth * 24}px` } as CSSProperties;
-  const row = (
-    <span className={`launches-reference-step-row is-${step.status}`} style={depthStyle}>
-      <span
-        aria-hidden="true"
-        className={`launches-reference-step-disclosure ${expandable ? "" : "is-placeholder"}`}
-        title={expandable ? (expanded ? "Свернуть шаг" : "Развернуть шаг") : undefined}
-      >
-        {expandable ? <ChevronRight size={16} /> : null}
-      </span>
-      <span className="launches-reference-step-status">
-        <StatusIcon status={step.status} />
-      </span>
-      <strong>{step.name}</strong>
-      <em>{step.duration}</em>
-    </span>
-  );
-
-  return (
-    <li>
-      {expandable ? (
-        <details open={expanded} onToggle={(event) => setExpanded(event.currentTarget.open)}>
-          <summary aria-label={`${expanded ? "Свернуть" : "Развернуть"} шаг ${path}: ${step.name}`}>
-            {row}
-          </summary>
-          {childSteps.length > 0 ? (
-            <ScenarioStepTree depth={depth + 1} parentPath={path} steps={childSteps} />
-          ) : null}
-          {attachments.length > 0 ? (
-            <AttachmentList attachments={attachments} compact depth={depth + 1} />
-          ) : null}
-        </details>
-      ) : (
-        row
-      )}
-    </li>
-  );
-}
-
-function AttachmentList({
-  attachments,
-  compact = false,
-  depth = 0
-}: {
-  attachments: ResultAttachment[];
-  compact?: boolean;
-  depth?: number;
-}) {
-  const depthStyle = compact
-    ? ({ "--launches-step-indent": `${depth * 24}px` } as CSSProperties)
-    : undefined;
-  return (
-    <div
-      className={`launches-reference-attachments ${compact ? "compact" : ""}`}
-      style={depthStyle}
-    >
-      {attachments.map((attachment) => (
-        <AttachmentRow attachment={attachment} key={`${attachment.source}-${attachment.name}`} />
-      ))}
-    </div>
-  );
-}
-
-function AttachmentRow({ attachment }: { attachment: ResultAttachment }) {
-  return (
-    <details className="launches-reference-attachment">
-      <summary>
-        <span className="launches-reference-attachment-icon">
-          {getAttachmentRowIcon(attachment)}
-        </span>
-        <span className="launches-reference-attachment-name">
-          <strong>{attachment.name}</strong>
-          <small>
-            {attachment.mediaType} {"\u00b7"} {attachment.size}
-          </small>
-        </span>
-        <span className="launches-reference-attachment-tools">
-          <span
-            className="launches-reference-attachment-actions"
-            onClick={(event) => event.preventDefault()}
-          >
-            <AttachmentViewerButton attachment={attachment} compact />
-            <AttachmentDownloadButton attachment={attachment} compact />
-          </span>
-          <ChevronDown aria-hidden="true" size={16} />
-        </span>
-      </summary>
-      <div className="launches-reference-attachment-body">
-        {hasInlinePreview(attachment) ? (
-          <AttachmentInlinePreview attachment={attachment} />
-        ) : (
-          <p className="launches-reference-muted">
-            Превью для этого типа файла недоступно — откройте или скачайте вложение.
-          </p>
-        )}
-      </div>
-    </details>
-  );
-}
-
-function hasInlinePreview(attachment: ResultAttachment): boolean {
-  const mediaType = attachment.mediaType.toLowerCase();
-  const isMedia = mediaType.startsWith("image/") || mediaType.startsWith("video/");
-
-  return isMedia || attachment.preview?.body.type === "redacted-text";
-}
-
-function getAttachmentRowIcon(attachment: ResultAttachment) {
-  const mediaType = attachment.mediaType.toLowerCase();
-
-  if (mediaType.startsWith("image/") || mediaType.startsWith("video/")) {
-    return <Image aria-hidden="true" size={15} />;
-  }
-
-  if (mediaType.startsWith("text/") || attachment.preview?.body.type === "redacted-text") {
-    return <FileText aria-hidden="true" size={15} />;
-  }
-
-  return <Paperclip aria-hidden="true" size={15} />;
-}
-function ResultAttributes({ result }: { result: TestResult }) {
-  const parameters = result.parameters ?? [];
-  const tags = uniqueStrings(result.tags);
-  const testKeys = uniqueStrings(result.testKeys);
-  const links = uniqueStrings(result.links);
-  const defects = uniqueStrings(getDefectValues(result));
-  const hasValues =
-    parameters.length > 0 ||
-    tags.length > 0 ||
-    testKeys.length > 0 ||
-    links.length > 0 ||
-    defects.length > 0;
-
-  if (!hasValues) {
-    return <p className="launches-reference-muted">Поля и связи не заданы.</p>;
-  }
-
-  return (
-    <div className="launches-reference-attributes">
-      {parameters.length > 0 ? (
-        <div className="launches-reference-fields-group">
-          <h5>Параметры</h5>
-          <dl>
-            {parameters.map((parameter) => (
-              <div key={parameter.name}>
-                <dt>{parameter.name}</dt>
-                <dd>{parameter.masked ? "[redacted]" : parameter.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      ) : null}
-      <ResultAttributeValues title="Метки" values={tags} />
-      <ResultAttributeValues title="Ключи теста" values={testKeys} />
-      <ResultAttributeValues title="Ссылки" values={links} links />
-      <ResultAttributeValues title="Дефекты" values={defects} />
-    </div>
-  );
-}
-
-function ResultAttributeValues({
-  links = false,
-  title,
-  values
-}: {
-  links?: boolean;
-  title: string;
-  values: string[];
-}) {
-  if (values.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="launches-reference-fields-group">
-      <h5>{title}</h5>
-      <div className="launches-reference-fields-values">
-        {values.map((value) =>
-          links && isExternalUrl(value) ? (
-            <a href={value} key={value} rel="noreferrer" target="_blank">
-              {value}
-            </a>
-          ) : (
-            <span key={value}>{value}</span>
-          )
-        )}
-      </div>
     </div>
   );
 }

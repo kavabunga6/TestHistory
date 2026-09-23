@@ -10,7 +10,7 @@
   Trash2,
   XCircle
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
 import {
@@ -35,12 +35,13 @@ import {
   formatHistoryRailLabel,
   formatStatus,
   getDefectCreator,
-  getFullName,
   isExternalUrl,
   isResultQuarantined,
   uniqueStrings
 } from "./TestCaseDetailReferenceUtils.js";
+import { ResultIdCopy } from "./ResultIdCopy.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
+import { useResizableListWidth } from "./useResizableListWidth.js";
 
 import "./TestCaseDetailReferenceScreen.css";
 
@@ -79,39 +80,6 @@ function parseDetailTab(value: string | undefined): DetailTab {
   return detailTabs.some((tab) => tab.key === value) ? (value as DetailTab) : "overview";
 }
 
-function clampTestCaseListWidth(value: number): number {
-  return Math.min(TEST_CASE_LIST_MAX_WIDTH, Math.max(TEST_CASE_LIST_MIN_WIDTH, Math.round(value)));
-}
-
-function readStoredTestCaseListWidth(): number {
-  if (typeof window === "undefined") {
-    return TEST_CASE_LIST_DEFAULT_WIDTH;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(TEST_CASE_LIST_WIDTH_KEY);
-    if (stored === null) {
-      return TEST_CASE_LIST_DEFAULT_WIDTH;
-    }
-    const parsed = Number(stored);
-    return Number.isFinite(parsed) ? clampTestCaseListWidth(parsed) : TEST_CASE_LIST_DEFAULT_WIDTH;
-  } catch {
-    return TEST_CASE_LIST_DEFAULT_WIDTH;
-  }
-}
-
-function writeStoredTestCaseListWidth(value: number) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(TEST_CASE_LIST_WIDTH_KEY, String(clampTestCaseListWidth(value)));
-  } catch {
-    // The resized column still works for the current visit when storage is unavailable.
-  }
-}
-
 export function TestCaseDetailReferenceScreen({
   integrationProviders = [],
   onDeleteTestCase,
@@ -121,6 +89,7 @@ export function TestCaseDetailReferenceScreen({
   onSelect,
   onToggleMuteResult,
   onUnlinkResultDefect,
+  projectId = "ws",
   results,
   routeTab,
   selectedId
@@ -133,18 +102,29 @@ export function TestCaseDetailReferenceScreen({
   onSelect?: ((id: string) => void) | undefined;
   onToggleMuteResult?: ((id: string) => void) | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
+  projectId?: string | undefined;
   results: TestResult[];
   routeTab?: string | undefined;
   selectedId?: string;
 }) {
   const [query, setQuery] = useState("");
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
-  const [listWidth, setListWidth] = useState(readStoredTestCaseListWidth);
-  const [resizing, setResizing] = useState(false);
-  const screenRef = useRef<HTMLElement | null>(null);
+  const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
+    useResizableListWidth({
+      bodyClass: "tc-detail-reference-is-resizing",
+      defaultWidth: TEST_CASE_LIST_DEFAULT_WIDTH,
+      maxWidth: TEST_CASE_LIST_MAX_WIDTH,
+      minWidth: TEST_CASE_LIST_MIN_WIDTH,
+      storageKey: TEST_CASE_LIST_WIDTH_KEY
+    });
 
   const filteredResults = useMemo(() => filterResults(results, query), [query, results]);
-  const visibleResults = filteredResults.slice(0, TEST_CASE_REFERENCE_PAGE_SIZE);
+  const firstResults = filteredResults.slice(0, TEST_CASE_REFERENCE_PAGE_SIZE);
+  const requestedResult = filteredResults.find((result) => result.id === selectedId);
+  const visibleResults =
+    requestedResult !== undefined && !firstResults.includes(requestedResult)
+      ? [requestedResult, ...firstResults.slice(0, TEST_CASE_REFERENCE_PAGE_SIZE - 1)]
+      : firstResults;
   const hasRequestedResult = selectedId !== undefined && selectedId.trim().length > 0;
   const selectedResult =
     filteredResults.find((result) => result.id === selectedId) ??
@@ -158,30 +138,6 @@ export function TestCaseDetailReferenceScreen({
       onSelect?.(selectedResult.id);
     }
   }, [hasRequestedResult, onSelect, selectedResult?.id]);
-  useEffect(() => {
-    if (!resizing) {
-      return;
-    }
-
-    const handlePointerMove = (event: PointerEvent) => {
-      const screenLeft = screenRef.current?.getBoundingClientRect().left ?? 0;
-      const nextWidth = clampTestCaseListWidth(event.clientX - screenLeft);
-      setListWidth(nextWidth);
-      writeStoredTestCaseListWidth(nextWidth);
-    };
-    const handlePointerUp = () => setResizing(false);
-
-    document.body.classList.add("tc-detail-reference-is-resizing");
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp, { once: true });
-
-    return () => {
-      document.body.classList.remove("tc-detail-reference-is-resizing");
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, [resizing]);
-
   const screenStyle = {
     "--tc-detail-reference-list-width": `${listWidth}px`
   } as CSSProperties;
@@ -215,15 +171,17 @@ export function TestCaseDetailReferenceScreen({
           </h1>
         </header>
 
-        <ThqlSearchPanel
-          activeFilterId={activeFilterId}
-          actorId={actorId}
-          entity="testCases"
-          projectId="ws"
-          query={query}
-          onActiveFilterChange={setActiveFilterId}
-          onQueryChange={setQuery}
-        />
+        <div className="tc-detail-reference-filter-panel">
+          <ThqlSearchPanel
+            activeFilterId={activeFilterId}
+            actorId={actorId}
+            entity="testCases"
+            projectId={projectId}
+            query={query}
+            onActiveFilterChange={setActiveFilterId}
+            onQueryChange={setQuery}
+          />
+        </div>
 
         <div className="tc-detail-reference-list">
           {visibleResults.map((result) => (
@@ -283,29 +241,17 @@ export function TestCaseDetailReferenceScreen({
         aria-valuenow={listWidth}
         role="separator"
         title="Потяните, чтобы изменить ширину списка"
-        onKeyDown={(event) => {
-          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-            return;
-          }
-          event.preventDefault();
-          const direction = event.key === "ArrowLeft" ? -1 : 1;
-          const nextWidth = clampTestCaseListWidth(listWidth + direction * 24);
-          setListWidth(nextWidth);
-          writeStoredTestCaseListWidth(nextWidth);
-        }}
-        onPointerDown={(event) => {
-          event.currentTarget.setPointerCapture(event.pointerId);
-          setResizing(true);
-        }}
+        onKeyDown={onSeparatorKeyDown}
+        onPointerDown={onSeparatorPointerDown}
       />
 
       {selectedResult === undefined ? (
-        <main className="tc-detail-reference-details empty" aria-label="Детали тест-кейса">
+        <section className="tc-detail-reference-details empty" aria-label="Детали тест-кейса">
           <div className="tc-detail-reference-empty">
             <strong>Выберите тест-кейс</strong>
             <span>Детали появятся справа от списка.</span>
           </div>
-        </main>
+        </section>
       ) : (
         <TestCaseDetails
           integrationProviders={integrationProviders}
@@ -362,12 +308,15 @@ function TestCaseDetails({
   }, [activeTab, isQuarantined, onOpenTab]);
 
   return (
-    <main className="tc-detail-reference-details" aria-label="Детали выбранного тест-кейса">
+    <section className="tc-detail-reference-details" aria-label="Детали выбранного тест-кейса">
       <header className="tc-detail-reference-detail-header">
         <div className="tc-detail-reference-title-row">
-          <span className="tc-detail-reference-id" title={result.allureId || result.id}>
-            #{result.allureId || result.id}
-          </span>
+          <div className="tc-detail-reference-identifiers">
+            <span className="tc-detail-reference-id" title={result.allureId || result.id}>
+              #{result.allureId || result.id}
+            </span>
+            <ResultIdCopy resultId={result.id} />
+          </div>
           {onToggleMuteResult !== undefined ||
           (onDeleteTestCase !== undefined && result.deletedAt === undefined) ? (
             <div className="tc-detail-reference-actions">
@@ -400,9 +349,7 @@ function TestCaseDetails({
             </div>
           ) : null}
         </div>
-        <p>
-          {result.suite} / {getFullName(result)}
-        </p>
+        {result.suite ? <p>{result.suite}</p> : null}
         <div className="tc-detail-reference-heading-line">
           <h2>{result.name}</h2>
           <div className="tc-detail-reference-badges">
@@ -458,7 +405,7 @@ function TestCaseDetails({
       {activeTab === "defects" ? (
         <DefectsTab result={result} onUnlinkResultDefect={onUnlinkResultDefect} />
       ) : null}
-    </main>
+    </section>
   );
 }
 
@@ -473,6 +420,8 @@ function OverviewTab({
   onOpenResult: OpenTestResult | undefined;
   result: TestResult;
 }) {
+  const hasHistory = collapseHistoryToFinalRunResults(result.historyPoints ?? []).length > 0;
+
   return (
     <div className="tc-detail-reference-overview">
       <div className="tc-detail-reference-overview-main">
@@ -505,7 +454,9 @@ function OverviewTab({
       </div>
 
       <aside className="tc-detail-reference-side-rail" aria-label="Свойства тест-кейса">
-        <section className="tc-detail-reference-rail-card tc-detail-reference-history-card">
+        <section
+          className={`tc-detail-reference-rail-card tc-detail-reference-history-card ${hasHistory ? "" : "is-empty"}`}
+        >
           <h3>История результатов</h3>
           <HistoryRail result={result} onOpenResult={onOpenResult} />
         </section>
@@ -574,7 +525,7 @@ function HistoryRail({
   ).slice(0, 7);
 
   if (points.length === 0) {
-    return <p className="muted">История пока пустая.</p>;
+    return null;
   }
 
   return (

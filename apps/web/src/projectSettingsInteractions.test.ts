@@ -130,10 +130,14 @@ describe("reference list layout contracts", () => {
       "background: #eef4ff"
     );
 
-    expect(source).toContain('title="Длительность"');
+    expect(source).toContain('title="Данные результата"');
+    expect(source).toContain('className="launches-reference-result-duration"');
+    expect(source).toContain("formatResultDuration(result.duration)");
+    expect(source).not.toContain("`Длительность: ${result.duration}`");
     expect(source).not.toContain('title="Ожидаемая длительность"');
-    expect(source).toContain("testhistory:launch-results-list-width");
-    expect(source).toContain("testhistory:launch-errors-list-width");
+    expect(source).toContain("testhistory:launch-detail-list-width-v3");
+    expect(source).not.toContain("testhistory:launch-results-list-width");
+    expect(source).not.toContain("testhistory:launch-errors-list-width");
     expect(source).toContain("writeStoredLaunchSplitListWidth");
     expect(railValuesBlock).toContain("display: flex");
     expect(railValuesBlock).toContain("flex-wrap: wrap");
@@ -186,24 +190,49 @@ describe("settings table readability contracts", () => {
     }
   });
 
-  it("keeps launch overview as a dense two-column card grid", () => {
-    const styles = readFileSync(
+  it("keeps launch overview centered with a wide results list and compact side cards", () => {
+    const overviewStyles = readFileSync(
+      new URL("./referenceScreens/LaunchesReferenceOverview.css", import.meta.url),
+      "utf8"
+    );
+    const sharedStyles = readFileSync(
       new URL("./referenceScreens/LaunchesReferenceScreen.css", import.meta.url),
       "utf8"
     );
 
-    const overviewBlock = extractCssBlockContaining(styles, ".launches-reference-overview", "gap:");
-    expect(overviewBlock).toContain("gap: 16px");
-    expect(overviewBlock).toContain("padding: 20px");
-    expect(overviewBlock).toContain("background: #f8fafc");
-    expect(overviewBlock).toContain('"summary unresolved"');
-    expect(overviewBlock).toContain('"defects variables"');
+    const overviewBlock = extractCssBlockContaining(
+      overviewStyles,
+      ".launches-reference-overview",
+      "gap:"
+    );
+    expect(overviewBlock).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(overviewBlock).toContain("gap: 18px");
+    expect(overviewBlock).toContain("padding: 24px");
     expect(overviewBlock).toContain("overflow-y: auto");
 
-    const cardBlock = extractCssBlockContaining(styles, ".launches-reference-card", "padding:");
+    const centeredContentBlock = extractExactCssBlock(
+      overviewStyles,
+      ".launches-reference-overview > *"
+    );
+    expect(centeredContentBlock).toContain("max-width: 1600px");
+    expect(centeredContentBlock).toContain("margin-inline: auto");
+
+    const detailColumnsBlock = extractExactCssBlock(
+      overviewStyles,
+      ".launches-reference-overview-content"
+    );
+    expect(detailColumnsBlock).toContain(
+      "grid-template-columns: minmax(0, 1.65fr) minmax(350px, 0.9fr)"
+    );
+
+    const cardBlock = extractCssBlockContaining(
+      sharedStyles,
+      ".launches-reference-card",
+      "padding:"
+    );
     expect(cardBlock).toContain("padding: 0");
-    expect(cardBlock).toContain("border-radius: 5px");
-    expect(cardBlock).toContain("border: 1px solid #dfe6ef");
+    expect(cardBlock).toContain("border-radius: 8px");
+    expect(cardBlock).toContain("border: 1px solid #d7e1ee");
   });
 
   it("keeps selected test case detail as list sections instead of nested cards", () => {
@@ -288,7 +317,7 @@ describe("settings table readability contracts", () => {
     expect(source).toContain("defects-reference-result-head");
     expect(source).toContain("<span>Статус</span>");
     expect(source).toContain("<span>Результат</span>");
-    expect(source).toContain("<span>Окружение</span>");
+    expect(source).toContain("<span>Владелец / теги</span>");
     expect(source).toContain("<span>Длительность</span>");
     expect(resultHeadBlock).toContain("minmax(82px, 0.15fr)");
     expect(resultHeadBlock).toContain("minmax(190px, 1fr)");
@@ -305,7 +334,13 @@ describe("settings table readability contracts", () => {
     expect(source).toContain("defects-reference-result-row");
     expect(source).toContain("getHashFromRoute");
     expect(source).toContain("DEFECT_LIST_WIDTH_KEY");
-    expect(source).toContain("writeStoredDefectListWidth");
+    expect(source).toContain("useResizableListWidth");
+    expect(source).toContain("onKeyDown={onSeparatorKeyDown}");
+    expect(source).not.toContain("Создатель:");
+    expect(source).not.toContain("Правила автоматизации");
+    expect(source.indexOf('title="Результаты тестов"')).toBeLessThan(
+      source.indexOf('title="Запуски"')
+    );
     expect(screenBlock).toContain("height: 100%");
     expect(screenBlock).toContain("overflow: hidden");
     expect(splitterBlock).toContain("height: auto");
@@ -322,6 +357,10 @@ describe("settings table readability contracts", () => {
       new URL("./referenceScreens/TestCaseDetailReferenceScreen.css", import.meta.url),
       "utf8"
     );
+    const resizeHook = readFileSync(
+      new URL("./referenceScreens/useResizableListWidth.ts", import.meta.url),
+      "utf8"
+    );
     const sectionBlock = extractCssBlockContaining(
       styles,
       ".tc-detail-reference-overview-main section",
@@ -329,6 +368,11 @@ describe("settings table readability contracts", () => {
     );
     const railBlock = extractExactCssBlock(styles, ".tc-detail-reference-side-rail");
     const tabsBlock = extractExactCssBlock(styles, ".tc-detail-reference-tabs");
+    const narrowTabsBlock = extractCssBlockContaining(
+      styles,
+      ".tc-detail-reference-tabs",
+      "top: 0"
+    );
     const screenBlock = extractExactCssBlock(styles, ".tc-detail-reference-screen");
     const splitterBlock = extractExactCssBlock(styles, ".tc-detail-reference-splitter");
     const splitterStateBlock = extractExactCssBlock(
@@ -380,10 +424,12 @@ describe("settings table readability contracts", () => {
     expect(source).toContain("<h3>Длительность</h3>");
     expect(source).not.toContain('title="Ожидаемая длительность"');
     expect(source).toContain("TEST_CASE_LIST_WIDTH_KEY");
-    expect(source).toContain("writeStoredTestCaseListWidth");
+    expect(source).toContain("useResizableListWidth");
     expect(source).toContain('role="separator"');
     expect(source).toContain('aria-label="Изменить ширину списка тест-кейсов"');
-    expect(source).toContain('event.key !== "ArrowLeft" && event.key !== "ArrowRight"');
+    expect(source).toContain("onKeyDown={onSeparatorKeyDown}");
+    expect(resizeHook).toContain('event.key !== "ArrowLeft" && event.key !== "ArrowRight"');
+    expect(resizeHook).toContain("window.localStorage.setItem(storageKey");
     expect(source).toContain("result.linkDetails ?? result.links");
     expect(source).toContain("onFilterByTag");
     expect(source).toContain('aria-label="Теги"');
@@ -404,8 +450,10 @@ describe("settings table readability contracts", () => {
     expect(splitterBlock).toContain("cursor: col-resize");
     expect(splitterBlock).toContain("border-right: 1px solid #d9dee8");
     expect(splitterStateBlock).toContain("background: #f4f8ff");
-    expect(tabsBlock).toContain("top: 75px");
-    expect(tabsBlock).toContain("z-index: 5");
+    expect(tabsBlock).toContain("padding: 0 24px");
+    expect(narrowTabsBlock).toContain("position: sticky");
+    expect(narrowTabsBlock).toContain("top: 0");
+    expect(styles).not.toContain("grid-template-rows: 420px auto");
     expect(tabButtonBlock).toContain("max-width: 220px");
     expect(railBlock).toContain("position: static");
     expect(railBlock).toContain("height: 100%");
@@ -430,15 +478,15 @@ describe("settings table readability contracts", () => {
     expect(durationCardBlock).toContain("justify-content: space-between");
     expect(railChipListBlock).toContain("display: flex");
     expect(railChipListBlock).toContain("flex-wrap: wrap");
-    expect(railChipBlock).toContain("border-radius: 3px");
-    expect(railChipBlock).toContain("background: #eef1f5");
+    expect(railChipBlock).toContain("border-radius: 6px");
+    expect(railChipBlock).toContain("background: #eef2f7");
     expect(narrowRailBlock).toContain("position: static");
     expect(attemptRowBlock).toContain("border-bottom: 1px solid #edf0f5");
     expect(attemptRowBlock).toContain("background: transparent");
     expect(attemptRowBlock).not.toContain("border-radius: 7px");
   });
 
-  it("keeps analytics and dashboard screens Russian and list-oriented", () => {
+  it("keeps analytics and dashboard screens Russian with a clear metric hierarchy", () => {
     const analyticsSource = readFileSync(
       new URL("./referenceScreens/AnalyticsReferenceScreen.tsx", import.meta.url),
       "utf8"
@@ -457,12 +505,12 @@ describe("settings table readability contracts", () => {
     );
     const dashboardContractSource = `${dashboardSource}\n${dashboardModelSource}`;
     const dashboardStyles = readFileSync(
-      new URL("./referenceScreens/DashboardReferenceScreen.css", import.meta.url),
+      new URL("./referenceScreens/DashboardReferenceWidgets.css", import.meta.url),
       "utf8"
     );
     const analyticsSummaryBlock = extractCssBlockContaining(
       analyticsStyles,
-      ".analytics-reference-summary,",
+      ".analytics-reference-summary",
       "grid-template-columns:"
     );
     const analyticsPanelTitleBlock = extractExactCssBlock(
@@ -494,20 +542,19 @@ describe("settings table readability contracts", () => {
     expect(analyticsSource).not.toContain(">Suite<");
     expect(analyticsSource).not.toContain(">Owner<");
     expect(dashboardContractSource).toContain('metric: "Успешность"');
-    expect(dashboardContractSource).toContain("карантину");
+    expect(dashboardContractSource).toContain("formatResultCount(aggregate.totalResults)");
     expect(dashboardContractSource).not.toContain('metric: "Pass rate"');
     expect(dashboardContractSource).not.toContain("mute и истории");
-    expect(analyticsSummaryBlock).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
-    expect(analyticsSummaryBlock).toContain("gap: 16px");
+    expect(analyticsSummaryBlock).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
+    expect(analyticsSummaryBlock).toContain("border: 1px solid #d7e1ee");
     expect(analyticsPanelTitleBlock).toContain("min-height: 50px");
     expect(analyticsPanelTitleBlock).toContain("border-bottom: 1px solid #e8edf3");
     expect(analyticsSignalBlock).toContain("border-bottom: 1px solid #e8edf3");
     expect(analyticsSignalBlock).toContain("padding: 10px 0");
-    expect(dashboardGridBlock).toContain("grid-template-columns: 1fr");
-    expect(dashboardGridBlock).toContain("gap: 0");
-    expect(dashboardCardBlock).toContain("border-bottom: 1px solid #dfe4ee");
-    expect(dashboardCardBlock).toContain("border-radius: 0");
-    expect(dashboardCardBlock).toContain("box-shadow: none");
+    expect(dashboardGridBlock).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    expect(dashboardGridBlock).toContain("gap: 16px");
+    expect(dashboardCardBlock).toContain("border: 1px solid #d7e1ee");
+    expect(dashboardCardBlock).toContain("border-radius: 10px");
   });
 
   it("keeps legacy runtime panels free from visible English UI labels", () => {
@@ -691,38 +738,49 @@ describe("settings table readability contracts", () => {
         ".project-settings__tabs",
         ".project-settings__tabs button.active::after",
         "min-height: calc(42px + var(--th-font-heading-delta))",
-        "background: #155ca2"
+        "background: #2563eb",
+        "scrollbar-width: none"
       ],
       [
         launchesStyles,
         ".launches-reference-tabs",
         '.launches-reference-tabs button[aria-current="page"]::after',
-        "min-height: calc(88px + var(--th-font-heading-delta))",
-        "background: #2563eb"
+        "min-height: calc(44px + var(--th-font-heading-delta))",
+        "background: #2563eb",
+        "scrollbar-width: none"
       ],
       [
         launchesStyles,
         ".launches-reference-result-tabs",
         ".launches-reference-result-tabs button.active::after",
-        "min-height: calc(58px + var(--th-font-heading-delta))",
-        "background: #2563eb"
+        "min-height: calc(44px + var(--th-font-heading-delta))",
+        "background: #2563eb",
+        "scrollbar-width: none"
       ],
       [
         testCaseStyles,
         ".tc-detail-reference-tabs",
         ".tc-detail-reference-tabs button.active::after",
-        "min-height: calc(36px + var(--th-font-heading-delta))",
-        "background: #155ca2"
+        "min-height: calc(44px + var(--th-font-heading-delta))",
+        "background: #2563eb",
+        "scrollbar-width: none"
       ]
     ] as const;
 
-    for (const [styles, tabsSelector, underlineSelector, minHeight, underlineColor] of tabSources) {
+    for (const [
+      styles,
+      tabsSelector,
+      underlineSelector,
+      minHeight,
+      underlineColor,
+      scrollbar
+    ] of tabSources) {
       const tabsBlock = extractExactCssBlock(styles, tabsSelector);
       const underlineBlock = extractExactCssBlock(styles, underlineSelector);
 
       expect(tabsBlock).toContain(minHeight);
       expect(tabsBlock).toContain("overflow-x: auto");
-      expect(tabsBlock).toContain("scrollbar-width: none");
+      expect(tabsBlock).toContain(scrollbar);
       expect(underlineBlock).toContain("height: 2px");
       expect(underlineBlock).toContain(underlineColor);
     }

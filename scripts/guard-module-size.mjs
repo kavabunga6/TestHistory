@@ -84,10 +84,6 @@ const debtAllowlist = new Map(
       ["Launches reference screen must be split into panels and list/detail components.", 2950]
     ],
     [
-      "apps/web/src/m1Workspace.ts",
-      ["Archive workspace helpers must be split by diagnostics, fixtures, and mapping.", 2750]
-    ],
-    [
       "apps/api/src/routes/test-cases.ts",
       ["Test case routes must split handlers/schemas/mappers.", 2250]
     ],

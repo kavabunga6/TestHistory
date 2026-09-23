@@ -1,0 +1,122 @@
+@media (max-width: 1120px) {
+  .dashboard-reference-type-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-reference-widget-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 360px) {
+  .dashboard-reference-widget-card header {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .dashboard-reference-widget-actions {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-reference-screen {
+    padding: 12px;
+  }
+
+  .dashboard-reference-crumbs {
+    display: none;
+  }
+
+  .dashboard-reference-head,
+  .dashboard-reference-composer-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-reference-head {
+    padding: 16px;
+  }
+
+  .dashboard-reference-head > div:first-child {
+    width: 100%;
+    flex: 0 1 auto;
+  }
+
+  .dashboard-reference-data-summary {
+    padding: 10px 16px;
+  }
+
+  .dashboard-reference-head-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-reference-launch-picker,
+  .dashboard-reference-launch-picker select,
+  .dashboard-reference-head-actions > button {
+    width: 100%;
+    max-width: none;
+  }
+
+  .dashboard-reference-head-actions > button {
+    height: auto;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .dashboard-reference-widget-grid {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .dashboard-reference-modal-layer {
+    padding: 12px;
+  }
+
+  .dashboard-reference-modal {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  .dashboard-reference-modal-head {
+    padding: 12px;
+  }
+
+  .dashboard-reference-modal-footer {
+    padding: 10px 12px;
+  }
+
+  .dashboard-reference-type-grid,
+  .dashboard-reference-composer-grid,
+  .dashboard-reference-form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-reference-selected-type {
+    border-right: 0;
+    border-bottom: 1px solid #e1e7ef;
+    padding: 14px;
+  }
+
+  .dashboard-reference-form {
+    padding: 14px;
+  }
+
+  .dashboard-reference-type-card {
+    min-height: 0;
+  }
+
+  .dashboard-reference-footer-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .dashboard-reference-footer-actions > button,
+  .dashboard-reference-composer-footer > button {
+    flex: 1 1 0;
+  }
+}

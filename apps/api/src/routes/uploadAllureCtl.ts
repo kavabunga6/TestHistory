@@ -264,6 +264,7 @@ export async function handleAllureCtlBatchUpload(
     launch: allureCtlLaunchResponse(launch, host),
     upload: serializeUploadJob(result.job),
     imported: result.imported,
+    results: result.results,
     compatibilityFiles: result.compatibilityFiles,
     artifacts: result.artifacts
   });

@@ -414,7 +414,12 @@ async function installApiMocks(page) {
       });
     }
 
-    const fixtureResponse = createUiFixtureApiResponse(pathname, method);
+    const fixtureResponse = createUiFixtureApiResponse(
+      pathname,
+      method,
+      request.postData(),
+      url.search
+    );
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify(fixtureResponse ?? createEmptyUiApiResponse(pathname))

@@ -129,10 +129,6 @@ export function hasNestedStepData(step: ScenarioStep): boolean {
   return (step.steps?.length ?? 0) > 0 || (step.attachments?.length ?? 0) > 0;
 }
 
-export function getFullName(result: TestResult): string {
-  return `${result.suite}.${result.name}`;
-}
-
 export function getFallbackHistoryStatuses(result: TestResult): ResultStatus[] {
   return [result.status, ...result.history.slice(1)];
 }

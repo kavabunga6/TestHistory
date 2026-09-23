@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   BellRing,
   Bug,
@@ -21,6 +21,8 @@ import {
   type AutomationWorkspaceData
 } from "../automationApi.js";
 
+import "./AutomationReferenceScreen.css";
+
 type AutomationTab = "plans" | "jobs" | "integrations";
 type PanelProps = {
   data: AutomationWorkspaceData;
@@ -29,26 +31,47 @@ type PanelProps = {
   onChanged: () => Promise<void>;
 };
 
-export function AutomationReferenceScreen() {
+export function AutomationReferenceScreen({ projectId }: { projectId?: string | undefined }) {
   const [tab, setTab] = useState<AutomationTab>("plans");
   const [data, setData] = useState<AutomationWorkspaceData>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [creating, setCreating] = useState(false);
+  const requestSequence = useRef(0);
 
   const refresh = useCallback(async () => {
+    const sequence = requestSequence.current + 1;
+    requestSequence.current = sequence;
     setLoading(true);
     setError(undefined);
-    try {
-      setData(await loadAutomationWorkspace());
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : String(nextError));
-    } finally {
+    setData(undefined);
+    if (projectId === undefined) {
+      setError("Выберите проект, чтобы открыть автоматизацию.");
       setLoading(false);
+      return;
     }
-  }, []);
+    try {
+      const loaded = await loadAutomationWorkspace(projectId);
+      if (sequence === requestSequence.current) {
+        setData(loaded);
+      }
+    } catch (nextError) {
+      if (sequence === requestSequence.current) {
+        setError(nextError instanceof Error ? nextError.message : String(nextError));
+      }
+    } finally {
+      if (sequence === requestSequence.current) {
+        setLoading(false);
+      }
+    }
+  }, [projectId]);
 
-  useEffect(() => void refresh(), [refresh]);
+  useEffect(() => {
+    void refresh();
+    return () => {
+      requestSequence.current += 1;
+    };
+  }, [refresh]);
 
   return (
     <section className="automation-screen">
@@ -432,13 +455,15 @@ function PlansPanel({ data, creating, setCreating, onChanged }: PanelProps) {
           <strong>Тест-планы</strong>
           <span>Сохранённые выборки только автоматизированных кейсов.</span>
         </div>
-        <button
-          className="reference-primary-action"
-          type="button"
-          onClick={() => setCreating(!creating)}
-        >
-          <Plus size={16} /> Создать план
-        </button>
+        {data.plans.length > 0 ? (
+          <button
+            className="reference-primary-action"
+            type="button"
+            onClick={() => setCreating(!creating)}
+          >
+            <Plus size={16} /> Создать план
+          </button>
+        ) : null}
       </div>
       {creating ? (
         <PlanForm
@@ -479,11 +504,13 @@ function PlansPanel({ data, creating, setCreating, onChanged }: PanelProps) {
             </dl>
           </article>
         ))}
-        {data.plans.length === 0 ? (
+        {data.plans.length === 0 && !creating ? (
           <EmptyAutomation
             icon={<ListFilter />}
             title="Планов пока нет"
             copy="Создайте THQL-выборку для автоматизированного CI-прогона."
+            actionLabel="Создать первый план"
+            onAction={() => setCreating(true)}
           />
         ) : null}
       </div>
@@ -709,12 +736,29 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
-function EmptyAutomation({ icon, title, copy }: { icon: ReactNode; title: string; copy: string }) {
+function EmptyAutomation({
+  icon,
+  title,
+  copy,
+  actionLabel,
+  onAction
+}: {
+  icon: ReactNode;
+  title: string;
+  copy: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
   return (
-    <div className="automation-empty">
+    <div className={`automation-empty${onAction ? " automation-empty--actionable" : ""}`}>
       {icon}
       <strong>{title}</strong>
       <span>{copy}</span>
+      {onAction && actionLabel ? (
+        <button className="reference-primary-action" onClick={onAction} type="button">
+          <Plus size={16} aria-hidden="true" /> {actionLabel}
+        </button>
+      ) : null}
     </div>
   );
 }

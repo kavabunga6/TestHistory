@@ -25,7 +25,7 @@ export type LaunchListQuery = ListQuery & {
 };
 
 export type LaunchResultListQuery = ListQuery & {
-  status?: AllureStatus | string;
+  status?: AllureStatus | "muted" | string;
   testCaseId?: string;
   historyId?: string;
 };
@@ -406,25 +406,6 @@ export function matchesLaunchSearch(launch: Launch, query: string | undefined): 
     launch.branch,
     launch.commitSha,
     launch.buildNumber
-  ].some((value) => value?.toLowerCase().includes(needle));
-}
-
-export function matchesResultSearch(
-  result: Launch["results"][number],
-  query: string | undefined
-): boolean {
-  const needle = query?.trim().toLowerCase();
-  if (!needle) {
-    return true;
-  }
-
-  return [
-    result.uuid,
-    result.name,
-    result.status,
-    result.historyId,
-    result.testCaseId,
-    result.fullName
   ].some((value) => value?.toLowerCase().includes(needle));
 }
 

@@ -433,7 +433,7 @@ describe("api app history-compare-a", () => {
       },
       method: "POST",
       payload: {
-        expiresAt: "2026-09-01T00:00:00.000Z",
+        expiresAt: "2099-09-01T00:00:00.000Z",
         name: "Artifact retention reader",
         ownerSubject: "svc-artifacts",
         scopes: ["artifacts:read"]

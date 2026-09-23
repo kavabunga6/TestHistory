@@ -30,6 +30,7 @@ export function serializeArchiveUploadStatus(
     launchId: job.launchId,
     ...(launch !== undefined ? { projectId: launch.projectId } : {}),
     status: job.status,
+    results: job.results ?? [],
     phase: archiveJobPhase(job),
     progress: jobProgress(job),
     access: archiveStatusAccess(actorId),

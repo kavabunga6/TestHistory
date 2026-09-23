@@ -807,7 +807,7 @@ describe("api app part-19", () => {
       },
       method: "POST",
       payload: {
-        expiresAt: "2026-09-01T00:00:00.000Z",
+        expiresAt: "2099-09-01T00:00:00.000Z",
         name: "Defect projection reader",
         ownerSubject: "svc-defects",
         scopes: ["defects:read"]

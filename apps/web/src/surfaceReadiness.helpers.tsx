@@ -1,6 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ApiState } from "./api.js";
+import type { ProjectSelection } from "./projectSelection.js";
 import {
   demoM1Workspace,
   type LaunchListItem,
@@ -33,6 +34,7 @@ export function renderWorkspaceSurface(
     testCaseRouteId?: string;
     testCaseRouteTab?: string;
     workspaceLoading?: boolean;
+    projectSelection?: ProjectSelection;
   } = {}
 ): string {
   const launchRouteId =
@@ -48,6 +50,7 @@ export function renderWorkspaceSurface(
       launchRouteResultId={launchOpenRequest > 0 ? selectedId : undefined}
       launchRouteResultTab={routeOptions.launchRouteResultTab}
       mode={mode}
+      projectSelection={routeOptions.projectSelection}
       settingsRouteTab={routeOptions.settingsRouteTab}
       selectedId={selectedId}
       testCaseRouteId={routeOptions.testCaseRouteId}

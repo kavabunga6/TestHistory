@@ -5,6 +5,19 @@
   margin: 0 22px 10px;
 }
 
+.thql-search__search-row {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.thql-search__field-wrap {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .thql-search__field {
   min-width: 0;
   min-height: 40px;
@@ -17,6 +30,10 @@
   background: #ffffff;
   color: #526172;
   font-size: 13px;
+}
+
+.thql-search__field-wrap.has-clear .thql-search__field {
+  padding-right: 42px;
 }
 
 .thql-search__field:focus-within {
@@ -44,6 +61,30 @@
   opacity: 1;
 }
 
+.thql-search__clear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  padding: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.thql-search__clear:hover,
+.thql-search__clear:focus-visible {
+  outline: 0;
+  background: #eaf0f8;
+  color: #1d4ed8;
+}
+
 .thql-search__filters {
   position: relative;
   min-width: 0;
@@ -60,6 +101,13 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 6px;
+}
+
+.thql-search__trailing {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
 }
 
 .tc-detail-reference-list-panel > .thql-search {
@@ -154,6 +202,17 @@
 .thql-search__manage {
   width: 32px;
   padding: 0;
+}
+
+.thql-search__manage--labeled {
+  width: auto;
+  min-height: 40px;
+  gap: 7px;
+  border-radius: 7px;
+  padding: 0 11px;
+  background: #ffffff;
+  color: #334155;
+  white-space: nowrap;
 }
 
 .thql-search__overflow {

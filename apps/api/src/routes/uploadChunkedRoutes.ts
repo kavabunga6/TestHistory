@@ -18,6 +18,7 @@ import {
   serializeUploadSession
 } from "./uploadSerialization.js";
 import { enqueueChunkedSessionJob } from "./uploadAllureCtl.js";
+import { authorizeArchiveStatusRead } from "./uploadArchiveAuth.js";
 import {
   decodeChunk,
   expireSessionIfNeeded,
@@ -59,12 +60,28 @@ export async function registerUploadChunkedRoutes(app: FastifyInstance, store: A
     async (request, reply) => {
       const session = store.uploadSessions.get(request.params.uploadId);
       if (session !== undefined) {
+        const launch = store.launches.get(session.launchId) as Launch | undefined;
+        if (launch === undefined) {
+          return reply.code(404).send({ message: "Launch not found" });
+        }
+        const denial = authorizeArchiveStatusRead(store, request, launch.projectId);
+        if (denial !== undefined) {
+          return reply.code(403).send(denial);
+        }
         expireSessionIfNeeded(session, store.artifactObjects);
         return buildSessionIngestionStatus(store, session);
       }
 
       const job = store.uploadJobs.get(request.params.uploadId);
       if (job !== undefined) {
+        const launch = store.launches.get(job.launchId) as Launch | undefined;
+        if (launch === undefined) {
+          return reply.code(404).send({ message: "Launch not found" });
+        }
+        const denial = authorizeArchiveStatusRead(store, request, launch.projectId);
+        if (denial !== undefined) {
+          return reply.code(403).send(denial);
+        }
         return buildJobIngestionStatus(store, job);
       }
 

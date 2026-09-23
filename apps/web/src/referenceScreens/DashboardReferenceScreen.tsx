@@ -1,36 +1,52 @@
-import { BarChart3, Pencil, Plus, Trash2, X } from "lucide-react";
+import { BarChart3, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
-import type { TestResult } from "../m1Workspace.js";
+import type { LaunchListItem, TestResult } from "../m1Workspace.js";
 
 import "./DashboardReferenceScreen.css";
+import "./DashboardReferenceWidgets.css";
+import "./DashboardReferenceDialogs.css";
+import "./DashboardReferenceResponsive.css";
 
-import {
-  buildDonutGradient,
-  emptyGroupRows,
-  evaluateWidget,
-  formatPercent,
-  metricDescription,
-  metricLabel
-} from "./DashboardReferenceAnalytics.js";
+import { metricLabel } from "./DashboardReferenceVisuals.js";
 import type {
   SavedDashboardWidget,
   WidgetDraft,
-  WidgetEvaluation,
-  WidgetGroup,
   WidgetKind,
   WidgetTypeOption
 } from "./DashboardReferenceModel.js";
-import { emptyDraft, statusLabels, widgetTypes } from "./DashboardReferenceModel.js";
+import { emptyDraft, widgetTypes } from "./DashboardReferenceModel.js";
+import { formatResultCount } from "./DashboardReferenceFormatting.js";
+import { widgetUnavailableReason } from "./DashboardReferenceQuery.js";
 import { loadSavedDashboardWidgets, saveDashboardWidgets } from "./DashboardReferenceStorage.js";
-export function DashboardReferenceScreen({ results = [] }: { results?: TestResult[] } = {}) {
+import { DashboardWidgetGrid } from "./DashboardReferenceWidgets.js";
+import { useDashboardAggregate } from "./useDashboardAggregate.js";
+
+export function DashboardReferenceScreen({
+  launchItems = [],
+  onOpenResult,
+  storageScope
+}: {
+  launchItems?: LaunchListItem[];
+  results?: TestResult[];
+  onOpenResult?: ((id: string, launchId: string) => void) | undefined;
+  storageScope?: string | undefined;
+} = {}) {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [selectedWidgetKind, setSelectedWidgetKind] = useState<WidgetKind | null>(null);
   const [draft, setDraft] = useState<WidgetDraft>(emptyDraft);
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
   const [widgetPendingDelete, setWidgetPendingDelete] = useState<SavedDashboardWidget | null>(null);
-  const [savedWidgets, setSavedWidgets] =
-    useState<SavedDashboardWidget[]>(loadSavedDashboardWidgets);
+  const [savedWidgets, setSavedWidgets] = useState<SavedDashboardWidget[]>(() =>
+    loadSavedDashboardWidgets(storageScope)
+  );
+  const [selectedLaunchId, setSelectedLaunchId] = useState<string | undefined>();
+  const selectedLaunch =
+    launchItems.find((launch) => launch.id === selectedLaunchId) ?? launchItems[0];
+  const { state: dataState, retry: retryDataLoad } = useDashboardAggregate(
+    selectedLaunch?.id,
+    savedWidgets
+  );
 
   const selectedWidgetType = useMemo(
     () => widgetTypes.find((type) => type.id === selectedWidgetKind) ?? null,
@@ -38,8 +54,8 @@ export function DashboardReferenceScreen({ results = [] }: { results?: TestResul
   );
 
   useEffect(() => {
-    saveDashboardWidgets(savedWidgets);
-  }, [savedWidgets]);
+    saveDashboardWidgets(savedWidgets, storageScope);
+  }, [savedWidgets, storageScope]);
 
   const openComposer = () => {
     setDraft(emptyDraft);
@@ -53,7 +69,6 @@ export function DashboardReferenceScreen({ results = [] }: { results?: TestResul
       entity: widget.entity,
       groupBy: widget.groupBy,
       metric: widget.metric,
-      period: widget.period,
       thql: widget.thql,
       title: widget.title
     });
@@ -86,7 +101,11 @@ export function DashboardReferenceScreen({ results = [] }: { results?: TestResul
     const title = draft.title.trim();
     const thql = draft.thql.trim();
 
-    if (title.length === 0 || thql.length === 0) {
+    if (
+      title.length === 0 ||
+      thql.length === 0 ||
+      widgetUnavailableReason({ ...draft, kind: selectedWidgetType.id })
+    ) {
       return;
     }
 
@@ -138,23 +157,43 @@ export function DashboardReferenceScreen({ results = [] }: { results?: TestResul
         <header className="dashboard-reference-head">
           <div>
             <h1 id="dashboard-reference-title">Дашборды</h1>
-            <p>Рабочая область аналитики: виджеты считаются по текущим результатам и THQL.</p>
+            <p>Виджеты по результатам выбранного запуска.</p>
           </div>
-          <button
-            className="dashboard-reference-primary-button"
-            onClick={openComposer}
-            type="button"
-          >
-            <Plus aria-hidden="true" size={17} />
-            Добавить виджет
-          </button>
+          <div className="dashboard-reference-head-actions">
+            <label className="dashboard-reference-launch-picker">
+              <span>Запуск</span>
+              <select
+                disabled={launchItems.length === 0}
+                onChange={(event) => setSelectedLaunchId(event.target.value)}
+                value={selectedLaunch?.id ?? ""}
+              >
+                {launchItems.length === 0 ? <option value="">Нет запусков</option> : null}
+                {launchItems.map((launch) => (
+                  <option key={launch.id} value={launch.id}>
+                    {launch.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="dashboard-reference-primary-button"
+              onClick={openComposer}
+              type="button"
+            >
+              <Plus aria-hidden="true" size={17} />
+              Добавить виджет
+            </button>
+          </div>
         </header>
 
         {savedWidgets.length > 0 ? (
-          <DashboardWidgetGrid
+          <DashboardDataContent
+            dataState={dataState}
+            launchName={selectedLaunch?.name}
+            onRetry={retryDataLoad}
             onDelete={deleteWidget}
             onEdit={openEditor}
-            results={results}
+            onOpenResult={onOpenResult}
             widgets={savedWidgets}
           />
         ) : (
@@ -163,10 +202,7 @@ export function DashboardReferenceScreen({ results = [] }: { results?: TestResul
               <BarChart3 aria-hidden="true" size={36} />
             </div>
             <h2>Виджетов пока нет</h2>
-            <p>
-              Здесь появятся графики и таблицы на THQL: по статусам, тегам, кастомным полям,
-              дефектам, ретраям, карантину и истории запусков.
-            </p>
+            <p>Добавьте показатели по результатам выбранного запуска.</p>
             <button
               className="dashboard-reference-secondary-button"
               onClick={openComposer}
@@ -200,6 +236,90 @@ export function DashboardReferenceScreen({ results = [] }: { results?: TestResul
         />
       ) : null}
     </main>
+  );
+}
+
+function DashboardDataContent({
+  dataState,
+  launchName,
+  onRetry,
+  onDelete,
+  onEdit,
+  onOpenResult,
+  widgets
+}: {
+  dataState: ReturnType<typeof useDashboardAggregate>["state"];
+  launchName?: string | undefined;
+  onRetry: () => void;
+  onDelete: (widgetId: string) => void;
+  onEdit: (widget: SavedDashboardWidget) => void;
+  onOpenResult?: ((id: string, launchId: string) => void) | undefined;
+  widgets: SavedDashboardWidget[];
+}) {
+  if (dataState.status === "empty") {
+    return (
+      <div className="dashboard-reference-data-state" role="status">
+        <strong>Пока нет запусков с результатами</strong>
+        <span>После загрузки запуска виджеты покажут его показатели.</span>
+      </div>
+    );
+  }
+
+  if (dataState.status === "loading") {
+    return (
+      <>
+        <div aria-live="polite" className="dashboard-reference-data-state" role="status">
+          <strong>Расчёт показателей запуска</strong>
+          <span>Собираем данные для виджетов по всем результатам…</span>
+        </div>
+        <section className="dashboard-reference-widget-grid" aria-label="Загрузка виджетов">
+          {widgets.map((widget) => (
+            <article className="dashboard-reference-widget-card is-loading" key={widget.id}>
+              <header>
+                <div>
+                  <strong>{widget.title}</strong>
+                  <small>THQL · ожидание данных</small>
+                </div>
+              </header>
+              <span className="dashboard-reference-widget-placeholder" aria-hidden="true" />
+            </article>
+          ))}
+        </section>
+      </>
+    );
+  }
+
+  if (dataState.status === "error") {
+    return (
+      <div className="dashboard-reference-data-state is-error" role="alert">
+        <strong>Не удалось рассчитать показатели запуска</strong>
+        <span>Проверьте доступность сервера и повторите запрос.</span>
+        <button className="dashboard-reference-secondary-button" onClick={onRetry} type="button">
+          Повторить загрузку
+        </button>
+      </div>
+    );
+  }
+
+  const { aggregate } = dataState;
+  return (
+    <>
+      <div className="dashboard-reference-data-summary">
+        <strong>{launchName ?? "Выбранный запуск"}</strong>
+        <span>{formatResultCount(aggregate.totalResults)} · весь запуск</span>
+        <button aria-label="Обновить данные дашборда" onClick={onRetry} type="button">
+          <RefreshCw aria-hidden="true" size={14} />
+          Обновить
+        </button>
+      </div>
+      <DashboardWidgetGrid
+        aggregate={aggregate}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        onOpenResult={onOpenResult}
+        widgets={widgets}
+      />
+    </>
   );
 }
 
@@ -423,269 +543,30 @@ function DashboardDeleteWidgetDialog({
   );
 }
 
-function DashboardWidgetGrid({
-  onDelete,
-  onEdit,
-  results,
-  widgets
-}: {
-  onDelete: (widgetId: string) => void;
-  onEdit: (widget: SavedDashboardWidget) => void;
-  results: TestResult[];
-  widgets: SavedDashboardWidget[];
-}) {
-  return (
-    <section className="dashboard-reference-widget-grid" aria-label="Виджеты дашборда">
-      {widgets.map((widget) => (
-        <DashboardWidgetCard
-          key={widget.id}
-          onDelete={() => onDelete(widget.id)}
-          onEdit={() => onEdit(widget)}
-          results={results}
-          widget={widget}
-        />
-      ))}
-    </section>
-  );
-}
-
-function DashboardWidgetCard({
-  onDelete,
-  onEdit,
-  results,
-  widget
-}: {
-  onDelete: () => void;
-  onEdit: () => void;
-  results: TestResult[];
-  widget: SavedDashboardWidget;
-}) {
-  const type = widgetTypes.find((item) => item.id === widget.kind) ?? widgetTypes[0]!;
-  const Icon = type.icon;
-  const evaluation = evaluateWidget(widget, results);
-
-  return (
-    <article className={`dashboard-reference-widget-card is-${widget.kind}`}>
-      <header>
-        <span className="dashboard-reference-widget-icon">
-          <Icon aria-hidden="true" size={18} />
-        </span>
-        <div>
-          <strong>{widget.title}</strong>
-          <small>
-            {type.title} · {evaluation.filteredResults.length} результатов
-          </small>
-        </div>
-        <div className="dashboard-reference-widget-actions">
-          <button
-            aria-label={`Редактировать виджет ${widget.title}`}
-            onClick={onEdit}
-            type="button"
-          >
-            <Pencil aria-hidden="true" size={15} />
-          </button>
-          <button aria-label={`Удалить виджет ${widget.title}`} onClick={onDelete} type="button">
-            <Trash2 aria-hidden="true" focusable="false" size={15} strokeWidth={2.2} />
-          </button>
-        </div>
-      </header>
-
-      <WidgetVisualization evaluation={evaluation} kind={widget.kind} />
-
-      <details className="dashboard-reference-widget-details">
-        <summary>THQL и параметры</summary>
-        <dl>
-          <div>
-            <dt>Сущность</dt>
-            <dd>{widget.entity}</dd>
-          </div>
-          <div>
-            <dt>Метрика</dt>
-            <dd>{widget.metric}</dd>
-          </div>
-          <div>
-            <dt>Группировка</dt>
-            <dd>{widget.groupBy}</dd>
-          </div>
-          <div>
-            <dt>Период</dt>
-            <dd>{widget.period}</dd>
-          </div>
-        </dl>
-        <code>{widget.thql}</code>
-      </details>
-    </article>
-  );
-}
-
-function WidgetVisualization({
-  evaluation,
-  kind
-}: {
-  evaluation: WidgetEvaluation;
-  kind: WidgetKind;
-}) {
-  if (kind === "metric") {
-    return <MetricWidget evaluation={evaluation} />;
-  }
-  if (kind === "bar") {
-    return <BarWidget groups={evaluation.groups} />;
-  }
-  if (kind === "donut") {
-    return <DonutWidget groups={evaluation.groups} total={evaluation.filteredResults.length} />;
-  }
-  if (kind === "line") {
-    return <LineWidget series={evaluation.series} />;
-  }
-  return <TableWidget rows={evaluation.tableRows} />;
-}
-
-function MetricWidget({ evaluation }: { evaluation: WidgetEvaluation }) {
-  return (
-    <div className="dashboard-reference-metric-widget">
-      <strong>{evaluation.value}</strong>
-      <span>{metricDescription(evaluation)}</span>
-      <div className="dashboard-reference-metric-strip">
-        <span className="is-passed">Успешность {formatPercent(evaluation.passedRate)}</span>
-        <span>Среднее {evaluation.averageDuration}</span>
-        <span>Ретраи {evaluation.retryCount}</span>
-      </div>
-    </div>
-  );
-}
-
-function BarWidget({ groups }: { groups: WidgetGroup[] }) {
-  const visibleGroups = groups.length > 0 ? groups : emptyGroupRows();
-
-  return (
-    <div className="dashboard-reference-bar-widget">
-      {visibleGroups.map((group) => (
-        <div className="dashboard-reference-bar-row" key={group.key}>
-          <span>{group.label}</span>
-          <div>
-            <i
-              className={group.status ? `is-${group.status}` : undefined}
-              style={{ width: `${Math.max(group.percent, group.value > 0 ? 3 : 0)}%` }}
-            />
-          </div>
-          <strong>{group.value}</strong>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DonutWidget({ groups, total }: { groups: WidgetGroup[]; total: number }) {
-  const segments = groups.length > 0 ? groups : emptyGroupRows();
-  const gradient = buildDonutGradient(segments);
-
-  return (
-    <div className="dashboard-reference-donut-widget">
-      <div className="dashboard-reference-donut" style={{ background: gradient }}>
-        <strong>{total}</strong>
-        <span>всего</span>
-      </div>
-      <div className="dashboard-reference-donut-legend">
-        {segments.map((group) => (
-          <span key={group.key}>
-            <i className={group.status ? `is-${group.status}` : undefined} />
-            {group.label} {group.value}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LineWidget({ series }: { series: WidgetGroup[] }) {
-  const values = series.length > 0 ? series : emptyGroupRows();
-  const maxValue = Math.max(...values.map((item) => item.value), 1);
-  const points = values
-    .map((item, index) => {
-      const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
-      const y = 88 - (item.value / maxValue) * 74;
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <div className="dashboard-reference-line-widget">
-      <svg aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 100 100">
-        <polyline points={points} />
-        {values.map((item, index) => {
-          const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
-          const y = 88 - (item.value / maxValue) * 74;
-          return <circle cx={x} cy={y} key={item.key} r="2.8" />;
-        })}
-      </svg>
-      <div>
-        {values.map((item) => (
-          <span key={item.key}>
-            <small>{item.label}</small>
-            <strong>{item.value}</strong>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TableWidget({ rows }: { rows: TestResult[] }) {
-  return (
-    <div className="dashboard-reference-table-widget">
-      <table>
-        <thead>
-          <tr>
-            <th>Статус</th>
-            <th>Тест</th>
-            <th>Длит.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(rows.length > 0 ? rows : []).map((result) => (
-            <tr key={result.id}>
-              <td>
-                <span className={`dashboard-reference-status is-${result.status}`}>
-                  {statusLabels[result.status]}
-                </span>
-              </td>
-              <td>{result.name}</td>
-              <td>{result.duration}</td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={3}>Нет результатов по THQL</td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function WidgetTypePicker({ onSelect }: { onSelect: (type: WidgetTypeOption) => void }) {
   return (
     <div className="dashboard-reference-type-grid" aria-label="Типы виджетов">
-      {widgetTypes.map((type) => {
-        const Icon = type.icon;
+      {widgetTypes
+        .filter((type) => type.id !== "line")
+        .map((type) => {
+          const Icon = type.icon;
 
-        return (
-          <button
-            className="dashboard-reference-type-card"
-            data-dialog-initial-focus={type === widgetTypes[0] ? "true" : undefined}
-            key={type.id}
-            onClick={() => onSelect(type)}
-            type="button"
-          >
-            <span>
-              <Icon aria-hidden="true" size={22} />
-            </span>
-            <strong>{type.title}</strong>
-            <small>{type.description}</small>
-          </button>
-        );
-      })}
+          return (
+            <button
+              className="dashboard-reference-type-card"
+              data-dialog-initial-focus={type === widgetTypes[0] ? "true" : undefined}
+              key={type.id}
+              onClick={() => onSelect(type)}
+              type="button"
+            >
+              <span>
+                <Icon aria-hidden="true" size={22} />
+              </span>
+              <strong>{type.title}</strong>
+              <small>{type.description}</small>
+            </button>
+          );
+        })}
     </div>
   );
 }
@@ -708,7 +589,8 @@ function WidgetThqlForm({
   selectedWidgetType: WidgetTypeOption;
 }) {
   const Icon = selectedWidgetType.icon;
-  const canSave = draft.title.trim().length > 0 && draft.thql.trim().length > 0;
+  const queryError = widgetUnavailableReason({ ...draft, kind: selectedWidgetType.id });
+  const canSave = draft.title.trim().length > 0 && draft.thql.trim().length > 0 && !queryError;
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -758,9 +640,9 @@ function WidgetThqlForm({
                 value={draft.entity}
               >
                 <option>Результаты тестов</option>
-                <option>Запуски</option>
-                <option>Тест-кейсы</option>
-                <option>Дефекты</option>
+                {draft.entity !== "Результаты тестов" ? (
+                  <option disabled>{draft.entity}</option>
+                ) : null}
               </select>
             </label>
 
@@ -773,7 +655,9 @@ function WidgetThqlForm({
                 <option>Количество</option>
                 <option>Доля успешных</option>
                 <option>Средняя длительность</option>
-                <option>Количество ретраев</option>
+                {draft.metric === "Количество ретраев" ? (
+                  <option disabled>Количество ретраев</option>
+                ) : null}
               </select>
             </label>
           </div>
@@ -790,13 +674,8 @@ function WidgetThqlForm({
             </label>
 
             <label className="dashboard-reference-field">
-              <span>Период</span>
-              <input
-                onChange={(event) => updateDraft({ period: event.target.value })}
-                placeholder="Например: последние 14 дней"
-                type="text"
-                value={draft.period}
-              />
+              <span>Область данных</span>
+              <input aria-readonly="true" readOnly type="text" value="Весь выбранный запуск" />
             </label>
           </div>
 
@@ -815,8 +694,12 @@ function WidgetThqlForm({
         <button className="dashboard-reference-secondary-button" onClick={onBack} type="button">
           Назад к типам
         </button>
-        <span className="dashboard-reference-form-hint" id="dashboard-reference-form-hint">
-          {canSave ? "" : "Заполните название и THQL"}
+        <span
+          className="dashboard-reference-form-hint"
+          id="dashboard-reference-form-hint"
+          role="status"
+        >
+          {queryError ?? (canSave ? "" : "Заполните название и THQL")}
         </span>
         <div className="dashboard-reference-footer-actions">
           <button className="dashboard-reference-secondary-button" onClick={onCancel} type="button">

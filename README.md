@@ -108,7 +108,8 @@ Start API, worker, and web locally without Docker:
 npm run local:dev
 ```
 
-Start the same local stack and idempotently import the retained UI evidence archives:
+Start the same local stack and idempotently import the retained UI evidence archives plus a 100-result
+showcase launch with mixed statuses, attachments, and nested steps:
 
 ```bash
 npm run local:demo

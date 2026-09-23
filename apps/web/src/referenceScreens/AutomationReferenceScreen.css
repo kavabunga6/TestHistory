@@ -1,0 +1,645 @@
+/* Automated test plans and external CI executions. */
+.automation-screen {
+  min-height: 100vh;
+  min-width: 0;
+  padding: var(--workspace-page-gutter, 16px);
+  background: #f4f7fb;
+}
+
+.automation-header,
+.automation-toolbar,
+.automation-card-heading,
+.automation-tabs,
+.automation-table-row,
+.automation-form-actions {
+  display: flex;
+  align-items: center;
+}
+
+.automation-header {
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.automation-header > div,
+.automation-toolbar > div {
+  min-width: 0;
+}
+
+.automation-header h1 {
+  margin: 4px 0 6px;
+  color: #0f172a;
+  font-size: 26px;
+}
+
+.automation-header p,
+.automation-toolbar span,
+.automation-card p,
+.automation-empty span {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.automation-tabs {
+  gap: 26px;
+  min-height: 48px;
+  padding: 0 4px;
+  border-bottom: 1px solid #dbe3ee;
+}
+
+.automation-tabs button {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0 4px;
+  color: #52647c;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.automation-tabs button.active {
+  border-bottom-color: #2563eb;
+  color: #1456d9;
+}
+
+.automation-tabs button span {
+  min-width: 24px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: #eaf0f8;
+  color: #475569;
+  font-size: 12px;
+  text-align: center;
+}
+
+.automation-content {
+  margin-top: 18px;
+}
+
+.automation-toolbar {
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.automation-toolbar > div {
+  display: grid;
+  gap: 4px;
+}
+
+.automation-toolbar strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.automation-toolbar strong,
+.automation-toolbar span {
+  overflow-wrap: anywhere;
+}
+
+.reference-action,
+.reference-primary-action,
+.automation-form-actions button,
+.automation-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #24324a;
+  background: #fff;
+}
+
+.reference-primary-action {
+  border-color: #2563eb;
+  color: #fff;
+  background: #2563eb;
+}
+
+.automation-screen :is(button, a):focus-visible {
+  outline: 3px solid rgb(37 99 235 / 22%);
+  outline-offset: 2px;
+}
+
+.automation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.automation-card,
+.automation-table,
+.automation-form,
+.automation-notice {
+  border: 1px solid #d8e1ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.automation-card {
+  min-height: 146px;
+  padding: 16px;
+}
+
+.automation-card-heading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.automation-card dl {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 7px 12px;
+  margin: 14px 0 0;
+  font-size: 12px;
+}
+
+.automation-card dt {
+  color: #7b8ca4;
+}
+
+.automation-card dd {
+  min-width: 0;
+  margin: 0;
+  color: #26354c;
+  overflow-wrap: anywhere;
+}
+
+.automation-card code {
+  border-radius: 4px;
+  padding: 3px 6px;
+  background: #f1f5f9;
+}
+
+.automation-status {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #475569;
+  background: #edf2f7;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.automation-status--active,
+.automation-status--succeeded {
+  color: #087a35;
+  background: #dcf7e7;
+}
+
+.automation-status--running {
+  color: #1556c0;
+  background: #e1ecff;
+}
+
+.automation-status--failed,
+.automation-notice--error {
+  color: #b42318;
+  background: #fff0ef;
+}
+
+.automation-status--queued {
+  color: #8a5600;
+  background: #fff3d6;
+}
+
+.automation-status--pending,
+.automation-status--retrying {
+  color: #8a5600;
+  background: #fff3d6;
+}
+
+.automation-status--processing {
+  color: #1556c0;
+  background: #e1ecff;
+}
+
+.automation-status--delivered {
+  color: #087a35;
+  background: #dcf7e7;
+}
+
+.automation-status--dead {
+  color: #b42318;
+  background: #fff0ef;
+}
+
+.automation-table {
+  overflow: hidden;
+}
+
+.automation-table-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(140px, 1fr) 120px 40px;
+  gap: 14px;
+  min-height: 58px;
+  border-bottom: 1px solid #e4eaf2;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.automation-table-row:last-child {
+  border-bottom: 0;
+}
+
+.automation-table-row > span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.automation-table-row > span:first-child {
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.automation-table-row small {
+  color: #718197;
+}
+
+.automation-table-row a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #1456d9;
+  text-decoration: none;
+}
+
+.automation-table-head {
+  min-height: 38px;
+  color: #718197;
+  background: #f6f8fb;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.automation-icon-action {
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.automation-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px;
+}
+
+.automation-form label {
+  display: grid;
+  gap: 6px;
+  color: #52647c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.automation-form input,
+.automation-form select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #0f172a;
+  background: #fff;
+  font: inherit;
+}
+
+.automation-form-wide,
+.automation-form-actions {
+  grid-column: 1 / -1;
+}
+
+.automation-form-actions {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.automation-notice {
+  margin-top: 14px;
+  padding: 14px;
+  color: #52647c;
+}
+
+.automation-empty {
+  grid-column: 1 / -1;
+  min-width: 0;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  color: #94a3b8;
+  padding: 20px;
+  text-align: center;
+}
+
+.automation-empty strong,
+.automation-empty span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.automation-empty svg {
+  width: 28px;
+  height: 28px;
+}
+
+.automation-empty strong {
+  color: #475569;
+}
+
+.automation-empty--actionable {
+  width: min(100%, 560px);
+  min-height: min(340px, calc(100dvh - 290px));
+  justify-self: center;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.automation-empty--actionable svg {
+  color: #647da3;
+}
+
+.automation-empty--actionable .reference-primary-action {
+  margin-top: 8px;
+}
+
+.automation-empty--actionable .reference-primary-action svg {
+  width: 16px;
+  height: 16px;
+  color: inherit;
+}
+
+.automation-toolbar > .automation-toolbar-actions {
+  display: flex;
+  grid-auto-flow: initial;
+  gap: 8px;
+}
+
+.automation-toolbar-actions button,
+.automation-integration-card > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #24324a;
+  background: #fff;
+}
+
+.automation-integration-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.automation-integration-section {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.automation-integration-section h2,
+.automation-deliveries h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.automation-integration-section h2 > span,
+.automation-deliveries h2 > span {
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: #64748b;
+  background: #eaf0f8;
+  font-size: 11px;
+}
+
+.automation-integration-card {
+  min-height: 130px;
+}
+
+.automation-integration-card > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  margin: 10px 0;
+  color: #1456d9;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.automation-integration-card > button {
+  width: fit-content;
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.automation-deliveries {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .automation-screen {
+    min-height: calc(100dvh - 56px);
+    padding: var(--workspace-page-gutter, 12px);
+  }
+
+  .automation-grid,
+  .automation-form,
+  .automation-integration-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .automation-table {
+    overflow-x: auto;
+  }
+
+  .automation-table-row {
+    min-width: 760px;
+  }
+}
+
+@media (max-width: 600px) {
+  .automation-header,
+  .automation-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .automation-header {
+    margin-bottom: 12px;
+  }
+
+  .automation-header > .reference-action {
+    min-height: 40px;
+    align-self: flex-start;
+    flex: 0 0 auto;
+    white-space: normal;
+  }
+
+  .automation-tabs {
+    gap: 4px;
+    overflow-x: auto;
+    padding: 0;
+    scrollbar-width: thin;
+  }
+
+  .automation-tabs button {
+    min-height: 44px;
+    padding: 0 10px;
+  }
+
+  .automation-content {
+    margin-top: 16px;
+  }
+
+  .automation-toolbar > .reference-primary-action,
+  .automation-toolbar-actions button {
+    width: 100%;
+    min-height: 40px;
+    white-space: normal;
+  }
+
+  .automation-toolbar > .automation-toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .automation-toolbar-actions button {
+    flex: 1 1 130px;
+  }
+
+  .automation-card,
+  .automation-form {
+    padding: 14px;
+  }
+
+  .automation-form-actions {
+    flex-wrap: wrap;
+  }
+
+  .automation-form-actions button {
+    flex: 1 1 110px;
+    min-height: 40px;
+    white-space: normal;
+  }
+
+  .automation-table {
+    overflow: visible;
+  }
+
+  .automation-table-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .automation-table-row:not(.automation-table-head) {
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .automation-table-row:not(.automation-table-head) > span {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    overflow-wrap: anywhere;
+  }
+
+  .automation-table-row:not(.automation-table-head) > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .automation-table-row:not(.automation-table-head) > span:nth-child(2)::before,
+  .automation-table-row:not(.automation-table-head) > span:nth-child(3)::before,
+  .automation-table-row:not(.automation-table-head) > span:nth-child(4)::before {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .automation-table[aria-label="CI-задачи"] .automation-table-row > span:nth-child(2)::before {
+    content: "Провайдер";
+  }
+
+  .automation-table[aria-label="CI-задачи"] .automation-table-row > span:nth-child(3)::before {
+    content: "План";
+  }
+
+  .automation-table[aria-label="Доставки интеграций"]
+    .automation-table-row
+    > span:nth-child(2)::before {
+    content: "Тип";
+  }
+
+  .automation-table[aria-label="Доставки интеграций"]
+    .automation-table-row
+    > span:nth-child(3)::before {
+    content: "Попытки";
+  }
+
+  .automation-table-row > span:nth-child(4)::before {
+    content: "Статус";
+  }
+
+  .automation-table-row > span:last-child:empty {
+    display: none;
+  }
+
+  .automation-empty {
+    min-height: 150px;
+  }
+
+  .automation-integration-card > a {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .automation-integration-card > button {
+    min-height: 40px;
+  }
+}

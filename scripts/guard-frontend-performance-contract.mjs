@@ -28,13 +28,16 @@ const sourceChecks = [
     constants: {
       workspaceInitialLaunchLimit: 100,
       workspaceInitialResultHydrationLimit: 50,
-      workspaceInitialHistoryLimit: 100,
+      workspaceResultListLimit: 100,
+      workspaceDefaultResultPageSize: 25,
       workspaceInitialTestCaseLimit: 100,
       workspaceInitialDefectLimit: 100
     },
     requiredFragments: [
       "launches?limit=${workspaceInitialLaunchLimit}",
-      "results?limit=${workspaceInitialResultHydrationLimit}",
+      "resultsPayload.items.slice(0, workspaceInitialResultHydrationLimit)",
+      "limit > workspaceResultListLimit",
+      "results?limit=${limit}",
       "test-cases?projectId=${encodeURIComponent(",
       "limit=${workspaceInitialTestCaseLimit}",
       "test-case-detail",
@@ -43,8 +46,14 @@ const sourceChecks = [
       "defect-detail",
       'return "result-detail"',
       "preferredResultId",
+      'from "./m1WorkspaceHistoryReads.js"',
       "limit=${workspaceInitialHistoryLimit}"
     ]
+  },
+  {
+    file: "apps/web/src/m1WorkspaceHistoryReads.ts",
+    constants: { workspaceInitialHistoryLimit: 100 },
+    requiredFragments: ["limit=${workspaceInitialHistoryLimit}"]
   },
   {
     file: "apps/web/src/referenceScreens/DefectsReferenceScreen.tsx",

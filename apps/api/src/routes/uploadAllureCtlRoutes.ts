@@ -151,6 +151,7 @@ export async function registerUploadAllureCtlRoutes(app: FastifyInstance, store:
         session: allureCtlSessionResponse(session, launch, request.headers.host),
         upload: serializeUploadJob(result.job),
         imported: result.imported,
+        results: result.results,
         compatibilityFiles: result.compatibilityFiles,
         artifacts: result.artifacts,
         launch: result.launch

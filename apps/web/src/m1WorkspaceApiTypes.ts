@@ -6,6 +6,9 @@ import type {
 
 export type ApiProjectReadModel = {
   id: string;
+  key?: string;
+  name?: string;
+  createdAt?: string;
 };
 
 export type ApiAllureStatus = Exclude<ResultStatus, "muted"> | "unknown";
@@ -407,6 +410,7 @@ export type ApiLaunchDetailsReadModel = ApiLaunchReadModel & {
 export type ApiResultStepReadModel = {
   name: string;
   status?: ApiAllureStatus;
+  statusDetails?: ApiStatusDetailsReadModel;
   start?: number;
   stop?: number;
   attachments?: ApiAttachmentReadModel[];
@@ -427,4 +431,13 @@ export type ApiPagedList<T> = {
 
 export type ApiLaunchResultListReadModel = {
   items: ApiNormalizedResultReadModel[];
+  page?: {
+    limit: number;
+    cursor: string | null;
+    offset: number;
+    returned: number;
+    total: number;
+    nextCursor: string | null;
+    hasMore: boolean;
+  };
 };

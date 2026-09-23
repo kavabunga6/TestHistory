@@ -8,10 +8,14 @@ import type { ApiLaunchRetentionReadModel, ApiProjectReadModel } from "./apiStat
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
 
-export async function loadAttachmentPreviewRetentionState(): Promise<AttachmentPreviewRetentionApiState> {
+export async function loadAttachmentPreviewRetentionState(
+  projectId?: string
+): Promise<AttachmentPreviewRetentionApiState> {
   try {
-    const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-    const project = projects[0];
+    const project =
+      projectId !== undefined
+        ? { id: projectId }
+        : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
     if (project === undefined) {
       return {
         data: emptyAttachmentPreviewRetention("no-api-project", "no-closed-launch"),
@@ -62,10 +66,14 @@ export async function loadAttachmentPreviewRetentionState(): Promise<AttachmentP
   }
 }
 
-export async function loadAttachmentPreviewRetentionDryRunScheduleState(): Promise<AttachmentPreviewRetentionDryRunScheduleApiState> {
+export async function loadAttachmentPreviewRetentionDryRunScheduleState(
+  projectId?: string
+): Promise<AttachmentPreviewRetentionDryRunScheduleApiState> {
   try {
-    const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-    const project = projects[0];
+    const project =
+      projectId !== undefined
+        ? { id: projectId }
+        : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
     if (project === undefined) {
       return {
         data: emptyAttachmentPreviewRetentionDryRunSchedule("no-api-project", "no-closed-launch"),

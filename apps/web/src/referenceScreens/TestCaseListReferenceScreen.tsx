@@ -7,11 +7,13 @@ import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 import "./TestCaseListReferenceScreen.css";
 
 type TestCaseListReferenceScreenProps = {
+  projectId?: string;
   results: TestResult[];
   onSelect?: ((id: string) => void) | undefined;
 };
 
 export function TestCaseListReferenceScreen({
+  projectId = "ws",
   results,
   onSelect
 }: TestCaseListReferenceScreenProps) {
@@ -50,7 +52,7 @@ export function TestCaseListReferenceScreen({
           activeFilterId={activeFilterId}
           actorId={actorId}
           entity="testCases"
-          projectId="ws"
+          projectId={projectId}
           query={query}
           onActiveFilterChange={setActiveFilterId}
           onQueryChange={setQuery}

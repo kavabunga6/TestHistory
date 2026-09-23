@@ -160,7 +160,7 @@ describe("THQL search panel filter ordering", () => {
 
     const manageButton = container.querySelector<HTMLButtonElement>(".thql-search__manage");
     expect(manageButton).not.toBeNull();
-    expect(manageButton!.getAttribute("aria-label")).toBe("Управление фильтрами");
+    expect(manageButton!.getAttribute("aria-label")).toBe("Фильтры: настроить быстрые фильтры");
     expect(manageButton!.textContent).toBe("");
     manageButton!.focus();
 

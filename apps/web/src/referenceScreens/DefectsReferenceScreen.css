@@ -20,6 +20,7 @@
 
 .defects-reference-crumbs {
   min-width: 0;
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -118,7 +119,7 @@
   display: flex;
   align-items: center;
   border-bottom: 1px solid #e8edf3;
-  padding: 16px 20px 10px;
+  padding: 16px 20px 12px;
 }
 
 .defects-reference-header h1 {
@@ -178,7 +179,7 @@
   width: 100%;
   min-height: 82px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 10px;
   border: 0;
@@ -222,6 +223,12 @@
   white-space: nowrap;
 }
 
+.defects-reference-row > .defects-reference-status {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+}
+
 .defects-reference-status.open {
   background: #fff5f4;
   color: #c83b33;
@@ -235,6 +242,8 @@
 .defects-reference-row-copy {
   min-width: 0;
   display: grid;
+  grid-column: 1;
+  grid-row: 1;
   gap: 4px;
 }
 
@@ -293,6 +302,7 @@
 }
 
 .defects-reference-detail-panel {
+  container-type: inline-size;
   overflow: auto;
   overscroll-behavior: contain;
   padding: 0 24px 24px;
@@ -315,7 +325,7 @@
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid #e8edf3;
-  padding: 20px 0 18px;
+  padding: 16px 0;
 }
 
 .defects-reference-detail-title {
@@ -395,7 +405,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   overflow: hidden;
-  margin: 16px 0;
+  margin: 16px 0 20px;
   border: 1px solid #e8edf3;
   border-radius: 10px;
   background: #f8fafc;
@@ -429,7 +439,15 @@
 
 .defects-reference-detail-meta dd {
   color: #172033;
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.defects-reference-detail-meta div:last-child dd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -619,30 +637,72 @@
 }
 
 .defects-reference-result-status.passed {
-  background: #f0faf2;
-  color: #23873a;
+  background: #43a047;
+  color: #ffffff;
 }
 
 .defects-reference-result-status.failed {
-  background: #fff5f4;
-  color: #c83b33;
+  background: #dc574d;
+  color: #ffffff;
 }
 
 .defects-reference-result-status.broken {
-  background: #fff8ef;
-  color: #c57420;
+  background: #e5a24a;
+  color: #172033;
+}
+
+@container (max-width: 680px) {
+  .defects-reference-result-head {
+    display: none;
+  }
+
+  .defects-reference-result-row {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 12px 16px;
+  }
+
+  .defects-reference-result-row > span:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .defects-reference-result-row > .defects-reference-result-status {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .defects-reference-result-row > time {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .defects-reference-result-row > span:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .defects-reference-result-row > span:nth-child(2) strong {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
 }
 
 @media (max-width: 980px) {
   .defects-reference-screen {
-    height: auto;
-    min-height: 100%;
-    overflow: visible;
+    display: block;
+    height: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .defects-reference-workspace {
+    display: block;
     height: auto;
-    grid-template-columns: minmax(0, 1fr);
     overflow: visible;
   }
 
@@ -652,13 +712,23 @@
 
   .defects-reference-list-panel {
     height: auto;
-    min-height: 420px;
+    min-height: 0;
+    border-bottom: 1px solid #d7e1ee;
+  }
+
+  .defects-reference-list {
+    flex: 0 1 auto;
+    max-height: min(32vh, 320px);
   }
 
   .defects-reference-detail-panel {
     height: auto;
-    min-height: 320px;
+    min-height: 0;
     overflow: visible;
+  }
+
+  .defects-reference-detail-panel.empty {
+    min-height: 180px;
   }
 
   .defects-reference-detail-grid {
@@ -672,16 +742,16 @@
 
 @media (max-width: 760px) {
   .defects-reference-detail-meta {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .defects-reference-detail-meta div {
+  .defects-reference-detail-meta div:nth-child(2) {
     border-right: 0;
-    border-bottom: 1px solid #e8edf3;
   }
 
   .defects-reference-detail-meta div:last-child {
-    border-bottom: 0;
+    grid-column: 1 / -1;
+    border-top: 1px solid #e8edf3;
   }
 
   .defects-reference-detail-header {
@@ -701,6 +771,27 @@
 }
 
 @media (max-width: 480px) {
+  .defects-reference-crumbs {
+    padding: 0 12px;
+  }
+
+  .defects-reference-header {
+    min-height: 56px;
+    padding: 12px;
+  }
+
+  .defects-reference-list-panel .thql-search {
+    margin: 0 12px 12px;
+  }
+
+  .defects-reference-row {
+    padding: 12px;
+  }
+
+  .defects-reference-detail-panel {
+    padding: 0 12px 24px;
+  }
+
   .defects-reference-simple-list > a {
     grid-template-columns: minmax(0, 1fr);
     gap: 4px;

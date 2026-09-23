@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Bug, Trash2 } from "lucide-react";
 
 import { filterRecordsByQuery } from "../analyticsQuery.js";
 import type { TestResult } from "../m1Workspace.js";
 import { getHashFromRoute } from "../workspaceRouting.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
+import { useResizableListWidth } from "./useResizableListWidth.js";
 
 import "./DefectsReferenceScreen.css";
 
@@ -12,7 +13,6 @@ export type DefectStatus = "open" | "closed";
 export type DefectStatusFilter = "all" | DefectStatus | "quarantined";
 
 export type DefectSummary = {
-  createdBy: string;
   id: string;
   title: string;
   results: TestResult[];
@@ -47,89 +47,46 @@ const DEFECT_LIST_DEFAULT_WIDTH = 420;
 const DEFECT_LIST_MIN_WIDTH = 360;
 const DEFECT_LIST_MAX_WIDTH = 720;
 
-function clampDefectListWidth(value: number): number {
-  return Math.min(DEFECT_LIST_MAX_WIDTH, Math.max(DEFECT_LIST_MIN_WIDTH, Math.round(value)));
-}
-
-function readStoredDefectListWidth(): number {
-  if (typeof window === "undefined") {
-    return DEFECT_LIST_DEFAULT_WIDTH;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(DEFECT_LIST_WIDTH_KEY);
-    if (stored === null) {
-      return DEFECT_LIST_DEFAULT_WIDTH;
-    }
-    const parsed = Number(stored);
-    return Number.isFinite(parsed) ? clampDefectListWidth(parsed) : DEFECT_LIST_DEFAULT_WIDTH;
-  } catch {
-    return DEFECT_LIST_DEFAULT_WIDTH;
-  }
-}
-
-function writeStoredDefectListWidth(value: number) {
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(DEFECT_LIST_WIDTH_KEY, String(clampDefectListWidth(value)));
-    } catch {
-      // The resized column still works for the current visit when storage is unavailable.
-    }
-  }
-}
-
 export function DefectsReferenceScreen({
   onDeleteDefect,
   onOpenDefect,
+  projectId = "ws",
   routeDefectId,
   results
 }: {
   onDeleteDefect?: ((id: string) => void) | undefined;
   onOpenDefect?: ((id: string) => void) | undefined;
+  projectId?: string | undefined;
   routeDefectId?: string | undefined;
   results: TestResult[];
 }) {
   const [query, setQuery] = useState("");
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
   const [selectedDefectId, setSelectedDefectId] = useState<string | undefined>();
-  const [listWidth, setListWidth] = useState(readStoredDefectListWidth);
-  const [resizing, setResizing] = useState(false);
-  const screenRef = useRef<HTMLElement | null>(null);
+  const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
+    useResizableListWidth({
+      bodyClass: "defects-reference-is-resizing",
+      defaultWidth: DEFECT_LIST_DEFAULT_WIDTH,
+      maxWidth: DEFECT_LIST_MAX_WIDTH,
+      minWidth: DEFECT_LIST_MIN_WIDTH,
+      storageKey: DEFECT_LIST_WIDTH_KEY
+    });
 
   const defects = useMemo(() => buildDefectSummaries(results), [results]);
   const filteredDefects = useMemo(() => filterDefects(defects, query, "all"), [defects, query]);
-  const visibleDefects = filteredDefects.slice(0, DEFECT_REFERENCE_PAGE_SIZE);
   const effectiveSelectedDefectId = routeDefectId ?? selectedDefectId;
+  const firstDefects = filteredDefects.slice(0, DEFECT_REFERENCE_PAGE_SIZE);
+  const requestedDefect = filteredDefects.find((defect) => defect.id === effectiveSelectedDefectId);
+  const visibleDefects =
+    requestedDefect !== undefined && !firstDefects.includes(requestedDefect)
+      ? [requestedDefect, ...firstDefects.slice(0, DEFECT_REFERENCE_PAGE_SIZE - 1)]
+      : firstDefects;
   const actorId =
     typeof window === "undefined"
       ? "admin"
       : (window.localStorage.getItem("testhistory.actorId") ?? "admin");
   const selectedDefect =
     visibleDefects.find((defect) => defect.id === effectiveSelectedDefectId) ?? visibleDefects[0];
-
-  useEffect(() => {
-    if (!resizing) {
-      return;
-    }
-
-    const handlePointerMove = (event: PointerEvent) => {
-      const screenLeft = screenRef.current?.getBoundingClientRect().left ?? 0;
-      const nextWidth = clampDefectListWidth(event.clientX - screenLeft);
-      setListWidth(nextWidth);
-      writeStoredDefectListWidth(nextWidth);
-    };
-    const handlePointerUp = () => setResizing(false);
-
-    document.body.classList.add("defects-reference-is-resizing");
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp, { once: true });
-
-    return () => {
-      document.body.classList.remove("defects-reference-is-resizing");
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, [resizing]);
 
   const screenStyle = {
     "--defects-reference-list-width": `${listWidth}px`
@@ -170,7 +127,7 @@ export function DefectsReferenceScreen({
             activeFilterId={activeFilterId}
             actorId={actorId}
             entity="defects"
-            projectId="ws"
+            projectId={projectId}
             query={query}
             onActiveFilterChange={setActiveFilterId}
             onQueryChange={setQuery}
@@ -193,9 +150,7 @@ export function DefectsReferenceScreen({
                 </span>
                 <span className="defects-reference-row-copy">
                   <strong title={defect.title}>{defect.title}</strong>
-                  <small title={defect.id}>
-                    #{formatDefectId(defect.id)} · Создатель: {defect.createdBy}
-                  </small>
+                  <small title={defect.id}>#{formatDefectId(defect.id)}</small>
                   <small>Тест-кейсы: {defect.testCaseCount}</small>
                 </span>
               </button>
@@ -226,20 +181,8 @@ export function DefectsReferenceScreen({
           aria-valuenow={listWidth}
           role="separator"
           title="Потяните, чтобы изменить ширину списка"
-          onKeyDown={(event) => {
-            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-              return;
-            }
-            event.preventDefault();
-            const direction = event.key === "ArrowLeft" ? -1 : 1;
-            const nextWidth = clampDefectListWidth(listWidth + direction * 24);
-            setListWidth(nextWidth);
-            writeStoredDefectListWidth(nextWidth);
-          }}
-          onPointerDown={(event) => {
-            event.currentTarget.setPointerCapture(event.pointerId);
-            setResizing(true);
-          }}
+          onKeyDown={onSeparatorKeyDown}
+          onPointerDown={onSeparatorPointerDown}
         />
 
         {selectedDefect === undefined ? (
@@ -254,12 +197,12 @@ export function DefectsReferenceScreen({
 
 function DefectEmptyState() {
   return (
-    <main className="defects-reference-detail-panel empty" aria-label="Детали дефекта">
+    <section className="defects-reference-detail-panel empty" aria-label="Детали дефекта">
       <div className="defects-reference-empty-state">
         <Bug size={28} />
         <strong>Выберите дефект для отображения</strong>
       </div>
-    </main>
+    </section>
   );
 }
 
@@ -271,7 +214,7 @@ function DefectDetails({
   onDeleteDefect?: ((id: string) => void) | undefined;
 }) {
   return (
-    <main className="defects-reference-detail-panel" aria-label="Информация о выбранном дефекте">
+    <section className="defects-reference-detail-panel" aria-label="Информация о выбранном дефекте">
       <header className="defects-reference-detail-header">
         <div className="defects-reference-detail-title">
           <span className={`defects-reference-status ${defect.status}`}>
@@ -299,26 +242,22 @@ function DefectDetails({
 
       <dl className="defects-reference-detail-meta">
         <div>
-          <dt>Создан:</dt>
-          <dd>{formatCreatedAt(defect)}</dd>
-        </div>
-        <div>
-          <dt>Создатель:</dt>
-          <dd>{defect.createdBy}</dd>
-        </div>
-        <div>
-          <dt>Тест-кейсы:</dt>
+          <dt>Тест-кейсов</dt>
           <dd>{formatCount(defect.testCaseCount)}</dd>
+        </div>
+        <div>
+          <dt>Запусков</dt>
+          <dd>{formatCount(collectLaunchLinks(defect).length)}</dd>
+        </div>
+        <div>
+          <dt>ID дефекта</dt>
+          <dd>{defect.id}</dd>
         </div>
       </dl>
 
       <div className="defects-reference-detail-grid">
-        <DefectSection title="Описание">
-          <p>Описание не задано.</p>
-        </DefectSection>
-
-        <DefectSection title="Правила автоматизации">
-          <p>Автоматические правила для этого дефекта не настроены.</p>
+        <DefectSection className="wide" title="Результаты тестов">
+          <DefectResultList defect={defect} />
         </DefectSection>
 
         <DefectSection title="Запуски">
@@ -348,12 +287,8 @@ function DefectDetails({
             label="Кейс"
           />
         </DefectSection>
-
-        <DefectSection className="wide" title="Результаты тестов">
-          <DefectResultList defect={defect} />
-        </DefectSection>
       </div>
-    </main>
+    </section>
   );
 }
 
@@ -415,7 +350,7 @@ function DefectResultList({ defect }: { defect: DefectSummary }) {
       <div className="defects-reference-result-head" aria-hidden="true">
         <span>Статус</span>
         <span>Результат</span>
-        <span>Окружение</span>
+        <span>Владелец / теги</span>
         <span>Длительность</span>
       </div>
       {linkedResults.map((result) => (
@@ -459,7 +394,6 @@ export function buildDefectSummaries(results: TestResult[]): DefectSummary[] {
       );
       const status: DefectStatus = hasActiveFailure ? "open" : "closed";
       const base = {
-        createdBy: groupedResults[0]?.owner || "Не назначен",
         id,
         title: groupedResults[0]?.name ?? id,
         results: groupedResults,
@@ -594,7 +528,6 @@ function collectResultLinks(defect: DefectSummary): DefectResultLink[] {
         continue;
       }
 
-      const testCaseId = point.testCaseId ?? result.testKeys[0] ?? result.allureId;
       const id = `${point.launchId}:${point.resultUuid}`;
       results.set(id, {
         duration: point.duration,
@@ -606,7 +539,7 @@ function collectResultLinks(defect: DefectSummary): DefectResultLink[] {
         }),
         id,
         launchName: point.launchName,
-        name: testCaseId,
+        name: result.name,
         owner: result.owner || "Не назначен",
         status: point.status,
         tags: result.tags.slice(0, 3).join(", ") || "Без тегов"
@@ -624,24 +557,6 @@ function formatDefectDisplayName(defect: DefectSummary): string {
 function formatDefectId(id: string): string {
   const normalizedId = id.replace(/^defect:/i, "");
   return normalizedId.length > 12 ? `${normalizedId.slice(0, 8)}…` : normalizedId;
-}
-
-function formatCreatedAt(defect: DefectSummary): string {
-  const startedAt =
-    defect.results[0]?.historyCompare?.to.startedAt ??
-    defect.results[0]?.historyCompare?.from.startedAt ??
-    defect.results[0]?.historyPoints?.[0]?.startedAt;
-
-  if (startedAt === undefined) {
-    return "неизвестно";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(startedAt));
 }
 
 function uniqueValues(values: string[]): string[] {

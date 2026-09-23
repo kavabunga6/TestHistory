@@ -8,10 +8,14 @@ import type { ApiProjectReadModel } from "./apiStateModels.js";
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
 
-export async function loadDefectMuteProjectionState(): Promise<DefectMuteProjectionApiState> {
+export async function loadDefectMuteProjectionState(
+  projectId?: string
+): Promise<DefectMuteProjectionApiState> {
   try {
-    const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-    const project = projects[0];
+    const project =
+      projectId !== undefined
+        ? { id: projectId }
+        : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
     if (project === undefined) {
       return {
         data: emptyDefectMuteProjection("no-api-project"),
@@ -54,10 +58,14 @@ export async function loadDefectMuteProjectionState(): Promise<DefectMuteProject
   }
 }
 
-export async function loadDefectMuteReplayInvariantState(): Promise<DefectMuteReplayInvariantApiState> {
+export async function loadDefectMuteReplayInvariantState(
+  projectId?: string
+): Promise<DefectMuteReplayInvariantApiState> {
   try {
-    const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-    const project = projects[0];
+    const project =
+      projectId !== undefined
+        ? { id: projectId }
+        : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
     if (project === undefined) {
       return {
         data: emptyDefectMuteReplayInvariants("no-api-project"),

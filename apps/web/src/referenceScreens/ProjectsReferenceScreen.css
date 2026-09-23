@@ -1,6 +1,6 @@
 .projects-reference {
   min-height: 100vh;
-  padding: 24px;
+  padding: var(--workspace-page-gutter, 16px);
   background: #f4f7fb;
   color: #172033;
   font-family:
@@ -137,7 +137,8 @@
 .projects-reference__card {
   min-width: 0;
   display: grid;
-  gap: 16px;
+  gap: 18px;
+  grid-template-rows: auto 1fr auto;
   border: 1px solid #dbe3ed;
   border-radius: 9px;
   padding: 18px;
@@ -183,6 +184,7 @@
   min-width: 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 7px;
   color: #172033;
   font-size: 15px;
@@ -192,22 +194,7 @@
 
 .projects-reference__project-title > span:first-child {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.projects-reference__project-number {
-  flex: 0 0 auto;
-  color: #718096;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.projects-reference__star {
-  flex: 0 0 auto;
-  fill: #eab308;
-  color: #eab308;
+  overflow-wrap: anywhere;
 }
 
 .projects-reference__current {
@@ -221,60 +208,75 @@
   line-height: 1;
 }
 
-.projects-reference__description {
-  display: -webkit-box;
-  overflow: hidden;
+.projects-reference__project-key {
   color: #65738a;
-  font-size: 13px;
-  line-height: 1.45;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
-.projects-reference__metrics {
+.projects-reference__project-meta {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 4px;
   border-top: 1px solid #e3e9f1;
   padding-top: 14px;
+  color: #65738a;
+  font-size: 12px;
 }
 
-.projects-reference__metric {
+.projects-reference__project-meta code {
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 7px;
-  padding: 9px 10px;
-  background: #f8fafc;
-  color: #526075;
-}
-
-.projects-reference__metric svg {
-  flex: 0 0 auto;
-  color: #64748b;
-}
-
-.projects-reference__metric > span {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.projects-reference__metric small {
   overflow: hidden;
-  color: #718096;
-  font-size: 11px;
-  line-height: 1.2;
+  color: #334155;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.projects-reference__metric strong {
-  color: #172033;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.2;
+.projects-reference__open,
+.projects-reference__refresh,
+.projects-reference__empty button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #2563eb;
+  border-radius: 7px;
+  padding: 8px 12px;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.projects-reference__open:hover,
+.projects-reference__empty button:hover {
+  background: #1d4ed8;
+}
+
+.projects-reference__open:focus-visible,
+.projects-reference__refresh:focus-visible,
+.projects-reference__empty button:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 28%);
+  outline-offset: 2px;
+}
+
+.projects-reference__open:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.projects-reference__refresh {
+  flex: 0 0 auto;
+  border-color: #dbe3ed;
+  background: #ffffff;
+  color: #334155;
+}
+
+.projects-reference__refresh:hover {
+  background: #f1f5f9;
 }
 
 .projects-reference__empty {
@@ -297,9 +299,14 @@
   font-size: 15px;
 }
 
+.projects-reference__empty button {
+  justify-self: center;
+  margin-top: 12px;
+}
+
 @media (max-width: 900px) {
   .projects-reference {
-    padding: 16px;
+    padding: var(--workspace-page-gutter, 16px);
   }
 
   .projects-reference__grid {
@@ -309,7 +316,7 @@
 
 @media (max-width: 560px) {
   .projects-reference {
-    padding: 10px;
+    padding: var(--workspace-page-gutter, 12px);
   }
 
   .projects-reference__header {
@@ -332,8 +339,15 @@
   .projects-reference__card {
     padding: 14px;
   }
+}
 
-  .projects-reference__metrics {
-    grid-template-columns: minmax(0, 1fr);
+@media (max-width: 360px) {
+  .projects-reference__header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .projects-reference__header > div {
+    min-width: 0;
   }
 }

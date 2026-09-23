@@ -34,7 +34,6 @@ import {
 } from "./testExports.js";
 import { buildDefectSummaries, filterDefects } from "./referenceScreens/DefectsReferenceScreen.js";
 import { LaunchesReferenceScreen } from "./referenceScreens/LaunchesReferenceScreen.js";
-import { filterProjects, projects } from "./referenceScreens/ProjectsReferenceScreen.js";
 import {
   apiStates,
   archiveFixtureReadyApiState,

@@ -105,6 +105,29 @@ describe("project settings API helpers", () => {
     expect(settings.members[0]?.role).toBe("owner");
   });
 
+  it("loads settings for the selected project without choosing the first project", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      if (String(input) === "/api/v1/projects/project-2/settings/access") {
+        return jsonResponse({
+          ...accessSettings,
+          project: { id: "project-2", key: "P2", name: "Second", visibility: "private" }
+        });
+      }
+      if (String(input) === "/api/v1/projects/project-2/settings/artifacts") {
+        return jsonResponse({ ...artifactSettings, projectId: "project-2" });
+      }
+      return jsonResponse({ message: "Unexpected project" }, 404);
+    });
+
+    const settings = await loadProjectSettingsFromApi("project-2");
+
+    expect(settings.project.id).toBe("project-2");
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      "/api/v1/projects/project-2/settings/access",
+      "/api/v1/projects/project-2/settings/artifacts"
+    ]);
+  });
+
   it("does not create a project as a side effect of an empty settings read", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse([]));
 

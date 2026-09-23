@@ -7,6 +7,13 @@ import type { LaunchStatus, LaunchSummary } from "./launches.js";
 export type UploadJobStatus =
   "queued" | "processing" | "completed" | "completed_with_errors" | "failed";
 
+export type UploadResultReferenceReadModel = {
+  path: string;
+  resultId: string;
+  resultUrl: string;
+  status: "imported" | "duplicate";
+};
+
 export type UploadJobReadModel = {
   id: string;
   launchId: string;
@@ -15,6 +22,7 @@ export type UploadJobReadModel = {
   importedResults: number;
   duplicateResults: number;
   storedArtifacts: number;
+  results: UploadResultReferenceReadModel[];
   errors: Array<{ path: string; errors: string[]; warnings: string[] }>;
   createdAt: string;
   updatedAt: string;
@@ -180,6 +188,7 @@ export type UploadIngestionStatusReadModel = {
   status: UploadSessionStatus | UploadJobStatus;
   progress: UploadProgressReadModel;
   diagnostics: UploadDiagnosticReadModel[];
+  results: UploadResultReferenceReadModel[];
   queue: QueueWorkerStatusReadModel;
   session?: UploadSessionReadModel;
   job?: UploadJobReadModel;
@@ -224,6 +233,7 @@ export type UploadBatchRequest = {
 export type UploadBatchResponse = {
   job: UploadJobReadModel;
   imported: Array<{ path: string; uuid: string; warnings: string[] }>;
+  results: UploadResultReferenceReadModel[];
   artifacts: ArtifactDescriptorReadModel[];
   checksumDuplicates: ArtifactChecksumDuplicateReadModel[];
   launch: LaunchSummary;
@@ -249,6 +259,29 @@ export type UploadChunkRequest = {
   sha256?: string;
 };
 
-export type ChunkedUploadCompleteResponse = UploadBatchResponse & {
+export type ChunkedUploadCompleteResponse = {
   session: UploadSessionReadModel;
+  job: UploadJobReadModel;
+  accepted: true;
+  processing: {
+    mode: "queue";
+    queue: "ingestion.parse";
+    workerBoundary: "chunked-session-import";
+    payloadAvailable: true;
+    chunksRetainedUntilWorkerCompletion: true;
+  };
+  links: {
+    status: string;
+    process: string;
+    launchIngestion: string;
+  };
 };
+
+export type ChunkedUploadProcessResponse =
+  | (UploadBatchResponse & { session: UploadSessionReadModel })
+  | {
+      job: UploadJobReadModel;
+      status: UploadIngestionStatusReadModel;
+      results: UploadResultReferenceReadModel[];
+      idempotent: true;
+    };

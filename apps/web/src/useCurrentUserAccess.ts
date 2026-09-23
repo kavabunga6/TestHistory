@@ -5,25 +5,26 @@ import { getProjectSettingsAccess, loadProjectSettingsFromApi } from "./projectS
 
 export function useCurrentUserAccess() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | undefined>();
-  const [canDeleteEntities, setCanDeleteEntities] = useState(false);
 
   useEffect(() => {
     let active = true;
+    let requestSequence = 0;
     const syncCurrentUser = () => {
+      const sequence = ++requestSequence;
+      setCurrentUser(undefined);
       const token = getStoredSessionToken();
       if (token === undefined) {
-        setCurrentUser(undefined);
         return;
       }
 
       void loadCurrentUser(token)
         .then((user) => {
-          if (active) {
+          if (active && sequence === requestSequence) {
             setCurrentUser(user);
           }
         })
         .catch(() => {
-          if (active) {
+          if (active && sequence === requestSequence) {
             setCurrentUser(undefined);
           }
         });
@@ -37,9 +38,15 @@ export function useCurrentUserAccess() {
     };
   }, []);
 
+  return { currentUser };
+}
+
+export function useProjectDeleteAccess(currentUser?: CurrentUser, projectId?: string) {
+  const [canDeleteEntities, setCanDeleteEntities] = useState(false);
+
   useEffect(() => {
     let active = true;
-    if (currentUser === undefined) {
+    if (currentUser === undefined || projectId === undefined) {
       setCanDeleteEntities(false);
       return;
     }
@@ -48,7 +55,7 @@ export function useCurrentUserAccess() {
       return;
     }
 
-    void loadProjectSettingsFromApi()
+    void loadProjectSettingsFromApi(projectId)
       .then((settings) => {
         if (active) {
           const access = getProjectSettingsAccess(settings, currentUser.email);
@@ -64,7 +71,7 @@ export function useCurrentUserAccess() {
     return () => {
       active = false;
     };
-  }, [currentUser]);
+  }, [currentUser, projectId]);
 
-  return { canDeleteEntities, currentUser };
+  return canDeleteEntities;
 }

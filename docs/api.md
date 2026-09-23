@@ -84,6 +84,7 @@ API enforces the same boundary.
 | `uploads:write`  | Create upload sessions and submit Allure result files. |
 | `artifacts:read` | Read redacted artifact descriptors and previews.       |
 | `defects:read`   | Read defect and quarantine projections.                |
+| `analytics:read` | Read full project or launch result analytics.          |
 
 Project owners and admins can manage destructive project actions. Maintainers can manage operational
 project data. Editors can upload and update test data. Observers are read-only. CI/service tokens
@@ -130,14 +131,15 @@ string can be validated before execution:
 
 Endpoints:
 
-| Method | Path                              | Purpose                                       |
-| ------ | --------------------------------- | --------------------------------------------- |
-| POST   | `/api/v1/query/validate`          | Parse THQL and return supported-field errors. |
-| POST   | `/api/v1/query/preview`           | Return a bounded read-model preview.          |
-| POST   | `/api/v1/analytics/run`           | Run aggregate analytics over filtered rows.   |
-| GET    | `/api/v1/thql/filters`            | List saved THQL filters visible to the actor. |
-| POST   | `/api/v1/thql/filters`            | Create a saved THQL filter.                   |
-| DELETE | `/api/v1/thql/filters/{filterId}` | Delete a user-created saved THQL filter.      |
+| Method | Path                              | Purpose                                         |
+| ------ | --------------------------------- | ----------------------------------------------- |
+| POST   | `/api/v1/query/validate`          | Parse THQL and return supported-field errors.   |
+| POST   | `/api/v1/query/preview`           | Return a bounded read-model preview.            |
+| POST   | `/api/v1/analytics/run`           | Run aggregate analytics over filtered rows.     |
+| GET    | `/api/v1/analytics/results`       | Read full-scope result metrics and signal rows. |
+| GET    | `/api/v1/thql/filters`            | List saved THQL filters visible to the actor.   |
+| POST   | `/api/v1/thql/filters`            | Create a saved THQL filter.                     |
+| DELETE | `/api/v1/thql/filters/{filterId}` | Delete a user-created saved THQL filter.        |
 
 Supported operators: `=`, `!=`, `~=`, `>`, `>=`, `<`, `<=`, `in`, `and`, `or`, `not`,
 parentheses, quoted strings, numbers, and booleans.
@@ -361,6 +363,16 @@ curl -s http://127.0.0.1:18080/api/v1/launches/<launch-id>/results/json \
   -d '{"files":[{"path":"sample-result.json","content":"{\"uuid\":\"sample\",\"name\":\"Sample\",\"status\":\"passed\"}"}]}'
 ```
 
+The response includes `results: [{ path, resultId, resultUrl, status }]`. Use `resultId` in
+`GET /api/v1/launches/{launchId}/results/{resultId}`, or request `resultUrl` directly. For an
+idempotent retry, `status` is `duplicate` and the same result ID is returned. The older
+`imported[].uuid` field remains available.
+
+The launch result list accepts one `status` or a comma-separated union. For example,
+`GET /api/v1/launches/{launchId}/results?status=broken,unknown&limit=25` returns both statuses,
+with `page.total` and `page.nextCursor` calculated after filtering. A single `status=broken`
+matches only broken results. Invalid status names return HTTP 400.
+
 Always prefer generated Swagger for exact request and response schemas; these examples show the
 auth/scoping headers expected by protected endpoints.
 
@@ -379,6 +391,9 @@ payloads; Swagger remains the source of truth for the full schema of every reque
 4. Complete the upload with `POST /api/v1/uploads/{uploadId}/complete`.
 5. Poll `GET /api/v1/uploads/{uploadId}/status` or `GET /api/v1/launches/{launchId}/ingestion/status`
    until processing is finished.
+
+The complete response returns `job.id` immediately. Result IDs are available in `job.results` and
+the upload status `results` after parsing finishes; the queued response has an empty array.
 
 Required scopes are usually `uploads:write` for mutation calls and `uploads:read,launches:read` for
 status reads.
@@ -507,6 +522,13 @@ uses the same calls below; operators can reproduce them from Swagger, curl, or a
 - Launch comparison uses final retries and stable automated-test identities to classify new,
   removed, fixed, regressed, status-changed, and unchanged results. Analytics responses include
   launch series, status counters, pass/failure rate, total/average duration, p50, and p95 values.
+- Launch dashboard aggregation evaluates up to 24 widgets across all results of one launch at
+  `POST /api/v1/launches/{launchId}/dashboard/aggregate`. Each widget returns complete counts with
+  up to 30 groups and 20 table rows, or an explicit unsupported reason. `groupsTruncated` and
+  `groupCount` mark large distributions; donut widgets combine remaining groups into "Остальные".
+  Muted results are excluded unless a widget filters for
+  them; pass rate excludes muted results from its denominator. Retry counts are unavailable because
+  the stored result does not carry a reliable attempt total.
 - Artifact retention settings are policy data. They do not delete artifacts by themselves until the
   retention preview or execution endpoint is called by an authorized operator or scheduled worker.
 
@@ -519,6 +541,7 @@ Regenerate it with `npm run api:docs:catalog` after changing paths, tags, or ope
 
 ### analytics
 
+- `GET /api/v1/analytics/results` - `listAnalyticsResults`
 - `POST /api/v1/analytics/run` - `runAnalytics`
 
 ### artifacts
@@ -558,6 +581,7 @@ Regenerate it with `npm run api:docs:catalog` after changing paths, tags, or ope
 - `POST /api/v1/dashboards/{dashboardId}/widgets` - `createDashboardWidget`
 - `DELETE /api/v1/dashboards/{dashboardId}/widgets/{widgetId}` - `deleteDashboardWidget`
 - `PATCH /api/v1/dashboards/{dashboardId}/widgets/{widgetId}` - `updateDashboardWidget`
+- `POST /api/v1/launches/{launchId}/dashboard/aggregate` - `aggregateLaunchDashboard`
 
 ### defects
 

@@ -11,7 +11,7 @@ import {
   type ArtifactRetentionClass
 } from "@testhistory/artifacts";
 import type { Launch as DomainLaunch } from "@testhistory/domain";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApiApp } from "./app.js";
 import { createAppStore, type Launch, type UploadJob } from "./store.js";
 
@@ -409,8 +409,12 @@ type ArchiveDiagnosticReplayMaterializedFixtureListResponse = {
 let app: FastifyInstance | undefined;
 
 afterEach(async () => {
-  await app?.close();
-  app = undefined;
+  try {
+    await app?.close();
+  } finally {
+    app = undefined;
+    vi.useRealTimers();
+  }
 });
 
 describe("api app quality-launches", () => {
@@ -582,6 +586,8 @@ describe("api app quality-launches", () => {
   });
 
   it("previews attachment descriptor retention eligibility as paginated redacted read models", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-01T00:00:00.000Z"));
     const store = createAppStore();
     app = await createApiApp(store);
     const project = await createProject(app);

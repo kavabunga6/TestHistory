@@ -66,6 +66,9 @@ Behavior:
 - Imports `*-result.json` files into launch results.
 - Returns `200` when the batch completes cleanly.
 - Returns `207` when the batch completes with per-file errors.
+- Returns `results[]` with `resultId` and `resultUrl` for each imported result or idempotent
+  duplicate. `resultId` is the result UUID used by
+  `GET /api/v1/launches/{launchId}/results/{resultId}`; it is distinct from `job.id`.
 
 This mode is easiest when all files fit comfortably in one request and retries can resend the full batch.
 
@@ -115,12 +118,13 @@ Use the session response to determine which chunks are already accepted before c
 POST /api/v1/uploads/{uploadId}/complete
 ```
 
-Completion assembles the uploaded chunks, stores the artifact, and imports supported Allure data for the file.
+Completion queues parsing and immediately returns `job.id`. Poll the job status to receive
+`results[]` with result IDs and detail URLs once processing finishes.
 
 5. Poll the upload job if the client needs status.
 
 ```text
-GET /api/v1/uploads/{uploadId}
+GET /api/v1/uploads/{jobId}/status
 ```
 
 6. Abort when the client will not finish the upload.

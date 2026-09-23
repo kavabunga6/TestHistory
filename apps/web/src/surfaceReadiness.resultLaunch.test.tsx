@@ -36,7 +36,6 @@ import { buildDefectSummaries, filterDefects } from "./referenceScreens/DefectsR
 import { LaunchesReferenceScreen } from "./referenceScreens/LaunchesReferenceScreen.js";
 import { LaunchComparisonScreen } from "./referenceScreens/LaunchComparisonCard.js";
 import { OverviewTab, ResultsTab } from "./referenceScreens/LaunchesReferenceTabs.js";
-import { filterProjects, projects } from "./referenceScreens/ProjectsReferenceScreen.js";
 import {
   apiStates,
   archiveFixtureReadyApiState,
@@ -252,7 +251,8 @@ describe("result and launch surface readiness", () => {
     expect(buttonContaining(markup, "Опции")).toBeUndefined();
 
     expect(buttonContaining(markup, "Экспорт")).toBeUndefined();
-    expect(buttonContaining(markup, "Статус")).toBeUndefined();
+    expect(markup).not.toContain('aria-label="Статус"');
+    expect(markup).toContain('role="img" aria-label="Статус:');
 
     expect(markup).not.toContain('aria-label="Дополнительные действия"');
   });
@@ -280,6 +280,29 @@ describe("result and launch surface readiness", () => {
     expect(markup).not.toContain("lucide-bot");
     expect(visibleText(markup)).not.toContain("выбрано");
     expect(visibleText(markup)).toContain(selectedResult.name);
+  });
+
+  it("keeps the quarantine filter available beyond the loaded result page", () => {
+    const result = { ...demoM1Workspace.results[0]!, muted: false, status: "passed" as const };
+    const markup = renderToStaticMarkup(
+      <ResultsTab
+        activeStatusFilter={undefined}
+        actorId="admin"
+        filteredResults={[result]}
+        launchCounters={{ broken: 0, failed: 0, muted: 0, passed: 1, skipped: 0 }}
+        loading={false}
+        query=""
+        results={[result]}
+        selectedResult={result}
+        onActiveFilterChange={() => undefined}
+        onClearStatusFilter={() => undefined}
+        onQueryChange={() => undefined}
+        onSelectResult={() => undefined}
+        onStatusFilterChange={() => undefined}
+      />
+    );
+
+    expect(markup).toContain('<option value="muted">Карантин</option>');
   });
 
   it("keeps launch overview cards fixed with paged overflowing lists", () => {
@@ -325,6 +348,22 @@ describe("result and launch surface readiness", () => {
       expect(markup).toContain(`launches-reference-overview-legend-item is-${status}`);
     }
     expect(markup).toContain("Открыть результаты с этим статусом");
+  });
+
+  it("labels the combined broken and unknown overview group explicitly", () => {
+    const launch = demoM1Workspace.launchItems[0]!;
+    const markup = renderToStaticMarkup(
+      <OverviewTab
+        launch={{ ...launch, counters: { ...launch.counters, broken: 12 } }}
+        results={demoM1Workspace.results}
+        onSelectAll={() => undefined}
+        onSelectResult={() => undefined}
+        onSelectStatus={() => undefined}
+      />
+    );
+
+    expect(markup).toContain("Сломаны и неизвестны");
+    expect(markup).toContain("Сломаны и неизвестны: 12. Открыть оба статуса");
   });
 
   it("keeps launch comparison on a separate explicit-request screen", () => {
@@ -404,9 +443,11 @@ describe("result and launch surface readiness", () => {
     );
 
     expect(source).toContain(
-      'const launchSplitListWidthKey = "testhistory:launch-detail-list-width"'
+      'const launchSplitListWidthKey = "testhistory:launch-detail-list-width-v3"'
     );
-    expect(source).toContain("legacyLaunchSplitListWidthKeys");
+    expect(source).toContain("const launchSplitListDefaultRatio = 0.43");
+    expect(source).toContain("new ResizeObserver(updateWidth)");
+    expect(source).not.toContain("legacyLaunchSplitListWidthKeys");
     expect(source).not.toContain("useLaunchSplitResize(launchResultsListWidthKey)");
     expect(source).not.toContain("useLaunchSplitResize(launchErrorsListWidthKey)");
     expect(source.match(/const splitResize = useLaunchSplitResize\(\);/g)).toHaveLength(2);
@@ -427,6 +468,19 @@ describe("result and launch surface readiness", () => {
 
     expect(visibleText(markup)).toContain("Результат теста не найден");
     expect(markup).not.toContain('aria-label="Отчет результата');
+  });
+
+  it("does not replace a missing routed launch with the first launch", () => {
+    const markup = renderToStaticMarkup(
+      <LaunchesReferenceScreen
+        launchItems={demoM1Workspace.launchItems}
+        results={demoM1Workspace.results}
+        routeLaunchId="missing-launch-id"
+      />
+    );
+
+    expect(visibleText(markup)).toContain("Запуск не найден");
+    expect(visibleText(markup)).not.toContain(demoM1Workspace.launchItems[0]!.name);
   });
 
   it("filters launch list items locally without backend or result-scope claims", () => {

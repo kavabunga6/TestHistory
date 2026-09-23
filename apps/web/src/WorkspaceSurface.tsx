@@ -1,18 +1,5 @@
-﻿import React from "react";
-import {
-  Activity,
-  BarChart3,
-  BookOpen,
-  Bug,
-  ChevronRight,
-  CircleDot,
-  GitBranch,
-  LayoutDashboard,
-  ListChecks,
-  Workflow,
-  Settings,
-  ShieldCheck
-} from "lucide-react";
+import { ChevronRight, CircleDot, GitBranch, ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
 
 import {
   getDeniedUiModel,
@@ -20,16 +7,20 @@ import {
   type ApiState,
   type PermissionDeniedError
 } from "./api.js";
-import { AuthPanel } from "./AuthPanel.js";
+import { WorkspaceNavigation } from "./WorkspaceNavigation.js";
+import type { ProjectSelection } from "./projectSelection.js";
 import {
   M1_SURFACE_CONTRACT,
   assertM1SurfaceContract,
+  emptyM1Workspace,
   type Launch,
   type LaunchListItem,
   type M1Workspace,
+  type ResultStatus,
   type TestResult
 } from "./m1Workspace.js";
 import { ProductWorkspace } from "./ProductWorkspace.js";
+import { emptyProjectSettings } from "./projectSettings.js";
 import { AnalyticsReferenceScreen } from "./referenceScreens/AnalyticsReferenceScreen.js";
 import { DashboardReferenceScreen } from "./referenceScreens/DashboardReferenceScreen.js";
 import { DefectsReferenceScreen } from "./referenceScreens/DefectsReferenceScreen.js";
@@ -46,12 +37,6 @@ import {
   modeLabels,
   type WorkspaceMode
 } from "./workspaceRouting.js";
-type NavItem = {
-  mode: WorkspaceMode;
-  label: string;
-  icon: React.ReactNode;
-};
-
 assertM1SurfaceContract(M1_SURFACE_CONTRACT);
 
 export const historyComparePermissionAuditBrowserSmokeGuidance = [
@@ -103,14 +88,22 @@ export function WorkspaceSurface({
   launchRouteTab,
   launchRouteResultId,
   launchRouteResultTab,
+  currentUserId,
   mode,
+  projectSelection,
   settingsRouteTab,
   selectedId,
+  resultPageIndex,
+  resultPageSize,
+  resultQuery,
+  resultStatusFilter,
   testCaseRouteId,
   testCaseRouteTab,
-  workspace,
+  workspace: loadedWorkspace,
   workspaceLoading = false,
   onModeChange,
+  onRefreshProjects,
+  onSelectProject,
   onOpenLaunch,
   onOpenLaunchList,
   onOpenLaunchResult,
@@ -122,6 +115,10 @@ export function WorkspaceSurface({
   onOpenTypographySettings,
   onOpenTestCaseTab,
   onRefreshWorkspace,
+  onResultPageIndexChange,
+  onResultPageSizeChange,
+  onResultQueryChange,
+  onResultStatusFilterChange,
   onSelect,
   onDeleteDefect,
   onDeleteLaunch,
@@ -136,14 +133,22 @@ export function WorkspaceSurface({
   launchRouteTab?: string | undefined;
   launchRouteResultId?: string | undefined;
   launchRouteResultTab?: string | undefined;
+  currentUserId?: string | undefined;
   mode: WorkspaceMode;
+  projectSelection?: ProjectSelection | undefined;
   settingsRouteTab?: string | undefined;
   selectedId: string;
+  resultPageIndex?: number | undefined;
+  resultPageSize?: number | undefined;
+  resultQuery?: string | undefined;
+  resultStatusFilter?: ResultStatus | undefined;
   testCaseRouteId?: string | undefined;
   testCaseRouteTab?: string | undefined;
   workspace: M1Workspace;
   workspaceLoading?: boolean;
   onModeChange: (mode: WorkspaceMode) => void;
+  onRefreshProjects?: (() => void) | undefined;
+  onSelectProject?: ((projectId: string) => void) | undefined;
   onOpenLaunch?: ((id: string) => void) | undefined;
   onOpenLaunchList?: (() => void) | undefined;
   onOpenLaunchResult?: ((id: string, launchId?: string, testCaseId?: string) => void) | undefined;
@@ -155,6 +160,10 @@ export function WorkspaceSurface({
   onOpenTypographySettings?: (() => void) | undefined;
   onOpenTestCaseTab?: ((tab: string) => void) | undefined;
   onRefreshWorkspace?: (() => void) | undefined;
+  onResultPageIndexChange?: ((index: number) => void) | undefined;
+  onResultPageSizeChange?: ((size: number) => void) | undefined;
+  onResultQueryChange?: ((query: string) => void) | undefined;
+  onResultStatusFilterChange?: ((status: ResultStatus | undefined) => void) | undefined;
   onSelect: (id: string) => void;
   onDeleteDefect?: ((id: string) => void) | undefined;
   onDeleteLaunch?: ((id: string) => void) | undefined;
@@ -162,24 +171,49 @@ export function WorkspaceSurface({
   onToggleMuteResult?: ((id: string) => void) | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
 }) {
-  const integrationProviders = useIntegrationLinkProviders();
+  const workspace =
+    projectSelection !== undefined &&
+    (projectSelection.selectedProjectId === undefined ||
+      loadedWorkspace.projectId !== projectSelection.selectedProjectId)
+      ? emptyM1Workspace
+      : loadedWorkspace;
+  const integrationProviders = useIntegrationLinkProviders(
+    projectSelection?.selectedProjectId ?? workspace.projectId
+  );
+  const selectedProject = projectSelection?.projects.find(
+    (project) => project.id === projectSelection.selectedProjectId
+  );
+  const settingsPlaceholder = useMemo(
+    () => (selectedProject === undefined ? undefined : emptyProjectSettings(selectedProject)),
+    [selectedProject]
+  );
   const runtimeModel = getRuntimeUiModel(apiState);
   const denied = apiState.denied;
-  const referenceMode = isReferenceWorkspaceMode(mode) && denied === undefined;
+  const referenceMode =
+    isReferenceWorkspaceMode(mode) && (denied === undefined || mode === "projects");
   const splitReferenceMode =
     referenceMode && (mode === "launch" || mode === "case" || mode === "defects");
+  const screenOwnsMain =
+    (denied === undefined || mode === "projects") &&
+    (mode === "projects" || mode === "dashboard" || mode === "settings");
 
   return (
-    <main className={`app-shell ${referenceMode ? "app-shell--reference" : ""}`}>
-      <Sidebar
+    <div className={`app-shell ${referenceMode ? "app-shell--reference" : ""}`}>
+      <WorkspaceNavigation
         activeMode={mode}
         onModeChange={onModeChange}
         onOpenTypographySettings={onOpenTypographySettings}
+        selectedProjectName={selectedProject?.name ?? selectedProject?.key}
       />
 
       <section className={`workspace ${referenceMode ? "reference-workspace-shell" : ""}`}>
         {referenceMode ? null : (
-          <WorkspaceHeader apiState={apiState} launch={workspace.launch} mode={mode} />
+          <WorkspaceHeader
+            apiState={apiState}
+            launch={workspace.launch}
+            mode={mode}
+            projectName={selectedProject?.name ?? selectedProject?.key}
+          />
         )}
         {workspaceLoading ? <WorkspaceLoadingIndicator /> : null}
         {apiState.error !== undefined ? (
@@ -198,16 +232,47 @@ export function WorkspaceSurface({
             className={`primary-column ${referenceMode ? "reference-primary-column" : ""} ${
               splitReferenceMode ? "reference-primary-column--split" : ""
             }`}
+            role={screenOwnsMain ? undefined : "main"}
+            aria-label={screenOwnsMain ? undefined : modeLabels[mode]}
           >
-            {denied !== undefined ? (
+            {mode === "projects" ? (
+              <ProjectsReferenceScreen
+                error={projectSelection?.error}
+                onRetry={onRefreshProjects}
+                onSelectProject={onSelectProject}
+                projects={projectSelection?.projects}
+                selectedProjectId={projectSelection?.selectedProjectId}
+                status={projectSelection?.status}
+              />
+            ) : denied !== undefined ? (
               <DeniedWorkspaceShell denied={denied} requestedMode={mode} />
-            ) : mode === "projects" ? (
-              <ProjectsReferenceScreen />
+            ) : projectSelection !== undefined &&
+              (projectSelection.status !== "ready" ||
+                projectSelection.selectedProjectId === undefined) ? (
+              <ProjectsReferenceScreen
+                error={projectSelection.error}
+                onRetry={onRefreshProjects}
+                onSelectProject={onSelectProject}
+                projects={projectSelection.projects}
+                selectedProjectId={projectSelection.selectedProjectId}
+                status={projectSelection.status}
+              />
             ) : mode === "dashboard" ? (
-              <DashboardReferenceScreen results={workspace.results} />
+              <DashboardReferenceScreen
+                key={`${currentUserId ?? ""}:${projectSelection?.selectedProjectId ?? ""}`}
+                launchItems={workspace.launchItems}
+                results={workspace.results}
+                onOpenResult={onOpenLaunchResult}
+                storageScope={
+                  currentUserId !== undefined && projectSelection?.selectedProjectId !== undefined
+                    ? `${currentUserId}:${projectSelection.selectedProjectId}`
+                    : undefined
+                }
+              />
             ) : mode === "launch" ? (
               <LaunchesReferenceScreen
                 integrationProviders={integrationProviders}
+                projectId={projectSelection?.selectedProjectId ?? workspace.projectId}
                 launchDetailLoading={workspaceLoading && launchRouteId !== undefined}
                 launchDetailPartial={getLaunchPartialState(
                   workspace.launchItems,
@@ -235,6 +300,11 @@ export function WorkspaceSurface({
                 routeResultId={launchRouteResultId}
                 routeResultTab={launchRouteResultTab}
                 resultLoading={workspaceLoading && launchRouteResultId !== undefined}
+                resultPage={workspace.resultPage}
+                resultPageIndex={resultPageIndex}
+                resultPageSize={resultPageSize}
+                resultQuery={resultQuery}
+                resultStatusFilter={resultStatusFilter}
                 resultPartial={
                   launchRouteResultId !== undefined && workspace.results.length <= 1
                     ? {
@@ -245,6 +315,7 @@ export function WorkspaceSurface({
                     : undefined
                 }
                 results={workspace.results}
+                selectedResultDetail={workspace.selectedResultDetail}
                 selectedResultId={selectedId}
                 onOpenLaunch={onOpenLaunch}
                 onOpenLaunchList={onOpenLaunchList}
@@ -252,6 +323,10 @@ export function WorkspaceSurface({
                 onOpenResultTab={onOpenLaunchResultTab}
                 onOpenTab={onOpenLaunchTab}
                 onRefresh={onRefreshWorkspace}
+                onResultPageIndexChange={onResultPageIndexChange}
+                onResultPageSizeChange={onResultPageSizeChange}
+                onResultQueryChange={onResultQueryChange}
+                onResultStatusFilterChange={onResultStatusFilterChange}
                 onSelectResult={onSelect}
                 onDeleteLaunch={onDeleteLaunch}
                 onToggleMuteResult={onToggleMuteResult}
@@ -260,6 +335,7 @@ export function WorkspaceSurface({
             ) : mode === "case" ? (
               <TestCaseDetailReferenceScreen
                 integrationProviders={integrationProviders}
+                projectId={projectSelection?.selectedProjectId ?? workspace.projectId}
                 routeTab={testCaseRouteTab}
                 results={workspace.results}
                 selectedId={testCaseRouteId ?? selectedId}
@@ -273,24 +349,31 @@ export function WorkspaceSurface({
               />
             ) : mode === "defects" ? (
               <DefectsReferenceScreen
+                projectId={projectSelection?.selectedProjectId ?? workspace.projectId}
                 routeDefectId={defectRouteId}
                 results={workspace.results}
                 onDeleteDefect={onDeleteDefect}
                 onOpenDefect={onOpenDefect}
               />
             ) : mode === "automation" ? (
-              <AutomationReferenceScreen />
+              <AutomationReferenceScreen projectId={projectSelection?.selectedProjectId} />
             ) : mode === "analytics" ? (
               <AnalyticsReferenceScreen
                 projectId={
+                  projectSelection?.selectedProjectId ??
+                  workspace.projectId ??
                   workspace.launchItems.find((item) => item.projectId !== undefined)?.projectId
                 }
                 results={workspace.results}
+                onOpenResult={onOpenLaunchResult}
               />
             ) : mode === "settings" ? (
               <ProjectSettingsReferenceScreen
+                key={projectSelection?.selectedProjectId}
+                projectId={projectSelection?.selectedProjectId}
                 routeTab={settingsRouteTab}
                 onOpenTab={onOpenSettingsTab}
+                {...(settingsPlaceholder !== undefined ? { settings: settingsPlaceholder } : {})}
               />
             ) : (
               <ProductWorkspace
@@ -305,7 +388,7 @@ export function WorkspaceSurface({
           </section>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -379,99 +462,16 @@ function getLaunchCounterTotal(launch: LaunchListItem): number {
   return Object.values(launch.counters).reduce((total, count) => total + count, 0);
 }
 
-function Sidebar({
-  activeMode,
-  onModeChange,
-  onOpenTypographySettings
-}: {
-  activeMode: WorkspaceMode;
-  onModeChange: (mode: WorkspaceMode) => void;
-  onOpenTypographySettings?: (() => void) | undefined;
-}) {
-  const testingNav: NavItem[] = [
-    {
-      mode: "dashboard",
-      label: "Дашборды",
-      icon: <LayoutDashboard size={18} />
-    },
-    { mode: "case", label: "Тест-кейсы", icon: <ListChecks size={18} /> },
-    { mode: "launch", label: "Запуски", icon: <Activity size={18} /> },
-    { mode: "defects", label: "Дефекты", icon: <Bug size={18} /> },
-    { mode: "automation", label: "Автоматизация", icon: <Workflow size={18} /> }
-  ];
-  const projectNav: NavItem[] = [
-    { mode: "projects", label: "Проекты", icon: <BookOpen size={18} /> },
-    { mode: "analytics", label: "Аналитика", icon: <BarChart3 size={18} /> },
-    { mode: "settings", label: "Настройки", icon: <Settings size={18} /> }
-  ];
-
-  return (
-    <aside className="sidebar">
-      <div className="brand">
-        <span>TH</span>
-        <strong>TestHistory</strong>
-      </div>
-
-      <nav className="nav-group" aria-label="Основная навигация">
-        <span className="nav-caption">Тестирование</span>
-        {testingNav.map((item) => (
-          <NavButton
-            active={activeMode === item.mode}
-            item={item}
-            key={item.mode}
-            onClick={onModeChange}
-          />
-        ))}
-      </nav>
-
-      <nav className="nav-group" aria-label="Навигация проекта">
-        <span className="nav-caption">Проект</span>
-        {projectNav.map((item) => (
-          <NavButton
-            active={activeMode === item.mode}
-            item={item}
-            key={item.mode}
-            onClick={onModeChange}
-          />
-        ))}
-      </nav>
-
-      <div className="sidebar-footer">
-        <AuthPanel onOpenTypographySettings={onOpenTypographySettings} />
-      </div>
-    </aside>
-  );
-}
-
-function NavButton({
-  active,
-  item,
-  onClick
-}: {
-  active: boolean;
-  item: NavItem;
-  onClick: (mode: WorkspaceMode) => void;
-}) {
-  return (
-    <button
-      className={`nav-link ${active ? "active" : ""}`}
-      type="button"
-      onClick={() => onClick(item.mode)}
-    >
-      {item.icon}
-      <span>{item.label}</span>
-    </button>
-  );
-}
-
 function WorkspaceHeader({
   apiState,
   launch,
-  mode
+  mode,
+  projectName
 }: {
   apiState: ApiState;
   launch: Launch;
   mode: WorkspaceMode;
+  projectName?: string | undefined;
 }) {
   const denied = apiState.denied !== undefined;
   const apiLabel = apiState.loading
@@ -481,23 +481,21 @@ function WorkspaceHeader({
       : apiState.error
         ? "API недоступен"
         : "API доступен";
-  const title = denied
-    ? "Доступ закрыт"
-    : mode === "launch"
-      ? modeLabels[mode]
-      : mode === "case"
-        ? "Тест-кейсы"
-        : modeLabels[mode];
+  const title = denied ? "Доступ закрыт" : modeLabels[mode];
 
   return (
     <header className="workspace-header">
       <div className="header-copy">
         <div className="breadcrumbs" aria-label="Breadcrumb">
-          <span>Мой проект</span>
+          <span>{projectName ?? "Проекты"}</span>
           <ChevronRight size={14} />
           <span>{modeLabels[mode]}</span>
-          <ChevronRight size={14} />
-          <span>{title}</span>
+          {title !== modeLabels[mode] ? (
+            <>
+              <ChevronRight size={14} />
+              <span>{title}</span>
+            </>
+          ) : null}
         </div>
         <div className="title-row">
           <h1>{title}</h1>

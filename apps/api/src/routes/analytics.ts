@@ -1,6 +1,7 @@
 import type { AllureStatus, AuthTokenScope } from "@testhistory/contracts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { AppStore, Launch } from "../store.js";
+import { registerAnalyticsResultRoutes } from "./analyticsResults.js";
 import { authorizeProjectVisibilityRead, hasProjectAuthSignals } from "./project-auth.js";
 import {
   evaluateThql,
@@ -43,6 +44,7 @@ const analyticsMetrics = [
 const analyticsGroupFields = ["status", "projectId", "launchId", "branch"] as const;
 
 export async function registerAnalyticsRoutes(app: FastifyInstance, store: AppStore) {
+  registerAnalyticsResultRoutes(app, store);
   app.post<{ Body: QueryBody }>(
     "/api/v1/query/validate",
     {

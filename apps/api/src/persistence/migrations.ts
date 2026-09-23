@@ -672,6 +672,15 @@ CREATE INDEX IF NOT EXISTS integration_deliveries_project_time_idx
   ON integration_deliveries(project_id, created_at DESC, id DESC)
   WHERE deleted_at IS NULL;
 `
+  }),
+  defineMigration({
+    id: "202609230001_upload_result_references",
+    phase: "schema",
+    description: "Persist result IDs and links returned by each upload job.",
+    sql: `
+ALTER TABLE upload_jobs
+  ADD COLUMN IF NOT EXISTS results jsonb NOT NULL DEFAULT '[]'::jsonb;
+`
   })
 ];
 

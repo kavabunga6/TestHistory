@@ -4,6 +4,7 @@ export type ScenarioStep = {
   name: string;
   status: ResultStatus;
   duration: string;
+  trace?: ResultTrace;
   steps?: ScenarioStep[];
   attachments?: ResultAttachment[];
 };
@@ -328,6 +329,7 @@ export type TestCaseHistoryComparePage = {
 
 export type TestResult = {
   id: string;
+  launchId?: string;
   allureId: string;
   name: string;
   suite: string;
@@ -391,9 +393,22 @@ export type LaunchListItem = {
 };
 
 export type M1Workspace = {
+  projectId?: string;
   launch: Launch;
   launchItems: LaunchListItem[];
   results: TestResult[];
+  resultPage?: LaunchResultPage;
+  selectedResultDetail?: TestResult;
+};
+
+export type LaunchResultPage = {
+  limit: number;
+  cursor: string | null;
+  offset: number;
+  returned: number;
+  total: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 };
 
 type ApiLaunch = Launch;

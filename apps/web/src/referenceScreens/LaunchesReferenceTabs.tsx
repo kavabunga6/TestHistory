@@ -1,64 +1,48 @@
-import { CheckCircle2, ChevronLeft, ChevronRight, MousePointer2, PauseCircle } from "lucide-react";
+import { CheckCircle2, ChevronRight, MousePointer2, PauseCircle } from "lucide-react";
 import {
   useEffect,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode
+  type PointerEvent as ReactPointerEvent
 } from "react";
 
-import type { LaunchListItem, ResultParameter, ResultStatus, TestResult } from "../m1Workspace.js";
+import type { LaunchResultPage, ResultStatus, TestResult } from "../m1Workspace.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
 import { formatStatus } from "./LaunchesReferenceFormatters.js";
 import {
-  analyticsStatusOrder,
-  buildDurationBuckets,
-  collectDefectItems,
   collectErrorGroups,
-  collectLaunchParameters,
-  collectTimelineRows,
-  defaultOverviewListPageSize,
   filterStatusOrder,
-  formatAverageDuration,
-  getLaunchTotal,
-  getPartialStateMessage,
   isResultQuarantined,
-  matchesStatusFilter,
-  overviewListPageSizeOptions,
-  type DefectOverviewItem,
-  type LaunchesReferencePartialState
+  matchesStatusFilter
 } from "./LaunchesReferenceModel.js";
 import { ResultReport } from "./LaunchesResultReport.js";
+import { LaunchesResultsPagination } from "./LaunchesResultsPagination.js";
 import { ReferenceRouteState } from "./LaunchesReferenceRouteState.js";
+import { formatResultDuration } from "./LaunchesResultDuration.js";
 import { StatusIcon } from "./LaunchesStatusIcon.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 
-const overviewStatusOrder: ResultStatus[] = ["passed", "failed", "broken", "skipped"];
-const launchSplitListMinWidth = 340;
-const launchSplitListDefaultWidth = 400;
-const launchSplitListMaxWidth = 720;
-const launchResultDetailMinWidth = 620;
-const launchSplitListWidthKey = "testhistory:launch-detail-list-width";
-const legacyLaunchSplitListWidthKeys = [
-  "testhistory:launch-results-list-width",
-  "testhistory:launch-errors-list-width"
-] as const;
-const overviewStatusLabels: Record<ResultStatus, string> = {
-  broken: "Сломаны",
-  failed: "Провалены",
-  muted: "В карантине",
-  passed: "Успешные",
-  skipped: "Пропущены"
-};
-const overviewStatusColors: Record<ResultStatus, string> = {
-  broken: "#d18b2c",
-  failed: "#d95f57",
-  muted: "#64748b",
-  passed: "#48a568",
-  skipped: "#8793a3"
-};
+export {
+  OverviewTab,
+  PagedDefectList,
+  PagedResultList,
+  PagedVariablesList
+} from "./LaunchesReferenceOverview.js";
+export { ChartsTab, LaunchProgressBar, TimelineTab } from "./LaunchesReferenceVisualTabs.js";
+
+const launchSplitListMinWidth = 380;
+const launchSplitListFallbackWidth = 480;
+const launchSplitListMaxWidth = 1080;
+const launchResultDetailMinWidth = 500;
+const launchSplitListDefaultRatio = 0.43;
+const launchSplitListWidthKey = "testhistory:launch-detail-list-width-v3";
+
+function compactResultId(id: string): string {
+  const numericSuffix = /(?:^|[-_#])(\d{3,})$/.exec(id)?.[1];
+  return numericSuffix ?? (id.length > 10 ? `${id.slice(0, 8)}…` : id);
+}
 
 function clampLaunchSplitListWidth(value: number, containerWidth?: number): number {
   const availableMaximum =
@@ -66,33 +50,26 @@ function clampLaunchSplitListWidth(value: number, containerWidth?: number): numb
       ? launchSplitListMaxWidth
       : Math.max(
           launchSplitListMinWidth,
-          Math.min(launchSplitListMaxWidth, containerWidth - launchResultDetailMinWidth)
+          Math.min(launchSplitListMaxWidth, containerWidth - launchResultDetailMinWidth - 9)
         );
 
   return Math.min(availableMaximum, Math.max(launchSplitListMinWidth, Math.round(value)));
 }
 
-function readStoredLaunchSplitListWidth(): number {
+function readStoredLaunchSplitListWidth(): number | undefined {
   if (typeof window === "undefined") {
-    return launchSplitListDefaultWidth;
+    return undefined;
   }
 
   try {
-    const stored =
-      window.localStorage.getItem(launchSplitListWidthKey) ??
-      legacyLaunchSplitListWidthKeys
-        .map((key) => window.localStorage.getItem(key))
-        .find((value) => value !== null) ??
-      null;
+    const stored = window.localStorage.getItem(launchSplitListWidthKey);
     if (stored === null) {
-      return launchSplitListDefaultWidth;
+      return undefined;
     }
     const parsed = Number(stored);
-    return Number.isFinite(parsed)
-      ? clampLaunchSplitListWidth(parsed)
-      : launchSplitListDefaultWidth;
+    return Number.isFinite(parsed) ? clampLaunchSplitListWidth(parsed) : undefined;
   } catch {
-    return launchSplitListDefaultWidth;
+    return undefined;
   }
 }
 
@@ -109,9 +86,36 @@ function writeStoredLaunchSplitListWidth(value: number) {
 }
 
 function useLaunchSplitResize() {
-  const [listWidth, setListWidth] = useState(readStoredLaunchSplitListWidth);
+  const [storedListWidth, setStoredListWidth] = useState(readStoredLaunchSplitListWidth);
+  const [containerWidth, setContainerWidth] = useState<number | undefined>();
   const [resizing, setResizing] = useState(false);
   const splitRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const split = splitRef.current;
+    if (split === null) {
+      return;
+    }
+
+    const updateWidth = () => setContainerWidth(split.getBoundingClientRect().width);
+    updateWidth();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateWidth);
+      return () => window.removeEventListener("resize", updateWidth);
+    }
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(split);
+    return () => observer.disconnect();
+  }, []);
+
+  const listWidth = clampLaunchSplitListWidth(
+    storedListWidth ??
+      (containerWidth === undefined
+        ? launchSplitListFallbackWidth
+        : containerWidth * launchSplitListDefaultRatio),
+    containerWidth
+  );
 
   useEffect(() => {
     if (!resizing) {
@@ -128,7 +132,7 @@ function useLaunchSplitResize() {
         event.clientX - splitBounds.left,
         splitBounds.width
       );
-      setListWidth(nextWidth);
+      setStoredListWidth(nextWidth);
       writeStoredLaunchSplitListWidth(nextWidth);
     };
     const handlePointerUp = () => setResizing(false);
@@ -145,7 +149,10 @@ function useLaunchSplitResize() {
   }, [resizing]);
 
   const splitStyle = {
-    "--launch-split-list-width": `${listWidth}px`
+    "--launch-split-list-width":
+      storedListWidth === undefined && containerWidth === undefined
+        ? `min(${launchSplitListDefaultRatio * 100}%, calc(100% - ${launchResultDetailMinWidth}px), ${launchSplitListMaxWidth}px)`
+        : `${listWidth}px`
   } as CSSProperties;
 
   const onResizeKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -157,7 +164,7 @@ function useLaunchSplitResize() {
     const direction = event.key === "ArrowLeft" ? -1 : 1;
     const containerWidth = splitRef.current?.getBoundingClientRect().width;
     const nextWidth = clampLaunchSplitListWidth(listWidth + direction * 24, containerWidth);
-    setListWidth(nextWidth);
+    setStoredListWidth(nextWidth);
     writeStoredLaunchSplitListWidth(nextWidth);
   };
 
@@ -200,174 +207,30 @@ function LaunchSplitResizer({
   );
 }
 
-export function OverviewTab({
-  launch,
-  onSelectAll,
-  onSelectResult,
-  onSelectStatus,
-  results
-}: {
-  launch: LaunchListItem;
-  onSelectAll: () => void;
-  onSelectResult: (id: string) => void;
-  onSelectStatus: (status: ResultStatus) => void;
-  results: TestResult[];
-}) {
-  const total = getLaunchTotal(launch);
-  const unresolved = results.filter(
-    (result) => result.status === "failed" || result.status === "broken"
-  );
-  const defectItems = collectDefectItems(results);
-  const parameters = collectLaunchParameters(launch, results);
-  const passRate = total > 0 ? Math.round((launch.counters.passed / total) * 100) : 0;
-  const activeStatusCount = overviewStatusOrder.filter(
-    (status) => launch.counters[status] > 0
-  ).length;
-  let chartOffset = 0;
-  const chartSegments = overviewStatusOrder.map((status) => {
-    const count = launch.counters[status];
-    const percent = total > 0 ? (count / total) * 100 : 0;
-    const gap = activeStatusCount > 1 && count > 0 ? Math.min(1.25, percent * 0.2) : 0;
-    const segment = {
-      count,
-      dash: Math.max(0, percent - gap),
-      offset: -(chartOffset + gap / 2),
-      percent,
-      status
-    };
-    chartOffset += percent;
-    return segment;
-  });
-
-  return (
-    <div className="launches-reference-overview">
-      <section className="launches-reference-card launches-reference-overview-summary">
-        <h2>
-          <span>Распределение результатов</span>
-        </h2>
-        <div className="launches-reference-overview-summary-main">
-          <div className="launches-reference-overview-donut-wrap">
-            <svg
-              aria-label={`Результаты запуска: ${total.toLocaleString("ru-RU")} тестов`}
-              className="launches-reference-overview-donut"
-              role="group"
-              viewBox="0 0 180 180"
-            >
-              <circle className="launches-reference-overview-donut-track" cx="90" cy="90" r="68" />
-              {chartSegments.map((segment) =>
-                segment.count > 0 ? (
-                  <circle
-                    aria-label={`${overviewStatusLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")}`}
-                    className={`launches-reference-overview-donut-segment is-${segment.status}`}
-                    cx="90"
-                    cy="90"
-                    key={segment.status}
-                    pathLength="100"
-                    r="68"
-                    role="button"
-                    style={
-                      {
-                        stroke: overviewStatusColors[segment.status],
-                        strokeDasharray: `${segment.dash} ${100 - segment.dash}`,
-                        strokeDashoffset: segment.offset
-                      } as CSSProperties
-                    }
-                    tabIndex={0}
-                    onClick={() => onSelectStatus(segment.status)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onSelectStatus(segment.status);
-                      }
-                    }}
-                  />
-                ) : null
-              )}
-            </svg>
-            <button
-              aria-label={`Показать все ${total.toLocaleString("ru-RU")} результатов`}
-              className="launches-reference-overview-donut-center"
-              type="button"
-              onClick={onSelectAll}
-            >
-              <strong>{passRate}%</strong>
-              <span>успех</span>
-              <small>{total.toLocaleString("ru-RU")} тестов</small>
-            </button>
-          </div>
-
-          <ul className="launches-reference-overview-legend" aria-label="Фильтры по статусу">
-            {chartSegments.map((segment) => (
-              <li key={segment.status}>
-                <button
-                  aria-label={`${overviewStatusLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")}. Открыть результаты с этим статусом`}
-                  className={`launches-reference-overview-legend-item is-${segment.status}`}
-                  type="button"
-                  onClick={() => onSelectStatus(segment.status)}
-                >
-                  <i style={{ backgroundColor: overviewStatusColors[segment.status] }} />
-                  <span>{overviewStatusLabels[segment.status]}</span>
-                  <strong>{segment.count.toLocaleString("ru-RU")}</strong>
-                  <small>{Math.round(segment.percent)}%</small>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="launches-reference-card launches-reference-overview-card-unresolved">
-        <OverviewCardTitle count={unresolved.length}>Неразобранные результаты</OverviewCardTitle>
-        <PagedResultList
-          emptyText="В запуске пока нет неразобранных результатов."
-          results={unresolved}
-          onSelectResult={onSelectResult}
-        />
-      </section>
-
-      <section className="launches-reference-card launches-reference-overview-card-defects">
-        <OverviewCardTitle count={defectItems.length}>Дефекты</OverviewCardTitle>
-        <PagedDefectList
-          emptyText="Нет дефектов в этом запуске"
-          items={defectItems}
-          onSelectResult={onSelectResult}
-        />
-      </section>
-
-      <section className="launches-reference-card launches-reference-overview-card-variables">
-        <OverviewCardTitle count={parameters.length}>Переменные окружения</OverviewCardTitle>
-        <PagedVariablesList parameters={parameters} />
-      </section>
-    </div>
-  );
-}
-
-function OverviewCardTitle({ children, count }: { children: ReactNode; count: number }) {
-  return (
-    <h2>
-      <span>{children}</span>
-      <em>{count.toLocaleString("ru-RU")}</em>
-    </h2>
-  );
-}
-
 export function ResultsTab({
   integrationProviders = [],
   activeFilterId,
   activeStatusFilter,
   actorId,
   filteredResults,
+  launchCounters,
   loading,
   onActiveFilterChange,
   onClearStatusFilter,
   onFilterByTag,
   onQueryChange,
+  onResultPageIndexChange,
+  onResultPageSizeChange,
   onOpenResultTab,
   onSelectResult,
   onStatusFilterChange,
   onToggleMuteResult,
   onUnlinkResultDefect,
+  projectId = "ws",
   query,
+  resultPage,
+  resultPageIndex = 0,
+  resultPageSize = 25,
   results,
   requestedResultId,
   routeResultTab,
@@ -378,23 +241,39 @@ export function ResultsTab({
   activeStatusFilter: ResultStatus | undefined;
   actorId: string;
   filteredResults: TestResult[];
+  launchCounters?: Record<ResultStatus, number> | undefined;
   loading: boolean;
   onActiveFilterChange: (id: string | undefined) => void;
   onClearStatusFilter: () => void;
   onFilterByTag?: ((tag: string) => void) | undefined;
   onQueryChange: (query: string) => void;
+  onResultPageIndexChange?: ((index: number) => void) | undefined;
+  onResultPageSizeChange?: ((size: number) => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
   onSelectResult: (id: string) => void;
   onStatusFilterChange: (status: ResultStatus | undefined) => void;
   onToggleMuteResult?: ((id: string) => void) | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
+  projectId?: string | undefined;
   query: string;
+  resultPage?: LaunchResultPage | undefined;
+  resultPageIndex?: number | undefined;
+  resultPageSize?: number | undefined;
   results: TestResult[];
   requestedResultId?: string | undefined;
   routeResultTab?: string | undefined;
   selectedResult: TestResult | undefined;
 }) {
   const splitResize = useLaunchSplitResize();
+  const countForStatus = (status: ResultStatus) => {
+    const pageCount = results.filter((result) => matchesStatusFilter(result, status)).length;
+    return status === "muted"
+      ? Math.max(launchCounters?.muted ?? 0, pageCount)
+      : (launchCounters?.[status] ?? pageCount);
+  };
+  const availableStatusFilters = filterStatusOrder.filter(
+    (status) => status === "muted" || status === activeStatusFilter || countForStatus(status) > 0
+  );
 
   return (
     <div
@@ -409,57 +288,63 @@ export function ResultsTab({
           activeFilterId={activeFilterId}
           actorId={actorId}
           entity="launchResults"
-          projectId="ws"
+          projectId={projectId}
           query={query}
           onActiveFilterChange={onActiveFilterChange}
           onQueryChange={onQueryChange}
+          trailingFilters={
+            <label
+              className={`launches-reference-results-status-picker ${
+                activeStatusFilter ? "is-filtered" : ""
+              }`}
+            >
+              <span>Статус</span>
+              <select
+                aria-label="Фильтр по статусу"
+                value={activeStatusFilter ?? ""}
+                onChange={(event) => {
+                  const status = filterStatusOrder.find((item) => item === event.target.value);
+                  if (status === undefined) {
+                    onClearStatusFilter();
+                    return;
+                  }
+                  onQueryChange("");
+                  onStatusFilterChange(status);
+                  const firstMatchingResult = results.find((result) =>
+                    matchesStatusFilter(result, status)
+                  );
+                  if (firstMatchingResult !== undefined) {
+                    onSelectResult(firstMatchingResult.id);
+                  }
+                }}
+              >
+                <option value="">Все статусы</option>
+                {availableStatusFilters.map((status) => {
+                  const count = countForStatus(status);
+                  const label =
+                    status === "muted" && !launchCounters?.muted
+                      ? formatStatus(status)
+                      : `${formatStatus(status)} · ${count.toLocaleString("ru-RU")}`;
+                  return (
+                    <option key={status} value={status}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          }
         />
 
-        {activeStatusFilter !== undefined || results.some(isResultQuarantined) ? (
-          <div className="launches-reference-chip-strip">
-            {activeStatusFilter !== undefined ? (
-              <button
-                className="launches-reference-active-filter"
-                type="button"
-                onClick={onClearStatusFilter}
-              >
-                {formatStatus(activeStatusFilter)} ×
-              </button>
-            ) : null}
-            {filterStatusOrder.map((status) => {
-              const count = results.filter((result) => matchesStatusFilter(result, status)).length;
-              if (count === 0 || activeStatusFilter === status) {
-                return null;
-              }
-
-              return (
-                <button
-                  className="launches-reference-status-filter"
-                  key={status}
-                  type="button"
-                  onClick={() => {
-                    onQueryChange("");
-                    onStatusFilterChange(status);
-                    const firstMatchingResult = results.find((result) =>
-                      matchesStatusFilter(result, status)
-                    );
-                    if (firstMatchingResult !== undefined) {
-                      onSelectResult(firstMatchingResult.id);
-                    }
-                  }}
-                >
-                  {formatStatus(status)} {count.toLocaleString("ru-RU")}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
-
-        <div className="launches-reference-test-count">
-          <span>Тесты: {filteredResults.length.toLocaleString("ru-RU")}</span>
-        </div>
-
         <div className="launches-reference-result-table" aria-label="Результаты">
+          <div className="launches-reference-result-table-head" aria-hidden="true">
+            <span title="Цвет значка показывает статус теста; выберите статус в фильтре выше">
+              Статус
+            </span>
+            <span>ID</span>
+            <span>Название</span>
+            <span>Время</span>
+          </div>
           {loading ? (
             <ReferenceRouteState
               compact
@@ -474,31 +359,42 @@ export function ResultsTab({
             filteredResults.map((result) => (
               <button
                 className={selectedResult?.id === result.id ? "selected" : ""}
+                aria-current={selectedResult?.id === result.id ? "true" : undefined}
                 key={result.id}
+                title={`${formatStatus(result.status)} · ${result.name}`}
                 type="button"
                 onClick={() => onSelectResult(result.id)}
               >
-                <StatusIcon status={result.status} />
                 <span
-                  className={`launches-reference-quarantine-cell ${
-                    result.muted || result.defectMute !== undefined ? "active" : ""
-                  }`}
-                  title={
-                    result.muted || result.defectMute !== undefined
-                      ? "Результат в карантине"
-                      : undefined
-                  }
+                  className={`launches-reference-result-table-status is-${result.status}`}
+                  role="img"
+                  aria-label={`Статус: ${formatStatus(result.status)}`}
+                  title={formatStatus(result.status)}
                 >
-                  {result.muted || result.defectMute !== undefined ? (
-                    <PauseCircle aria-hidden="true" size={16} />
+                  <StatusIcon status={result.status} size={17} />
+                </span>
+                <span className="launches-reference-result-table-id" title={result.id}>
+                  {compactResultId(result.id)}
+                </span>
+                <span className="launches-reference-result-table-name" title={result.name}>
+                  <strong>{result.name}</strong>
+                  {isResultQuarantined(result) ? (
+                    <PauseCircle aria-label="Результат в карантине" size={14} />
                   ) : null}
                 </span>
-                <strong>{result.name}</strong>
-                <em>{result.duration}</em>
+                <em>{formatResultDuration(result.duration)}</em>
               </button>
             ))
           )}
         </div>
+        <LaunchesResultsPagination
+          loading={loading}
+          onPageIndexChange={onResultPageIndexChange}
+          onPageSizeChange={onResultPageSizeChange}
+          page={resultPage}
+          pageIndex={resultPageIndex}
+          pageSize={resultPageSize}
+        />
       </aside>
 
       <LaunchSplitResizer label="Изменить ширину списка тестов" resize={splitResize} />
@@ -634,7 +530,7 @@ export function ErrorsTab({
                     >
                       <StatusIcon status={result.status} />
                       <span>{result.name}</span>
-                      <small>{result.duration}</small>
+                      <small>{formatResultDuration(result.duration)}</small>
                     </button>
                   ))}
                 </div>
@@ -670,396 +566,5 @@ export function ErrorsTab({
         )}
       </section>
     </div>
-  );
-}
-
-export function ChartsTab({ results }: { results: TestResult[] }) {
-  const buckets = buildDurationBuckets(results);
-  const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count));
-  const axisMaxCount = getDurationAxisMax(maxCount);
-  const yAxisTicks = buildDurationAxisTicks(axisMaxCount);
-  const averageDuration = formatAverageDuration(results);
-
-  return (
-    <div className="launches-reference-chart-page">
-      <section className="launches-reference-card launches-reference-chart-card">
-        <header className="launches-reference-chart-card-head">
-          <h2>Распределение по продолжительности</h2>
-          <span>
-            Средняя продолжительность теста <strong>{averageDuration}</strong>
-          </span>
-        </header>
-        {results.length > 0 ? (
-          <div className="launches-reference-chart-wrap">
-            <div className="launches-reference-chart-y-axis" aria-hidden="true">
-              {[...yAxisTicks].reverse().map((tick) => (
-                <span key={tick}>{tick}</span>
-              ))}
-            </div>
-            <div
-              className="launches-reference-chart"
-              aria-label="Распределение по продолжительности"
-            >
-              {buckets.map((bucket) => (
-                <div
-                  aria-label={`${bucket.label}: ${bucket.count}`}
-                  className="launches-reference-chart-column"
-                  key={bucket.label}
-                >
-                  <div className="launches-reference-chart-bar">
-                    <strong>{bucket.count}</strong>
-                    <span
-                      className={bucket.count === 0 ? "is-empty" : undefined}
-                      style={{
-                        height:
-                          bucket.count === 0
-                            ? "2px"
-                            : `${Math.max(10, Math.round((bucket.count / axisMaxCount) * 190))}px`
-                      }}
-                    />
-                  </div>
-                  <em>{bucket.label}</em>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="launches-reference-centered">Нет данных для графика</div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function getDurationAxisMax(maxCount: number) {
-  if (maxCount <= 10) {
-    return 10;
-  }
-
-  if (maxCount <= 50) {
-    return Math.ceil(maxCount / 5) * 5;
-  }
-
-  return Math.ceil(maxCount / 10) * 10;
-}
-
-function buildDurationAxisTicks(maxCount: number) {
-  const step = maxCount <= 10 ? 2 : maxCount <= 50 ? 5 : 10;
-  const ticks: number[] = [];
-  for (let tick = 0; tick <= maxCount; tick += step) {
-    ticks.push(tick);
-  }
-  return ticks;
-}
-
-export function TimelineTab({
-  loading,
-  onSelectResult,
-  partial,
-  results,
-  selectedResultId
-}: {
-  loading: boolean;
-  onSelectResult: (id: string) => void;
-  partial?: LaunchesReferencePartialState | undefined;
-  results: TestResult[];
-  selectedResultId: string | undefined;
-}) {
-  const rows = collectTimelineRows(results).slice(0, 24);
-  const partialMessage = getPartialStateMessage(
-    partial,
-    "Временная шкала построена по загруженным результатам. Поздние точки могут появиться после догрузки."
-  );
-
-  return (
-    <div className="launches-reference-timeline-page">
-      <section className="launches-reference-card">
-        <h2>Временная шкала</h2>
-        {loading ? (
-          <ReferenceRouteState
-            compact
-            kind="loading"
-            title="Загружаем временную шкалу"
-            text="Показываем доступные события, пока результаты маршрута догружаются."
-          />
-        ) : null}
-        {partialMessage !== undefined ? (
-          <ReferenceRouteState
-            compact
-            kind="partial"
-            title="Шкала построена частично"
-            text={partialMessage}
-          />
-        ) : null}
-        {rows.length === 0 ? (
-          <div className="launches-reference-centered">
-            {loading ? "События еще загружаются" : "Нет данных"}
-          </div>
-        ) : (
-          <div className="launches-reference-timeline">
-            {rows.map((row, index) => (
-              <button
-                className={selectedResultId === row.result.id ? "selected" : ""}
-                key={`${row.launchId}-${row.resultUuid}-${index}`}
-                type="button"
-                onClick={() => onSelectResult(row.result.id)}
-              >
-                <StatusIcon status={row.status} />
-                <strong>{row.result.name}</strong>
-                <span>{row.startedAt}</span>
-                <em>{row.duration}</em>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-export function LaunchProgressBar({
-  counters,
-  total: _total
-}: {
-  counters: Record<ResultStatus, number>;
-  total: number;
-}) {
-  const visibleStatuses = analyticsStatusOrder.filter((status) => counters[status] > 0);
-
-  return (
-    <div className="launches-reference-progress-wrap" aria-label="Распределение статусов">
-      <div className="launches-reference-progress">
-        {visibleStatuses.map((status) => {
-          const value = counters[status];
-
-          return (
-            <span
-              className={`is-${status}`}
-              key={status}
-              aria-label={`${formatStatus(status)}: ${value}`}
-              style={{ flexBasis: 0, flexGrow: value }}
-              title={`${formatStatus(status)}: ${value}`}
-            >
-              {value.toLocaleString("ru-RU")}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function PagedResultList({
-  emptyText,
-  onSelectResult,
-  results
-}: {
-  emptyText: string;
-  onSelectResult: (id: string) => void;
-  results: TestResult[];
-}) {
-  const pager = usePagedItems(results);
-
-  if (results.length === 0) {
-    return <div className="launches-reference-centered">{emptyText}</div>;
-  }
-
-  return (
-    <PagedCardContent pager={pager}>
-      <div className="launches-reference-compact-results">
-        <div className="launches-reference-compact-results-head" aria-hidden="true">
-          <span>Название теста</span>
-          <span>Время</span>
-          <span>Статус</span>
-        </div>
-        {pager.visibleItems.map((result) => (
-          <button key={result.id} type="button" onClick={() => onSelectResult(result.id)}>
-            <span className="launches-reference-compact-result-copy">
-              <strong>{result.name}</strong>
-              <small>{result.suite}</small>
-            </span>
-            <span className="launches-reference-compact-result-duration">{result.duration}</span>
-            <StatusBadge status={result.status} />
-          </button>
-        ))}
-      </div>
-    </PagedCardContent>
-  );
-}
-
-export function PagedDefectList({
-  emptyText,
-  items,
-  onSelectResult
-}: {
-  emptyText: string;
-  items: DefectOverviewItem[];
-  onSelectResult: (id: string) => void;
-}) {
-  const pager = usePagedItems(items);
-
-  if (items.length === 0) {
-    return (
-      <div className="launches-reference-centered launches-reference-defects-empty">
-        <CheckCircle2 aria-hidden="true" />
-        <span>{emptyText}</span>
-      </div>
-    );
-  }
-
-  return (
-    <PagedCardContent pager={pager}>
-      <div className="launches-reference-defect-overview-list">
-        <div className="launches-reference-defect-overview-head" aria-hidden="true">
-          <span>Описание</span>
-          <span>ID</span>
-        </div>
-        {pager.visibleItems.map((item) => (
-          <button
-            key={`${item.id}-${item.resultId}`}
-            type="button"
-            onClick={() => onSelectResult(item.resultId)}
-          >
-            <span>
-              <strong>{item.title}</strong>
-              <small>{item.subtitle}</small>
-            </span>
-            <em>{item.id}</em>
-          </button>
-        ))}
-      </div>
-    </PagedCardContent>
-  );
-}
-
-export function PagedVariablesList({ parameters }: { parameters: ResultParameter[] }) {
-  const pager = usePagedItems(parameters);
-
-  if (parameters.length === 0) {
-    return <div className="launches-reference-centered">Нет переменных</div>;
-  }
-
-  return (
-    <PagedCardContent pager={pager}>
-      <div className="launches-reference-variables-head" aria-hidden="true">
-        <span>Имя</span>
-        <span>Значение</span>
-      </div>
-      <dl className="launches-reference-variables">
-        {pager.visibleItems.map((parameter) => (
-          <div key={parameter.name}>
-            <dt>{parameter.name}</dt>
-            <dd>{parameter.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </PagedCardContent>
-  );
-}
-
-type PagedItems<T> = {
-  currentPage: number;
-  endIndex: number;
-  goToNextPage: () => void;
-  goToPreviousPage: () => void;
-  pageCount: number;
-  pageSize: number;
-  setPageSize: (pageSize: number) => void;
-  startIndex: number;
-  totalItems: number;
-  visibleItems: T[];
-};
-
-function usePagedItems<T>(items: T[]): PagedItems<T> {
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSizeState] = useState(defaultOverviewListPageSize);
-  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
-  const normalizedPage = Math.min(currentPage, pageCount - 1);
-  const startIndex = normalizedPage * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, items.length);
-
-  useEffect(() => {
-    if (currentPage !== normalizedPage) {
-      setCurrentPage(normalizedPage);
-    }
-  }, [currentPage, normalizedPage]);
-
-  return {
-    currentPage: normalizedPage,
-    endIndex,
-    goToNextPage: () => setCurrentPage((page) => Math.min(page + 1, pageCount - 1)),
-    goToPreviousPage: () => setCurrentPage((page) => Math.max(page - 1, 0)),
-    pageCount,
-    pageSize,
-    setPageSize: (nextPageSize) => {
-      setPageSizeState(nextPageSize);
-      setCurrentPage(0);
-    },
-    startIndex,
-    totalItems: items.length,
-    visibleItems: items.slice(startIndex, endIndex)
-  };
-}
-
-function PagedCardContent<T>({ children, pager }: { children: ReactNode; pager: PagedItems<T> }) {
-  return (
-    <div className="launches-reference-card-content">
-      <div className="launches-reference-card-scroll">{children}</div>
-      <div className="launches-reference-card-spacer" aria-hidden="true" />
-      {pager.totalItems > pager.pageSize ? <CardPager pager={pager} /> : null}
-    </div>
-  );
-}
-
-function CardPager<T>({ pager }: { pager: PagedItems<T> }) {
-  return (
-    <nav
-      aria-label="Страницы списка"
-      className="launches-reference-card-pager"
-      data-page-size={pager.pageSize}
-      data-total={pager.totalItems}
-    >
-      <span>
-        {pager.startIndex + 1}-{pager.endIndex} из {pager.totalItems}
-      </span>
-      <label>
-        <span>На странице</span>
-        <select
-          aria-label="Элементов на странице"
-          value={pager.pageSize}
-          onChange={(event) => pager.setPageSize(Number(event.target.value))}
-        >
-          {overviewListPageSizeOptions.map((pageSize) => (
-            <option key={pageSize} value={pageSize}>
-              {pageSize}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div>
-        <button
-          aria-label="Предыдущая страница"
-          disabled={pager.currentPage === 0}
-          type="button"
-          onClick={pager.goToPreviousPage}
-        >
-          <ChevronLeft aria-hidden="true" size={16} />
-        </button>
-        <button
-          aria-label="Следующая страница"
-          disabled={pager.currentPage >= pager.pageCount - 1}
-          type="button"
-          onClick={pager.goToNextPage}
-        >
-          <ChevronRight aria-hidden="true" size={16} />
-        </button>
-      </div>
-    </nav>
-  );
-}
-
-function StatusBadge({ status }: { status: ResultStatus }) {
-  return (
-    <span className={`launches-reference-status-badge ${status}`}>{formatStatus(status)}</span>
   );
 }

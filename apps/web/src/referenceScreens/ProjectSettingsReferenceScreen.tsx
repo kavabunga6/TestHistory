@@ -1,5 +1,5 @@
 ﻿import { Database, Eye, KeyRound, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createPersonalToken,
@@ -65,10 +65,12 @@ const visibilityPolicyCopy: Record<string, { description: string; label: string 
 
 export function ProjectSettingsReferenceScreen({
   onOpenTab,
+  projectId,
   routeTab,
   settings = demoProjectSettings
 }: {
   onOpenTab?: ((tab: string) => void) | undefined;
+  projectId?: string | undefined;
   routeTab?: string | undefined;
   settings?: ProjectSettings;
 }) {
@@ -83,11 +85,12 @@ export function ProjectSettingsReferenceScreen({
   const [personalTokens, setPersonalTokens] = useState<PersonalApiToken[]>([]);
   const [personalTokenName, setPersonalTokenName] = useState("Локальная консоль");
   const [personalTokenSecret, setPersonalTokenSecret] = useState<string | undefined>();
+  const activeTabRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let active = true;
     setApiStatus("loading");
-    void loadProjectSettingsFromApi()
+    void loadProjectSettingsFromApi(projectId)
       .then((loadedSettings) => {
         if (!active) {
           return;
@@ -108,13 +111,17 @@ export function ProjectSettingsReferenceScreen({
         setApiTokens([]);
         setCreatedSecret(undefined);
         setApiStatus("error");
-        setApiMessage(error instanceof Error ? error.message : "API настроек недоступен");
+        setApiMessage(
+          error instanceof Error && error.message.startsWith("Нет доступных проектов")
+            ? error.message
+            : "Не удалось получить настройки проекта. Обновите страницу и попробуйте снова."
+        );
       });
 
     return () => {
       active = false;
     };
-  }, [settings]);
+  }, [projectId, settings]);
 
   useEffect(() => {
     let active = true;
@@ -154,6 +161,38 @@ export function ProjectSettingsReferenceScreen({
   const visibleActiveTab = visibleTabs.some((tab) => tab.id === activeTab)
     ? activeTab
     : (visibleTabs[0]?.id ?? "tokens");
+  useEffect(() => {
+    const tab = activeTabRef.current;
+    const tabs = tab?.parentElement;
+    if (!tab || !tabs) {
+      return;
+    }
+    const centerActiveTab = () => {
+      if (tabs.scrollWidth <= tabs.clientWidth) {
+        return;
+      }
+      const tabBounds = tab.getBoundingClientRect();
+      const tabsBounds = tabs.getBoundingClientRect();
+      tabs.scrollTo({
+        left:
+          tabs.scrollLeft +
+          tabBounds.left -
+          tabsBounds.left -
+          (tabs.clientWidth - tabBounds.width) / 2,
+        behavior: "auto"
+      });
+    };
+    centerActiveTab();
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver(centerActiveTab);
+    observer.observe(tabs);
+    for (const button of Array.from(tabs.querySelectorAll("button"))) {
+      observer.observe(button);
+    }
+    return () => observer.disconnect();
+  }, [apiStatus, visibleActiveTab]);
   useEffect(() => {
     const routedTab = parseSettingsTab(routeTab);
     setActiveTab(routedTab);
@@ -306,6 +345,7 @@ export function ProjectSettingsReferenceScreen({
                 aria-pressed={visibleActiveTab === tab.id}
                 className={visibleActiveTab === tab.id ? "active" : ""}
                 key={tab.id}
+                ref={visibleActiveTab === tab.id ? activeTabRef : undefined}
                 type="button"
                 onClick={() => {
                   setActiveTab(tab.id);

@@ -137,7 +137,8 @@ export function toUploadJob(job: PersistentUploadJob): UploadJob {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
     ...(job.lease !== undefined ? { lease: job.lease } : {}),
-    ...(job.source !== undefined ? { source: job.source } : {})
+    ...(job.source !== undefined ? { source: job.source } : {}),
+    ...(job.results !== undefined ? { results: job.results } : {})
   };
 }
 

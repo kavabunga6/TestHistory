@@ -48,7 +48,7 @@
   justify-content: space-between;
   gap: 20px;
   border-bottom: 1px solid #dfe5ee;
-  padding: 16px 24px;
+  padding: 16px var(--workspace-page-gutter, 16px);
   background: #ffffff;
 }
 
@@ -139,8 +139,9 @@
 }
 
 .project-settings__error-state {
-  margin: 24px;
+  margin: var(--workspace-page-gutter, 16px);
   border-color: #f4b7b0;
+  padding: 16px;
   background: #fff7f6;
 }
 
@@ -151,8 +152,9 @@
 }
 
 .project-settings__access-state {
-  margin: 18px 24px 0;
+  margin: 18px var(--workspace-page-gutter, 16px) 0;
   border-color: #d7e0ee;
+  padding: 16px;
   background: #f8fbff;
 }
 
@@ -187,7 +189,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   border-bottom: 1px solid #dfe5ee;
-  padding: 0 16px;
+  padding: 0 var(--workspace-page-gutter, 16px);
   background: #ffffff;
   scrollbar-width: none;
 }
@@ -237,14 +239,14 @@
   bottom: -1px;
   left: 0;
   height: 2px;
-  background: #155ca2;
+  background: #2563eb;
   content: "";
 }
 
 .project-settings__grid {
   display: grid;
   gap: 16px;
-  padding: 20px 24px;
+  padding: 20px var(--workspace-page-gutter, 16px);
 }
 
 .project-settings__grid--access {
@@ -253,7 +255,7 @@
 }
 
 .project-settings__panel {
-  margin: 20px 24px;
+  margin: 20px var(--workspace-page-gutter, 16px);
   overflow: hidden;
   border: 1px solid #d7e1ee;
   border-radius: 10px;
@@ -1507,31 +1509,24 @@
   .project-settings__header {
     align-items: flex-start;
     flex-direction: column;
-    padding: 16px;
+    padding: 16px var(--workspace-page-gutter, 12px);
   }
 
   .project-settings__summary {
     width: 100%;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    overflow-x: auto;
-  }
-
-  .project-settings__summary-item {
-    min-width: 92px;
-    flex: 0 0 auto;
   }
 
   .project-settings__tabs {
-    padding: 0 8px;
+    padding: 0 var(--workspace-page-gutter, 12px);
+    scrollbar-width: thin;
   }
 
   .project-settings__panel {
-    margin: 12px;
+    margin: var(--workspace-page-gutter, 12px);
   }
 
   .project-settings__grid {
-    padding: 12px;
+    padding: var(--workspace-page-gutter, 12px);
   }
 
   .project-settings__scope-grid {
@@ -1561,5 +1556,269 @@
 
   .project-settings__dialog footer .project-settings__button {
     flex: 1 1 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .project-settings__summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    overflow: visible;
+  }
+
+  .project-settings__api-status {
+    justify-self: start;
+  }
+
+  .project-settings__summary-item {
+    min-width: 0;
+    border-left: 1px solid #dfe5ee;
+    padding: 6px 10px;
+  }
+
+  .project-settings__summary-item:nth-child(3) {
+    border-top: 1px solid #dfe5ee;
+    border-left: 0;
+  }
+
+  .project-settings__summary-item:nth-child(4) {
+    border-top: 1px solid #dfe5ee;
+  }
+
+  .project-settings__summary-item span {
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+
+  .project-settings__settings-list-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .project-settings__settings-list-row > input,
+  .project-settings__settings-list-row > .project-settings__badge {
+    justify-self: start;
+  }
+
+  .project-settings__table--retention,
+  .project-settings__table--tokens,
+  .project-settings__table--personal-tokens,
+  .project-settings__table--fields,
+  .project-settings__integrations-table {
+    overflow: visible;
+  }
+
+  .project-settings__table--retention .project-settings__table-head,
+  .project-settings__table--tokens .project-settings__table-head,
+  .project-settings__table--personal-tokens .project-settings__table-head,
+  .project-settings__table--fields .project-settings__table-head,
+  .project-settings__integrations-table-head {
+    position: absolute;
+    width: 1px;
+    min-width: 0;
+    height: 1px;
+    display: block;
+    overflow: hidden;
+    padding: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .project-settings__table--retention .project-settings__table-row,
+  .project-settings__table--tokens .project-settings__table-row,
+  .project-settings__table--personal-tokens .project-settings__table-row,
+  .project-settings__table--fields .project-settings__table-row,
+  .project-settings__integrations-table-row {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .project-settings__table--retention .project-settings__table-row > :first-child,
+  .project-settings__table--tokens .project-settings__table-row > :first-child,
+  .project-settings__table--personal-tokens .project-settings__table-row > :first-child,
+  .project-settings__table--fields .project-settings__table-row > :first-child,
+  .project-settings__integrations-table-row > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .project-settings__table--retention .project-settings__table-row > [role="cell"],
+  .project-settings__table--tokens .project-settings__table-row > [role="cell"],
+  .project-settings__table--personal-tokens .project-settings__table-row > [role="cell"],
+  .project-settings__table--fields .project-settings__table-row > [role="cell"],
+  .project-settings__integrations-table-row > [role="cell"] {
+    min-width: 0;
+    display: grid;
+    align-content: start;
+    gap: 4px;
+  }
+
+  .project-settings__table--retention .project-settings__table-row > [role="cell"]::before,
+  .project-settings__table--tokens .project-settings__table-row > [role="cell"]::before,
+  .project-settings__table--personal-tokens .project-settings__table-row > [role="cell"]::before,
+  .project-settings__table--fields .project-settings__table-row > [role="cell"]::before,
+  .project-settings__integrations-table-row > [role="cell"]::before {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+
+  .project-settings__table--retention .project-settings__table-row > :nth-child(2)::before {
+    content: "Пройден, дней";
+  }
+
+  .project-settings__table--retention .project-settings__table-row > :nth-child(3)::before {
+    content: "Провален, дней";
+  }
+
+  .project-settings__table--retention .project-settings__table-row > :nth-child(4)::before {
+    content: "Карантин, дней";
+  }
+
+  .project-settings__table--retention .project-settings__table-row > :nth-child(5)::before {
+    content: "Лимит, MB";
+  }
+
+  .project-settings__table--retention .project-settings__table-row input {
+    width: 100%;
+  }
+
+  .project-settings__table--tokens .project-settings__table-row > :nth-child(2)::before {
+    content: "Владелец";
+  }
+
+  .project-settings__table--tokens .project-settings__table-row > :nth-child(3)::before,
+  .project-settings__table--personal-tokens .project-settings__table-row > :nth-child(2)::before {
+    content: "Права";
+  }
+
+  .project-settings__table--tokens .project-settings__table-row > :nth-child(4)::before,
+  .project-settings__table--personal-tokens .project-settings__table-row > :nth-child(4)::before {
+    content: "Использован";
+  }
+
+  .project-settings__table--tokens .project-settings__table-row > :nth-child(5)::before {
+    content: "Действует";
+  }
+
+  .project-settings__table--personal-tokens .project-settings__table-row > :nth-child(3)::before {
+    content: "Создан";
+  }
+
+  .project-settings__table--personal-tokens .project-settings__table-row > :nth-child(5)::before {
+    content: "Статус";
+  }
+
+  .project-settings__table--tokens .project-settings__table-row > :last-child,
+  .project-settings__table--personal-tokens .project-settings__table-row > :last-child,
+  .project-settings__table--fields
+    .project-settings__table-row
+    > :last-child.project-settings__actions {
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+  }
+
+  .project-settings__table--fields .project-settings__table-row > :first-child::before {
+    content: "Поле";
+  }
+
+  .project-settings__table--fields .project-settings__table-row > :nth-child(2)::before {
+    content: "Источник";
+  }
+
+  .project-settings__table--fields .project-settings__table-row > :nth-child(3)::before {
+    content: "По умолчанию";
+  }
+
+  .project-settings__table--fields .project-settings__table-row > :nth-child(4)::before {
+    content: "Обязательное";
+  }
+
+  .project-settings__table--fields .project-settings__table-row > [role="cell"]:has(input),
+  .project-settings__integrations-table-row > .project-settings__provider-row-template {
+    grid-column: 1 / -1;
+  }
+
+  .project-settings__table--fields .project-settings__table-row input {
+    width: 100%;
+  }
+
+  .project-settings__integrations-table-row > .project-settings__provider-row-value::before {
+    content: "Лейбл в Allure";
+  }
+
+  .project-settings__integrations-table-row > .project-settings__provider-row-template::before {
+    content: "Шаблон ссылки";
+  }
+
+  .project-settings__integrations-table-row > .project-settings__provider-row-check::before {
+    content: "Статус";
+  }
+
+  .project-settings__integrations-table-row > .project-settings__provider-row-actions {
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+  }
+
+  .project-settings__integrations-table-row code {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .project-settings__integration-example code {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .project-settings__provider-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .project-settings__panel-row {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+  }
+
+  .project-settings__panel-row > .project-settings__panel-title {
+    flex: 1 1 100%;
+  }
+
+  .project-settings__panel-row > .project-settings__button,
+  .project-settings__panel-row > .project-settings__actions {
+    margin-left: auto;
+  }
+
+  .project-settings__inline-form {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .project-settings__inline-form input {
+    flex: 1 1 140px;
+  }
+
+  .project-settings__inline-form .project-settings__button {
+    flex: 0 0 auto;
+  }
+
+  .project-settings__enterprise-card strong,
+  .project-settings__enterprise-card span,
+  .project-settings__enterprise-card small {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 }

@@ -80,13 +80,15 @@
     "seed:local:metadata": "node scripts/seed-local-test-case-metadata.mjs",
     "seed:local:nested-steps": "node scripts/seed-local-nested-steps.mjs",
     "seed:history": "node scripts/seed-history-allure-results.mjs",
+    "test:seed:allure": "node --test scripts/seed-synthetic-allure-results.test.mjs && node --import tsx --test scripts/seed-synthetic-allure-results.integration.test.mjs",
+    "test:ui:fixtures": "node --test scripts/ui-api-fixtures.test.mjs",
     "smoke:api": "node scripts/smoke-api.mjs",
     "smoke:ui:local": "node scripts/smoke-local-ui.mjs",
     "smoke:perf": "node scripts/smoke-enterprise-performance.mjs && node scripts/guard-frontend-performance-contract.mjs",
     "smoke:quality-gate": "npm run build -w @testhistory/contracts && npm run build -w @testhistory/domain && node scripts/smoke-quality-gate.mjs",
     "smoke:k8s": "node scripts/smoke-api.mjs --k8s-readiness",
     "smoke:upload-close-ui": "node scripts/smoke-upload-close-ui.mjs",
-    "test": "npm run guard:sensitive && npm run licenses:check && npm run production:evidence:test && npm run test -w @testhistory/allure-parser && npm run test -w @testhistory/artifacts && npm run test -w @testhistory/domain && npm run test -w @testhistory/api && npm run test -w @testhistory/worker && npm run test -w @testhistory/mcp && npm run test -w @testhistory/web",
+    "test": "npm run guard:sensitive && npm run licenses:check && npm run production:evidence:test && npm run test:seed:allure && npm run test:ui:fixtures && npm run test -w @testhistory/allure-parser && npm run test -w @testhistory/artifacts && npm run test -w @testhistory/domain && npm run test -w @testhistory/api && npm run test -w @testhistory/worker && npm run test -w @testhistory/mcp && npm run test -w @testhistory/web",
     "typecheck": "npm run build"
   },
   "devDependencies": {

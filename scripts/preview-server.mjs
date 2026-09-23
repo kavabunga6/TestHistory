@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 
 export function startPreviewServer({ port, workspace }) {
+  const outDir = process.env.WEB_PREVIEW_OUT_DIR;
   return spawn(
     process.execPath,
     [
@@ -11,7 +12,8 @@ export function startPreviewServer({ port, workspace }) {
       "127.0.0.1",
       "--port",
       String(port),
-      "--strictPort"
+      "--strictPort",
+      ...(outDir === undefined ? [] : ["--outDir", outDir])
     ],
     {
       cwd: path.join(workspace, "apps", "web"),

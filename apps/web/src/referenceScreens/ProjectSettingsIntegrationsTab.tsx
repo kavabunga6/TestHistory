@@ -103,16 +103,16 @@ export function IntegrationsTab({
         ) : null}
         {providers.map((provider) => (
           <div className="project-settings__integrations-table-row" key={provider.id} role="row">
-            <div className="project-settings__provider-row-main">
+            <div className="project-settings__provider-row-main" role="cell">
               <strong>{provider.name}</strong>
             </div>
-            <div className="project-settings__provider-row-value">
+            <div className="project-settings__provider-row-value" role="cell">
               <code>{provider.source.name || "JIRA_ISSUE"}</code>
             </div>
-            <div className="project-settings__provider-row-template">
+            <div className="project-settings__provider-row-template" role="cell">
               <code>{getProviderLinkTemplate(provider)}</code>
             </div>
-            <div className="project-settings__provider-row-check">
+            <div className="project-settings__provider-row-check" role="cell">
               {canEdit ? (
                 <SwitchControl
                   checked={provider.enabled}
@@ -126,7 +126,7 @@ export function IntegrationsTab({
               )}
             </div>
             {canEdit ? (
-              <div className="project-settings__provider-row-actions">
+              <div className="project-settings__provider-row-actions" role="cell">
                 <button
                   aria-label={`Редактировать интеграцию ${provider.name}`}
                   className="project-settings__icon-button"

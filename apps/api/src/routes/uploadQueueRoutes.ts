@@ -264,7 +264,15 @@ export async function registerUploadQueueRoutes(app: FastifyInstance, store: App
       if (!job) {
         return reply.code(404).send({ message: "Upload not found" });
       }
-      return job;
+      const launch = store.launches.get(job.launchId) as Launch | undefined;
+      if (launch === undefined) {
+        return reply.code(404).send({ message: "Launch not found" });
+      }
+      const denial = authorizeArchiveStatusRead(store, request, launch.projectId);
+      if (denial !== undefined) {
+        return reply.code(403).send(denial);
+      }
+      return serializeUploadJob(job);
     }
   );
 }

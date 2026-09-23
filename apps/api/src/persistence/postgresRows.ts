@@ -79,6 +79,7 @@ export type UploadJobRow = {
   duplicate_results: number;
   stored_artifacts: number;
   errors: PersistentUploadJob["errors"];
+  results: NonNullable<PersistentUploadJob["results"]>;
   lease: PersistentUploadJob["lease"] | null;
   source: PersistentUploadJob["source"] | null;
   created_at: Date | string;

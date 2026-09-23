@@ -1,5 +1,5 @@
 import type { ArtifactDescriptor, ArtifactObjectStorePort } from "@testhistory/artifacts";
-import type { AllureStatus } from "@testhistory/contracts";
+import type { AllureStatus, UploadResultReferenceReadModel } from "@testhistory/contracts";
 import {
   type AutomationJob,
   type DefectMuteAuditEvent,
@@ -93,6 +93,7 @@ export type UploadJob = {
   duplicateResults: number;
   storedArtifacts: number;
   errors: Array<{ path: string; errors: string[]; warnings: string[] }>;
+  results?: UploadResultReferenceReadModel[];
   createdAt: string;
   updatedAt: string;
   lease?: {

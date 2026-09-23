@@ -1,0 +1,22 @@
+.launches-reference-result-report .launches-reference-trace.is-skipped {
+  border-color: var(--launches-status-skipped-border);
+  border-left-color: #94a3b8;
+  background: var(--launches-status-skipped-bg);
+}
+
+.launches-reference-result-report .launches-reference-trace.is-skipped > summary {
+  background: var(--launches-status-skipped-bg);
+}
+
+.launches-reference-result-report
+  .launches-reference-trace.is-skipped
+  .launches-reference-trace-status,
+.launches-reference-result-report .launches-reference-trace.is-skipped strong {
+  color: var(--launches-status-skipped-text);
+}
+
+.launches-reference-result-report
+  .launches-reference-trace.is-skipped
+  .launches-reference-trace-stack {
+  border-top-color: var(--launches-status-skipped-border);
+}

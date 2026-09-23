@@ -227,6 +227,23 @@ describe("PostgreSQL persistence boundary", () => {
     });
   });
 
+  it("persists upload result references with the job", async () => {
+    const client = createRecordingClient();
+    const repositories = createPostgresRepositories(client, testConfig());
+    const job = uploadJobFixture();
+    const result = {
+      path: "example-result.json",
+      resultId: "example-id",
+      resultUrl: `/api/v1/launches/${job.launchId}/results/example-id`,
+      status: "imported" as const
+    };
+
+    await repositories.uploadJobs.save({ ...job, results: [result] });
+    const query = client.queries[0];
+    expect(normalizeSql(query?.sql ?? "")).toContain("results = EXCLUDED.results");
+    expect(query?.params?.[8]).toBe(JSON.stringify([result]));
+  });
+
   it("upserts artifact descriptors with parameterized SQL and descriptor-only metadata", async () => {
     const client = createRecordingClient();
     const repositories = createPostgresRepositories(client, testConfig());

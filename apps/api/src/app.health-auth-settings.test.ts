@@ -813,7 +813,7 @@ describe("api app health-auth-settings", () => {
       headers: authHeaders,
       method: "POST",
       payload: {
-        expiresAt: "2026-09-01T00:00:00.000Z",
+        expiresAt: "2099-09-01T00:00:00.000Z",
         name: "CI upload",
         ownerSubject: "svc-ci",
         scopes: ["launches:write", "results:write", "settings:read", "security:audit:read"]

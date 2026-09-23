@@ -37,17 +37,17 @@ through `npm run screenshots:capture`. The required route list lives in
 `expected-manifest.json`; the capture script validates its internal screen list against that file
 before writing screenshots. The command also writes `final/manifest.json` with the route, auth state,
 dialog flag, and byte size for every PNG. CI captures the full deep set below and uploads the whole
-`docs/screenshots/final/*` directory as an artifact; local capture requires Playwright Chromium to be
-installed in the current user profile. The capture script tries Playwright's headless shell first and
-falls back to the regular Chromium executable path when that is the browser available in the local
-cache. If local browser download is blocked, use the CI `ui-screenshot-evidence` artifact.
+`docs/screenshots/final/*` directory as an artifact; local capture requires Chrome or Playwright
+Chromium. The capture script tries the installed Google Chrome channel first, then Playwright's
+Chromium and any available Chromium executable in the local cache. If local browser download is
+blocked, use the CI `ui-screenshot-evidence` artifact.
 
 | File                           | Screen             | Evidence purpose                                                                  |
 | ------------------------------ | ------------------ | --------------------------------------------------------------------------------- |
 | `final/projects.png`           | Projects           | Project navigation and project state surface.                                     |
 | `final/dashboard.png`          | Dashboard          | Default THQL widgets: pass-rate metric, status distribution, and slow/risk table. |
 | `final/launches.png`           | Launch list        | Launch table, filters, counters, and lifecycle state.                             |
-| `final/launch-detail.png`      | Launch detail      | Result list, counters, artifacts, and close/upload context.                       |
+| `final/launch-detail.png`      | Launch detail      | A 100-result launch with status counters, artifacts, and close/upload context.    |
 | `final/selected-test-case.png` | Selected test case | History, retries/flaky state, metadata, and detail tabs.                          |
 | `final/defects.png`            | Defects            | Defect grouping, mute/readiness state, and operational actions.                   |
 | `final/analytics.png`          | Analytics          | Analytics metrics, risk signals, and table output.                                |
@@ -55,7 +55,7 @@ cache. If local browser download is blocked, use the CI `ui-screenshot-evidence`
 The capture script also records deeper route and dialog states for design review and CI evidence:
 
 - `final/auth-login.png`
-- `final/launch-results.png`
+- `final/launch-results.png` shows the 100-result launch with a 25-row first page and test detail.
 - `final/launch-result-history.png`
 - `final/launch-result-defects.png`
 - `final/selected-test-case-history.png`

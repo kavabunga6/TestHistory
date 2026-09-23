@@ -97,6 +97,12 @@ export type PersistentUploadJob = PersistentRecord & {
   duplicateResults: number;
   storedArtifacts: number;
   errors: Array<{ path: string; errors: string[]; warnings: string[] }>;
+  results?: Array<{
+    path: string;
+    resultId: string;
+    resultUrl: string;
+    status: "imported" | "duplicate";
+  }>;
   lease?: {
     claimedBy: string;
     claimedAt: IsoDateTimeString;

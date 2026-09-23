@@ -67,9 +67,13 @@ export type IntegrationDeliveryReadModel = {
   lastError?: string;
 };
 
-export async function loadAutomationWorkspace(): Promise<AutomationWorkspaceData> {
-  const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-  const project = projects[0];
+export async function loadAutomationWorkspace(
+  projectId?: string
+): Promise<AutomationWorkspaceData> {
+  const project =
+    projectId !== undefined
+      ? { id: projectId }
+      : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
   if (project === undefined) {
     throw new Error("Сначала создайте проект");
   }

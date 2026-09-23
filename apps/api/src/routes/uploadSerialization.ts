@@ -86,6 +86,7 @@ export function buildSessionIngestionStatus(
     queue: queueWorkerStatus(store, session.launchId),
     session: serializedSession,
     ...(job !== undefined ? { job: serializeUploadJob(job) } : {}),
+    results: job?.results ?? [],
     links: {
       self: `/api/v1/uploads/${session.id}/status`,
       launch: `/api/v1/launches/${session.launchId}`,
@@ -112,6 +113,7 @@ export function buildJobIngestionStatus(
     diagnostics: jobDiagnostics(job),
     queue: queueWorkerStatus(store, job.launchId),
     job: serializeUploadJob(job),
+    results: job.results ?? [],
     ...(session !== undefined ? { session: serializeUploadSession(session) } : {}),
     links: {
       self: `/api/v1/uploads/${job.id}/status`,
@@ -292,6 +294,7 @@ export function serializeUploadJob(job: UploadJob): UploadJobReadModel {
     importedResults: job.importedResults,
     duplicateResults: job.duplicateResults,
     storedArtifacts: job.storedArtifacts,
+    results: job.results ?? [],
     errors: job.errors,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt
@@ -322,7 +325,8 @@ export function toRuntimeUploadJob(job: PersistentUploadJob): UploadJob {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
     ...(job.lease !== undefined ? { lease: job.lease } : {}),
-    ...(job.source !== undefined ? { source: job.source } : {})
+    ...(job.source !== undefined ? { source: job.source } : {}),
+    ...(job.results !== undefined ? { results: job.results } : {})
   };
 }
 

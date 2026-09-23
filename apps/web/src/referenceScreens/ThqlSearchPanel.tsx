@@ -1,5 +1,6 @@
 import { Check, EyeOff, MoreHorizontal, Plus, Search, Settings2, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 import "./ThqlSearchPanel.css";
 
@@ -25,11 +26,18 @@ import {
 } from "../thqlSavedFilters.js";
 
 const visibleFilterLimit = 6;
+const launchResultsThqlHint = 'THQL — язык поиска по условиям. Например: status = "failed".';
 const thqlEntitySearchLabels: Record<ThqlFilterEntity, string> = {
   defects: "THQL поиск дефектов",
   launchResults: "THQL поиск результатов запуска",
   launches: "THQL поиск запусков",
   testCases: "THQL поиск тест-кейсов"
+};
+const searchPlaceholders: Record<ThqlFilterEntity, string> = {
+  defects: "Название дефекта или THQL запрос",
+  launchResults: "Поиск по названию теста",
+  launches: "Название запуска или THQL запрос",
+  testCases: "Название тест-кейса или THQL запрос"
 };
 
 export function ThqlSearchPanel({
@@ -39,7 +47,8 @@ export function ThqlSearchPanel({
   onActiveFilterChange,
   onQueryChange,
   projectId,
-  query
+  query,
+  trailingFilters
 }: {
   actorId: string;
   activeFilterId?: string | undefined;
@@ -48,6 +57,7 @@ export function ThqlSearchPanel({
   onQueryChange: (query: string) => void;
   projectId: string;
   query: string;
+  trailingFilters?: ReactNode;
 }) {
   const [revision, setRevision] = useState(0);
   const [overflowOpen, setOverflowOpen] = useState(false);
@@ -86,6 +96,18 @@ export function ThqlSearchPanel({
   );
   const validation = validateDashboardQuery(query);
   const showValidation = query.trim().length > 0 && isLikelyThql(query);
+  const manageFiltersButton = (
+    <button
+      aria-label="Фильтры: настроить быстрые фильтры"
+      className={`thql-search__manage ${entity === "launchResults" ? "thql-search__manage--labeled" : ""}`}
+      title="Настроить быстрые фильтры"
+      type="button"
+      onClick={() => setSettingsOpen(true)}
+    >
+      <Settings2 aria-hidden="true" size={15} />
+      {entity === "launchResults" ? <span>Фильтры</span> : null}
+    </button>
+  );
 
   const applyFilter = (filter: ThqlSavedFilter) => {
     if (activeFilterId === filter.id) {
@@ -102,24 +124,46 @@ export function ThqlSearchPanel({
 
   return (
     <section className="thql-search" aria-label="THQL поиск">
-      <label className="thql-search__field">
-        <Search aria-hidden="true" size={16} />
-        <input
-          aria-label={thqlEntitySearchLabels[entity]}
-          placeholder='THQL: status in ["failed", "broken"] and tag = "checkout"'
-          type="search"
-          value={query}
-          onChange={(event) => {
-            onQueryChange(event.target.value);
-            onActiveFilterChange(undefined);
-          }}
-        />
-      </label>
+      <div className="thql-search__search-row">
+        <div className={`thql-search__field-wrap ${query.length > 0 ? "has-clear" : ""}`}>
+          <label className="thql-search__field">
+            <Search aria-hidden="true" size={16} />
+            <input
+              aria-label={thqlEntitySearchLabels[entity]}
+              aria-description={entity === "launchResults" ? launchResultsThqlHint : undefined}
+              placeholder={searchPlaceholders[entity]}
+              title={entity === "launchResults" ? launchResultsThqlHint : undefined}
+              type="search"
+              value={query}
+              onChange={(event) => {
+                onQueryChange(event.target.value);
+                onActiveFilterChange(undefined);
+              }}
+            />
+          </label>
+          {query.length > 0 ? (
+            <button
+              aria-label="Очистить поиск"
+              className="thql-search__clear"
+              title="Очистить поиск"
+              type="button"
+              onClick={() => {
+                onQueryChange("");
+                onActiveFilterChange(undefined);
+              }}
+            >
+              <X aria-hidden="true" size={15} />
+            </button>
+          ) : null}
+        </div>
+        {entity === "launchResults" ? manageFiltersButton : null}
+      </div>
 
       <div className="thql-search__filters" aria-label="Доступные фильтры">
         {pinnedFilters.map((filter) => (
           <button
             aria-label={`${filter.name}. ${thqlScopeLabels[filter.scope]}`}
+            aria-pressed={activeFilterId === filter.id}
             className={`thql-search__chip thql-search__chip--${filter.scope} ${
               activeFilterId === filter.id ? "active" : ""
             }`}
@@ -128,6 +172,7 @@ export function ThqlSearchPanel({
             type="button"
             onClick={() => applyFilter(filter)}
           >
+            {activeFilterId === filter.id ? <Check aria-hidden="true" size={13} /> : null}
             <span>{filter.name}</span>
           </button>
         ))}
@@ -163,16 +208,9 @@ export function ThqlSearchPanel({
               ) : null}
             </div>
           ) : null}
-          <button
-            aria-label="Управление фильтрами"
-            className="thql-search__manage"
-            title="Фильтры"
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <Settings2 aria-hidden="true" size={15} />
-          </button>
+          {entity === "launchResults" ? null : manageFiltersButton}
         </div>
+        {trailingFilters ? <div className="thql-search__trailing">{trailingFilters}</div> : null}
       </div>
 
       {showValidation ? (

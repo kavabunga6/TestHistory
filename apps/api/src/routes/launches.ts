@@ -26,7 +26,6 @@ import {
   launchDetailEmbeddedLimit,
   launchSortFields,
   matchesLaunchSearch,
-  matchesResultSearch,
   maxListLimit,
   paginate,
   paginationValidationError,
@@ -40,6 +39,7 @@ import {
   type LaunchListQuery,
   type LaunchResultListQuery
 } from "./launchHelpers.js";
+import { compileLaunchResultSearch } from "./launchResultSearch.js";
 import { findActiveDefectMuteForResult, loadProjectDefectMuteEvents } from "./defectMutations.js";
 import { serializeProjectionRecord } from "./defectProjection.js";
 import { toPersistentLaunch } from "../storeMappers.js";
@@ -53,6 +53,8 @@ type QualityGateEvaluationRequestBody = {
 };
 
 const launchWriteRoles = ["owner", "maintainer", "editor", "ci"] as const;
+const resultStatusListPattern =
+  "^(?:failed|broken|passed|skipped|unknown|muted)(?:,(?:failed|broken|passed|skipped|unknown|muted))*$";
 
 async function activeMutesForProject(store: AppStore, projectId: string) {
   const events = await loadProjectDefectMuteEvents(store, projectId);
@@ -312,12 +314,15 @@ export async function registerLaunchRoutes(app: FastifyInstance, store: AppStore
           properties: {
             status: {
               type: "string",
-              enum: ["failed", "broken", "passed", "skipped", "unknown"]
+              pattern: resultStatusListPattern,
+              maxLength: 80,
+              description:
+                "One result status or a comma-separated union, for example broken,unknown. A single status is exact."
             },
             testCaseId: { type: "string" },
             historyId: { type: "string" },
-            q: { type: "string" },
-            search: { type: "string" },
+            q: { type: "string", maxLength: 2_000 },
+            search: { type: "string", maxLength: 2_000 },
             sort: {
               type: "string",
               enum: resultSortFields
@@ -356,9 +361,16 @@ export async function registerLaunchRoutes(app: FastifyInstance, store: AppStore
       }
 
       const activeMutes = await activeMutesForProject(store, launch.projectId);
+      const matchesSearch = compileLaunchResultSearch(request.query.q ?? request.query.search);
+      const requestedStatuses = request.query.status?.split(",");
+      const isMuted = (result: Launch["results"][number]) =>
+        activeMutes.length > 0 && findActiveDefectMuteForResult(activeMutes, result) !== undefined;
       const items = launch.results
         .filter(
-          (result) => request.query.status === undefined || result.status === request.query.status
+          (result) =>
+            requestedStatuses === undefined ||
+            requestedStatuses.includes(result.status) ||
+            (requestedStatuses.includes("muted") && isMuted(result))
         )
         .filter(
           (result) =>
@@ -368,7 +380,7 @@ export async function registerLaunchRoutes(app: FastifyInstance, store: AppStore
           (result) =>
             request.query.historyId === undefined || result.historyId === request.query.historyId
         )
-        .filter((result) => matchesResultSearch(result, request.query.q ?? request.query.search))
+        .filter((result) => matchesSearch(result, isMuted(result)))
         .sort(compareResults(launch, pagination.sort, pagination.order))
         .map((result) => serializeResultWithQuarantine(launch, result, activeMutes));
 

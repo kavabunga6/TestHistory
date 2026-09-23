@@ -334,13 +334,17 @@ export function mapApiSteps(steps: ApiResultStepReadModel[] | undefined): Scenar
     return [];
   }
 
-  return steps.map((step) => ({
-    name: step.name,
-    status: mapResultStatus(step.status ?? "passed"),
-    duration: formatStepDuration(step),
-    attachments: mapAttachments(step.attachments),
-    steps: mapApiSteps(step.steps)
-  }));
+  return steps.map((step) => {
+    const trace = mapTrace(step.statusDetails);
+    return {
+      name: step.name,
+      status: mapResultStatus(step.status ?? "passed"),
+      duration: formatStepDuration(step),
+      ...(trace !== undefined ? { trace } : {}),
+      attachments: mapAttachments(step.attachments),
+      steps: mapApiSteps(step.steps)
+    };
+  });
 }
 
 export function mapCounters(

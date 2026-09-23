@@ -4,6 +4,7 @@ import { registerAnalyticsRoutes } from "./analytics.js";
 import { registerArtifactRoutes } from "./artifacts.js";
 import { registerAuthRoutes } from "./auth.js";
 import { registerDashboardRoutes } from "./dashboards.js";
+import { registerDashboardAggregateRoutes } from "./dashboardAggregate.js";
 import { registerDefectRoutes } from "./defects.js";
 import { registerLaunchRoutes } from "./launches.js";
 import { registerLaunchComparisonRoutes } from "./launchComparison.js";
@@ -42,6 +43,7 @@ export async function registerApiRoutes(app: FastifyInstance, store: AppStore) {
   await registerAnalyticsRoutes(app, store);
   await registerThqlFilterRoutes(app, store);
   await registerDashboardRoutes(app, store);
+  registerDashboardAggregateRoutes(app, store);
   await registerSecurityAuditRoutes(app, store);
   await registerMcpRoutes(app);
 }

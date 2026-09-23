@@ -227,6 +227,7 @@ export function findLaunchIdForResult(
 
   const result = results.find((item) => item.id === resultId);
   return (
+    result?.launchId ??
     result?.historyCompare?.to.launchId ??
     result?.historyCompare?.from.launchId ??
     result?.historyPoints?.[0]?.launchId
@@ -234,6 +235,10 @@ export function findLaunchIdForResult(
 }
 
 export function getLaunchResults(results: TestResult[], launch: LaunchListItem): TestResult[] {
+  if (results.some((result) => result.launchId !== undefined)) {
+    return results.filter((result) => result.launchId === launch.id);
+  }
+
   const matched = results.filter(
     (result) =>
       result.historyCompare?.to.launchId === launch.id ||

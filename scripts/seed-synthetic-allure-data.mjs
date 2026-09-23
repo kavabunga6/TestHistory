@@ -1,5 +1,7 @@
+import { buildGeneratedCases } from "./seed-synthetic-allure-generated-cases.mjs";
+
 // Synthetic Allure seed data is intentionally static so generated histories stay reproducible.
-export const caseCatalog = [
+const baseCaseCatalog = [
   {
     id: "auth-login",
     testCaseId: "SYN-AUTH-001",
@@ -258,101 +260,22 @@ export const caseCatalog = [
   }
 ];
 
-export const launchPlans = [
-  {
-    branch: "main",
-    cases: ["auth-login", "checkout-card", "profile-avatar", "reports-export", "catalog-search"]
-  },
-  {
-    branch: "main",
-    cases: [
-      "auth-login",
-      "checkout-card",
-      "profile-avatar",
-      "reports-export",
-      "notifications-email"
-    ]
-  },
-  {
-    branch: "main",
-    cases: [
-      "auth-login",
-      "checkout-card",
-      "profile-avatar",
-      "reports-export",
-      "catalog-search",
-      "admin-permissions"
-    ]
-  },
-  {
-    branch: "release/1.4",
-    cases: [
-      "auth-login",
-      "checkout-card",
-      "reports-export",
-      "catalog-search",
-      "notifications-email"
-    ]
-  },
-  {
-    branch: "release/1.4",
-    cases: ["auth-login", "checkout-card", "profile-avatar", "catalog-search", "admin-permissions"]
-  },
-  {
-    branch: "release/1.4",
-    cases: [
-      "auth-login",
-      "checkout-card",
-      "profile-avatar",
-      "reports-export",
-      "catalog-search",
-      "admin-permissions"
-    ]
-  },
-  {
-    branch: "main",
-    cases: [
-      "auth-login",
-      "profile-avatar",
-      "reports-export",
-      "catalog-search",
-      "notifications-email",
-      "mobile-deeplink"
-    ]
-  },
-  {
-    branch: "main",
-    cases: [
-      "auth-login",
-      "checkout-card",
-      "profile-avatar",
-      "catalog-search",
-      "notifications-email",
-      "mobile-deeplink"
-    ]
-  },
-  {
-    branch: "main",
-    cases: [
-      "auth-login",
-      "checkout-card",
-      "reports-export",
-      "catalog-search",
-      "admin-permissions",
-      "mobile-deeplink"
-    ]
-  },
-  {
-    branch: "main",
-    cases: [
-      "auth-login",
-      "checkout-card",
-      "profile-avatar",
-      "reports-export",
-      "catalog-search",
-      "notifications-email",
-      "admin-permissions",
-      "mobile-deeplink"
-    ]
-  }
+const launchBranches = [
+  "main",
+  "main",
+  "main",
+  "release/1.4",
+  "release/1.4",
+  "release/1.4",
+  "main",
+  "main",
+  "main",
+  "main"
 ];
+
+export const caseCatalog = [...baseCaseCatalog, ...buildGeneratedCases(baseCaseCatalog.length)];
+
+export const launchPlans = launchBranches.map((branch) => ({
+  branch,
+  cases: caseCatalog.map((testCase) => testCase.id)
+}));

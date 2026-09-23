@@ -34,7 +34,10 @@ import {
 } from "./testExports.js";
 import { buildDefectSummaries, filterDefects } from "./referenceScreens/DefectsReferenceScreen.js";
 import { LaunchesReferenceScreen } from "./referenceScreens/LaunchesReferenceScreen.js";
-import { filterProjects, projects } from "./referenceScreens/ProjectsReferenceScreen.js";
+import {
+  filterProjects,
+  ProjectsReferenceScreen
+} from "./referenceScreens/ProjectsReferenceScreen.js";
 import {
   apiStates,
   archiveFixtureReadyApiState,
@@ -304,29 +307,38 @@ describe("worker UI surface readiness", () => {
     }
   });
 
-  it("renders Projects as a Russian reference list with ready search and no unfinished actions", () => {
-    const markup = renderSurface("projects", onlineApiState);
+  it("renders live project identity, selected state and search without demo metrics", () => {
+    const apiProjects = [
+      { id: "project-1", key: "WS", name: "Web Sandbox" },
+      { id: "project-2", key: "MOBILE", name: "Mobile QA" }
+    ];
+    const markup = renderToStaticMarkup(
+      <ProjectsReferenceScreen
+        onSelectProject={() => undefined}
+        projects={apiProjects}
+        selectedProjectId="project-1"
+        status="ready"
+      />
+    );
     const text = visibleText(markup);
-    const actionMarkup =
-      markup.match(/<div class="projects-reference__actions"[\s\S]*?<\/div>/)?.[0] ?? "";
-    const optionsButton = buttonContaining(actionMarkup, "Опции");
-    const createButton = buttonContaining(actionMarkup, "Проект");
 
     expect(text).toContain("Проекты");
-    expect(text).toContain("Поиск и фильтрация");
+    expect(text).toContain("Поиск проектов");
     expect(text).toContain("Web Sandbox");
-    expect(text).toContain("#1");
-    expect(text).toContain("Тестовый проект для проверки web-интерфейса");
-    expect(markup).toContain("Избранный проект");
-    expect(text).toContain("Текущий");
-    expect(markup).toContain("Метрики проекта");
+    expect(text).toContain("Mobile QA");
+    expect(text).toContain("project-1");
+    expect(text).toContain("Выбран");
     expect(text).not.toContain("Участники");
-    expect(projects).toHaveLength(1);
-    expect(text).toContain("100%");
-    expect(filterProjects(projects, "web").map((project) => project.name)).toEqual(["Web Sandbox"]);
-    expect(filterProjects(projects, "100").map((project) => project.name)).toEqual(["Web Sandbox"]);
-    expect(optionsButton).toBeUndefined();
-    expect(createButton).toBeUndefined();
+    expect(filterProjects(apiProjects, "web").map((project) => project.name)).toEqual([
+      "Web Sandbox"
+    ]);
+    expect(filterProjects(apiProjects, "mobile").map((project) => project.name)).toEqual([
+      "Mobile QA"
+    ]);
+    expect(filterProjects(apiProjects, "project-2").map((project) => project.name)).toEqual([
+      "Mobile QA"
+    ]);
+    expect(text).not.toContain("100%");
     expect(text).not.toContain("WIP");
     expect(text).not.toContain("Runtime model");
     expect(text).not.toContain("Ingestion and processing pipeline");
@@ -334,7 +346,36 @@ describe("worker UI surface readiness", () => {
     expect(text).not.toContain("Project list placeholder");
   });
 
-  it("renders every ready route as a Russian denied shell without leaking scoped auth details", () => {
+  it("keeps the project switcher available when the current project denies access", () => {
+    const markup = renderSurface("projects", m5DeniedApiState);
+    const text = visibleText(markup);
+
+    expect(text).toContain("Проекты");
+    expect(text).toContain("Пока нет доступных проектов");
+    expect(text).not.toContain("Доступ закрыт");
+  });
+
+  it("does not show the previous project's results while the next project loads", () => {
+    const markup = renderWorkspaceSurface(
+      "launch",
+      onlineApiState,
+      { ...demoM1Workspace, projectId: "old-project" },
+      demoM1Workspace.results[0]!.id,
+      0,
+      {
+        projectSelection: {
+          projects: [{ id: "new-project", key: "NEW", name: "New project" }],
+          selectedProjectId: "new-project",
+          status: "ready"
+        }
+      }
+    );
+
+    expect(markup).not.toContain("PR-1289 Checkout Regression");
+    expect(markup).not.toContain(demoM1Workspace.results[0]!.name);
+  });
+
+  it("renders project routes as a Russian denied shell without leaking scoped auth details", () => {
     const forbiddenValues = [
       ...(m5DeniedPermissionDeniedError.requiredScopes ?? []),
       ...(m5DeniedPermissionDeniedError.requiredRoles ?? []),
@@ -348,6 +389,9 @@ describe("worker UI surface readiness", () => {
     ].filter((value): value is string => typeof value === "string");
 
     for (const mode of readyWorkspaceModes) {
+      if (mode === "projects") {
+        continue;
+      }
       const markup = renderSurface(mode, m5DeniedApiState);
       const text = visibleText(markup);
 

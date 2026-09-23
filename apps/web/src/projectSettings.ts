@@ -202,6 +202,35 @@ export const demoProjectSettings: ProjectSettings = {
   ]
 };
 
+export function emptyProjectSettings(project: {
+  id: string;
+  key?: string | undefined;
+  name?: string | undefined;
+}): ProjectSettings {
+  return {
+    project: {
+      id: project.id,
+      key: project.key ?? project.id,
+      name: project.name ?? project.key ?? project.id,
+      visibility: "private"
+    },
+    owners: [],
+    members: [],
+    apiTokens: [],
+    visibilityPolicies: [],
+    integrationProviders: [],
+    retentionPolicies: [],
+    artifactRetention: {
+      attachmentRetentionDays: 0,
+      cleanupGraceDays: 0,
+      compressRetainedTextArtifacts: false,
+      deleteBinaryArtifactsAfterRetention: false,
+      retentionPolicies: []
+    },
+    customFieldMappings: []
+  };
+}
+
 export function buildProviderPreview(provider: IntegrationLinkProvider): string {
   return buildProviderLink(provider, provider.previewValue);
 }
@@ -277,9 +306,11 @@ type ApiTokenCreateResponse = {
   token: ApiProjectAccessSettingsReadModel["apiTokens"][number];
 };
 
-export async function loadProjectSettingsFromApi(): Promise<ProjectSettings> {
-  const projects = await getProjectSettingsJson<ApiProjectReadModel[]>("/api/v1/projects");
-  const project = projects[0];
+export async function loadProjectSettingsFromApi(projectId?: string): Promise<ProjectSettings> {
+  const project =
+    projectId !== undefined
+      ? { id: projectId }
+      : (await getProjectSettingsJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
   if (project === undefined) {
     throw new Error("Нет доступных проектов. Сначала создайте проект.");
   }
@@ -304,9 +335,13 @@ export async function loadProjectSettingsFromApi(): Promise<ProjectSettings> {
   });
 }
 
-export async function loadIntegrationLinkProvidersFromApi(): Promise<IntegrationLinkProvider[]> {
-  const projects = await getProjectSettingsJson<ApiProjectReadModel[]>("/api/v1/projects");
-  const project = projects[0];
+export async function loadIntegrationLinkProvidersFromApi(
+  projectId?: string
+): Promise<IntegrationLinkProvider[]> {
+  const project =
+    projectId !== undefined
+      ? { id: projectId }
+      : (await getProjectSettingsJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
   if (project === undefined) {
     return [];
   }

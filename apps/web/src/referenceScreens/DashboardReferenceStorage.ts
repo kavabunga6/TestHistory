@@ -5,13 +5,27 @@ import {
   widgetTypes
 } from "./DashboardReferenceModel.js";
 
-export function loadSavedDashboardWidgets(): SavedDashboardWidget[] {
+function widgetStorageKey(scope?: string): string {
+  return scope === undefined
+    ? dashboardWidgetStorageKey
+    : `${dashboardWidgetStorageKey}:${encodeURIComponent(scope)}`;
+}
+
+export function loadSavedDashboardWidgets(scope?: string): SavedDashboardWidget[] {
   if (typeof window === "undefined") {
     return defaultDashboardWidgets;
   }
 
   try {
-    const rawWidgets = window.localStorage.getItem(dashboardWidgetStorageKey);
+    const storageKey = widgetStorageKey(scope);
+    let rawWidgets = window.localStorage.getItem(storageKey);
+    if (rawWidgets === null && scope !== undefined) {
+      rawWidgets = window.localStorage.getItem(dashboardWidgetStorageKey);
+      if (rawWidgets !== null) {
+        window.localStorage.setItem(storageKey, rawWidgets);
+        window.localStorage.removeItem(dashboardWidgetStorageKey);
+      }
+    }
     if (rawWidgets === null) {
       return defaultDashboardWidgets;
     }
@@ -21,18 +35,31 @@ export function loadSavedDashboardWidgets(): SavedDashboardWidget[] {
       return defaultDashboardWidgets;
     }
 
-    return parsedWidgets.filter(isSavedDashboardWidget);
+    return parsedWidgets.filter(isSavedDashboardWidget).map((widget) => ({
+      ...widget,
+      title:
+        widget.id === "dashboard-default-pass-rate" && widget.title === "Успешность среза"
+          ? "Успешность запуска"
+          : widget.id === "dashboard-default-slow-tests" &&
+              widget.title === "Медленные и рисковые тесты"
+            ? "Самые долгие тесты"
+            : widget.title
+    }));
   } catch {
     return defaultDashboardWidgets;
   }
 }
 
-export function saveDashboardWidgets(widgets: SavedDashboardWidget[]) {
+export function saveDashboardWidgets(widgets: SavedDashboardWidget[], scope?: string) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(widgets));
+  try {
+    window.localStorage.setItem(widgetStorageKey(scope), JSON.stringify(widgets));
+  } catch {
+    // Widget edits remain usable for this session when storage is disabled.
+  }
 }
 
 function isSavedDashboardWidget(value: unknown): value is SavedDashboardWidget {
@@ -48,7 +75,6 @@ function isSavedDashboardWidget(value: unknown): value is SavedDashboardWidget {
     typeof widget.entity === "string" &&
     typeof widget.metric === "string" &&
     typeof widget.groupBy === "string" &&
-    typeof widget.period === "string" &&
     typeof widget.thql === "string" &&
     typeof widget.kind === "string" &&
     widgetTypes.some((type) => type.id === widget.kind)

@@ -1,0 +1,93 @@
+.launches-reference-crumbs-nav .launches-reference-crumbs-launch,
+.launches-reference-crumbs-nav .launches-reference-crumbs-launch-link {
+  min-width: 0;
+  max-width: min(420px, 42vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.launches-reference-crumbs-nav .launches-reference-crumbs-launch-link {
+  flex: 0 1 auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #52678b;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.launches-reference-crumbs-nav .launches-reference-crumbs-launch-link:hover,
+.launches-reference-crumbs-nav .launches-reference-crumbs-launch-link:focus-visible {
+  color: #2057ba;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.launches-reference-crumbs-nav .launches-reference-crumbs-launch-link:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.launches-reference-crumbs-nav .launches-reference-crumbs-current {
+  min-width: 0;
+  overflow: hidden;
+  color: #334155;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .launches-reference-section-bar {
+    padding: 0;
+  }
+
+  .launches-reference-tabs--top {
+    flex-wrap: nowrap;
+    gap: 24px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 16px;
+    scroll-padding-inline: 16px;
+  }
+
+  .launches-reference-heading h1 {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 600px) {
+  .launches-reference-crumbs-nav {
+    overflow: hidden;
+  }
+
+  .launches-reference-crumbs-nav .launches-reference-crumbs-launch,
+  .launches-reference-crumbs-nav .launches-reference-crumbs-launch-link {
+    display: none;
+  }
+
+  .launches-reference-crumbs-nav a::before {
+    margin-right: 6px;
+    content: "←";
+  }
+
+  .launches-reference-heading {
+    min-width: 0;
+  }
+
+  .launches-reference-status-tools {
+    gap: 6px;
+  }
+
+  .launches-reference-status-tools .launches-reference-secondary-action,
+  .launches-reference-status-tools .launches-reference-danger-action {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+}

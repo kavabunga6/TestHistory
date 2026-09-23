@@ -9,10 +9,14 @@ import type { ApiLaunchRetentionReadModel, ApiProjectReadModel } from "./apiStat
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
 
-export async function loadArchiveDiagnosticReplayFixtureState(): Promise<ArchiveDiagnosticReplayFixtureApiState> {
+export async function loadArchiveDiagnosticReplayFixtureState(
+  projectId?: string
+): Promise<ArchiveDiagnosticReplayFixtureApiState> {
   try {
-    const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-    const project = projects[0];
+    const project =
+      projectId !== undefined
+        ? { id: projectId }
+        : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
     if (project === undefined) {
       return {
         data: emptyArchiveDiagnosticReplayFixtures("no-api-project"),
@@ -57,10 +61,14 @@ export async function loadArchiveDiagnosticReplayFixtureState(): Promise<Archive
   }
 }
 
-export async function loadArchiveUploadStatusState(): Promise<ArchiveUploadStatusApiState> {
+export async function loadArchiveUploadStatusState(
+  projectId?: string
+): Promise<ArchiveUploadStatusApiState> {
   try {
-    const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-    const project = projects[0];
+    const project =
+      projectId !== undefined
+        ? { id: projectId }
+        : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
     if (project === undefined) {
       return {
         data: emptyArchiveUploadStatus("no-api-project", "no-api-launch"),

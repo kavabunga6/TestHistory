@@ -34,7 +34,9 @@ cmd /c npm run local:demo
 The importer discovers `.tmp/testhistory-evidence-*.tar.gz`, adds each archive as a separate launch
 to the first `WS` project, and skips launches that were already imported. The current evidence set
 contains real Allure results, screenshots, logcat attachments, and an MP4 recording. Development
-mode exposes bounded inline previews for small images only; text, JSON, and XML previews up to
+mode also adds an idempotent synthetic launch with 100 varied results for checking the results list,
+status filters, attachments, and deeply nested steps. Existing launches are preserved. Small images
+have bounded inline previews in development mode; text, JSON, and XML previews up to
 3 MiB are loaded on demand. Larger files remain download-only and are rejected before their bodies
 are read from artifact storage. Production never embeds attachment
 payloads in result responses.
@@ -74,16 +76,26 @@ You can also import or refresh the evidence separately while `local:dev` is runn
 cmd /c npm run seed:local:evidence
 ```
 
-To add an idempotent UI fixture with three results, five nested step levels, attachments on levels
-three and four, and passed/failed/broken branches, run:
+To add the same idempotent 100-result UI fixture without starting the full demo stack, run:
 
 ```powershell
 cmd /c npm run seed:local:nested-steps
 ```
 
-The fixture is added to the first local project as the closed launch `Nested steps UI fixture v3`.
-Its level-three JSON and level-four text/XML attachments receive bounded, redacted on-demand previews.
-Rerunning the command reuses that launch instead of creating duplicates.
+The fixture is added to the first local project as the closed launch
+`Nested steps UI fixture v6 · 100 varied tests`. It covers passed, failed, broken, skipped, and unknown
+statuses; different suites and result types; attachments; and step trees up to six levels deep.
+Rerunning the command reuses the launch instead of creating duplicates. Older v3 fixtures remain intact.
+
+To check history and trend views with ten launches of 100 results each, use a separate synthetic
+project:
+
+```powershell
+cmd /c npm run seed:allure
+```
+
+Each run creates a new synthetic project. Results have stable test identities across its ten launches,
+mixed statuses and layers, attachments, and nested steps.
 
 With `local:demo` running, the same browser check also has a shorter alias:
 
@@ -348,8 +360,8 @@ npm run guard:ui-interactions
 npm run screenshots:capture
 ```
 
-The browser scripts first try Playwright's headless shell and then fall back to the regular
-Chromium executable reported by Playwright. If the current user profile cannot write to
+The browser scripts try the installed Google Chrome channel first, then Playwright's Chromium and
+any available Chromium executable in the local cache. If the current user profile cannot write to
 `%LOCALAPPDATA%\ms-playwright`, install into a workspace-local cache and run the evidence command
 with the same environment variable:
 

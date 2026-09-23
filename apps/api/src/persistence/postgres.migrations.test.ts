@@ -3,6 +3,14 @@ import { schemaMigrations } from "./index.js";
 import { normalizeSql } from "./postgresTestUtils.js";
 
 describe("PostgreSQL migration boundary", () => {
+  it("adds durable result references to upload jobs without rewriting earlier migrations", () => {
+    const migration = schemaMigrations.find(
+      (candidate) => candidate.id === "202609230001_upload_result_references"
+    );
+    expect(normalizeSql(migration?.sql ?? "")).toBe(
+      "ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS results jsonb NOT NULL DEFAULT '[]'::jsonb;"
+    );
+  });
   it("keeps ingestion index migrations append-only and targeted for high-volume lookups", () => {
     const ingestionMigration = schemaMigrations.find(
       (migration) => migration.id === "202605300003_ingestion_indexes"

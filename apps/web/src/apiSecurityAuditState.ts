@@ -6,10 +6,14 @@ import type {
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
 
-export async function loadSecurityAuditExportLifecycleInvariantState(): Promise<SecurityAuditExportLifecycleInvariantApiState> {
+export async function loadSecurityAuditExportLifecycleInvariantState(
+  projectId?: string
+): Promise<SecurityAuditExportLifecycleInvariantApiState> {
   try {
-    const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-    const project = projects[0];
+    const project =
+      projectId !== undefined
+        ? { id: projectId }
+        : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
     if (project === undefined) {
       return {
         data: emptySecurityAuditExportLifecycleInvariants("no-api-project", "no-api-actor"),

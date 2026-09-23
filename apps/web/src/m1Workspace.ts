@@ -10,6 +10,7 @@
   DefectMuteAudit,
   Launch,
   LaunchListItem,
+  LaunchResultPage,
   M1SurfaceContract,
   M1Workspace,
   M1WorkspaceResponse,
@@ -37,9 +38,21 @@
 export { assertM1SurfaceContract, M1_SURFACE_CONTRACT } from "./m1WorkspaceTypes.js";
 export { mergeHistoryComparePermissionAuditRead } from "./m1WorkspacePermissionAudit.js";
 import { getJson } from "./apiHttp.js";
-import type { M1Workspace, M1WorkspaceResponse } from "./m1WorkspaceTypes.js";
+import type {
+  LaunchResultPage,
+  M1Workspace,
+  M1WorkspaceResponse,
+  ResultStatus,
+  TestResult
+} from "./m1WorkspaceTypes.js";
 import { mockM1WorkspaceResponse } from "./m1WorkspaceMock.js";
 import { defaultResultSteps } from "./m1WorkspaceMockPreview.js";
+import {
+  loadHistoryComparePermissionAuditInvariantRead,
+  loadHistoryComparePermissionAuditRead,
+  loadTestCaseHistoryRead,
+  workspaceInitialHistoryLimit
+} from "./m1WorkspaceHistoryReads.js";
 import type {
   ApiDefectClusterReadModel,
   ApiDefectListReadModel,
@@ -93,7 +106,9 @@ export const demoM1Workspace = import.meta.env.PROD
 
 export const workspaceInitialLaunchLimit = 25;
 export const workspaceInitialResultHydrationLimit = 25;
-export const workspaceInitialHistoryLimit = 50;
+export const workspaceResultListLimit = 100;
+export const workspaceDefaultResultPageSize = 25;
+export { workspaceInitialHistoryLimit };
 export const workspaceInitialTestCaseLimit = 50;
 export const workspaceInitialDefectLimit = 50;
 
@@ -107,10 +122,15 @@ export type M1WorkspaceRouteScope =
   | "test-case-detail";
 
 export type LoadM1WorkspaceOptions = {
+  projectId?: string | undefined;
   preferredLaunchId?: string | undefined;
   preferredResultId?: string | undefined;
   preferredTestCaseId?: string | undefined;
   preferredDefectId?: string | undefined;
+  resultPageSize?: number | undefined;
+  resultPageCursor?: string | undefined;
+  resultQuery?: string | undefined;
+  resultStatusFilter?: ResultStatus | undefined;
   routeScope?: M1WorkspaceRouteScope | undefined;
 };
 
@@ -118,36 +138,58 @@ export async function loadM1Workspace(options: LoadM1WorkspaceOptions = {}): Pro
   return fetchM1Workspace(options);
 }
 
+export async function loadLaunchResultDetail(
+  launchId: string,
+  resultId: string
+): Promise<TestResult> {
+  const details = await getJson<ApiResultDetailsReadModel>(
+    `/api/v1/launches/${encodeURIComponent(launchId)}/results/${encodeURIComponent(resultId)}`
+  );
+  return { ...mapApiResult(details, details, undefined, undefined, undefined), launchId };
+}
+
 export async function resolveLaunchResultId(
   launchId: string,
   resultId: string,
   testCaseId?: string
 ): Promise<string> {
-  const resultsPayload = await getJson<ApiLaunchResultListReadModel>(
-    `/api/v1/launches/${encodeURIComponent(
-      launchId
-    )}/results?limit=${workspaceInitialResultHydrationLimit}`
-  );
-  const exactResult = resultsPayload.items.find((result) => result.uuid === resultId);
-  if (exactResult !== undefined) {
-    return exactResult.uuid;
-  }
-
   const normalizedTestCaseId = testCaseId?.trim();
-  if (normalizedTestCaseId === undefined || normalizedTestCaseId === "") {
-    return resultId;
-  }
+  let cursor: string | undefined;
+  const visitedCursors = new Set<string>();
+  do {
+    const resultsPayload = await fetchLaunchResultPage(launchId, workspaceResultListLimit, cursor);
+    const exactResult = resultsPayload.items.find((result) => result.uuid === resultId);
+    if (exactResult !== undefined) {
+      return exactResult.uuid;
+    }
+    if (normalizedTestCaseId !== undefined && normalizedTestCaseId !== "") {
+      const matchingTestCase = resultsPayload.items.find(
+        (result) => result.testCaseId === normalizedTestCaseId
+      );
+      if (matchingTestCase !== undefined) {
+        return matchingTestCase.uuid;
+      }
+    }
+    cursor = resultsPayload.page?.nextCursor ?? undefined;
+    if (cursor === undefined || visitedCursors.has(cursor)) {
+      break;
+    }
+    visitedCursors.add(cursor);
+  } while (true);
 
-  return (
-    resultsPayload.items.find((result) => result.testCaseId === normalizedTestCaseId)?.uuid ??
-    resultId
-  );
+  return resultId;
 }
 
 export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Promise<M1Workspace> {
   const routeScope = resolveM1WorkspaceRouteScope(options);
-  const projects = await getJson<ApiProjectReadModel[]>("/api/v1/projects");
-  const project = projects[0];
+  const resultPageSize = options.resultPageSize ?? workspaceResultListLimit;
+  const resultPageCursor = options.resultPageCursor;
+  const resultQuery = options.resultQuery;
+  const resultStatusFilter = options.resultStatusFilter;
+  const project =
+    options.projectId !== undefined
+      ? { id: options.projectId }
+      : (await getJson<ApiProjectReadModel[]>("/api/v1/projects"))[0];
   if (project === undefined) {
     throw new Error("No API projects available");
   }
@@ -158,12 +200,26 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
   const launches = (Array.isArray(launchesPayload) ? launchesPayload : launchesPayload.items)
     .slice()
     .sort((left, right) => Date.parse(right.createdAt ?? "") - Date.parse(left.createdAt ?? ""));
-  const selectedLaunch =
+  let selectedLaunch =
     options.preferredLaunchId !== undefined
       ? (launches.find((launch) => launch.id === options.preferredLaunchId) ?? launches[0])
       : launches[0];
+  if (
+    options.preferredLaunchId !== undefined &&
+    selectedLaunch?.id !== options.preferredLaunchId &&
+    (routeScope === "launch-detail" || routeScope === "result-detail")
+  ) {
+    const requestedLaunch = await getJson<ApiLaunchDetailsReadModel>(
+      `/api/v1/launches/${encodeURIComponent(options.preferredLaunchId)}`
+    );
+    if (requestedLaunch.projectId !== project.id) {
+      throw new Error("Requested launch is outside the selected project");
+    }
+    launches.unshift(requestedLaunch);
+    selectedLaunch = requestedLaunch;
+  }
   if (selectedLaunch === undefined) {
-    throw new Error("No API launches available");
+    return { ...emptyM1Workspace, projectId: project.id };
   }
 
   if (routeScope === "defect-list") {
@@ -276,10 +332,12 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
       throw new Error("No API result selected");
     }
 
-    const resultsPayload = await getJson<ApiLaunchResultListReadModel>(
-      `/api/v1/launches/${encodeURIComponent(
-        selectedLaunch.id
-      )}/results?limit=${workspaceInitialResultHydrationLimit}`
+    const resultsPayload = await fetchLaunchResultPage(
+      selectedLaunch.id,
+      resultPageSize,
+      resultPageCursor,
+      resultQuery,
+      resultStatusFilter
     );
     const listedResult = resultsPayload.items.find((result) => result.uuid === preferredResultId);
     const selectedResultDetails = await loadSelectedResultDetails(
@@ -287,60 +345,111 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
       preferredResultId,
       listedResult
     );
-    const mergedResults =
-      selectedResultDetails === undefined
-        ? resultsPayload.items
-        : mergeSelectedResultIntoPage(resultsPayload.items, selectedResultDetails);
-    const prefetchedDetails = mergedResults.map((result) =>
+    const prefetchedDetails = resultsPayload.items.map((result) =>
       result.uuid === selectedResultDetails?.uuid ? selectedResultDetails : undefined
     );
     const hydrationReads = await hydrateInitialResults(
       project.id,
       selectedLaunch.id,
-      mergedResults,
-      prefetchedDetails
+      resultsPayload.items.slice(0, workspaceInitialResultHydrationLimit),
+      prefetchedDetails.slice(0, workspaceInitialResultHydrationLimit)
     );
+    const selectedIsHydrated = resultsPayload.items
+      .slice(0, workspaceInitialResultHydrationLimit)
+      .some((result) => result.uuid === selectedResultDetails?.uuid);
 
     return mapLaunchDetailsToWorkspace({
       ...hydrationReads,
-      launchDetails: launchSummaryToDetails(selectedLaunch, mergedResults),
+      launchDetails: launchSummaryToDetails(selectedLaunch, resultsPayload.items),
       launches,
-      resultDetails: hydrationReads.resultDetails
+      resultPage: normalizeLaunchResultPage(resultsPayload, resultPageSize, resultPageCursor),
+      resultDetails:
+        selectedResultDetails !== undefined && listedResult !== undefined && !selectedIsHydrated
+          ? [...hydrationReads.resultDetails, selectedResultDetails]
+          : hydrationReads.resultDetails,
+      ...(selectedResultDetails !== undefined
+        ? {
+            selectedResultDetail: {
+              ...mapApiResult(
+                selectedResultDetails,
+                selectedResultDetails,
+                undefined,
+                undefined,
+                undefined
+              ),
+              launchId: selectedLaunch.id
+            }
+          }
+        : {})
     });
   }
 
-  const resultsPayload = await getJson<ApiLaunchResultListReadModel>(
-    `/api/v1/launches/${encodeURIComponent(
-      selectedLaunch.id
-    )}/results?limit=${workspaceInitialResultHydrationLimit}`
+  const resultsPayload = await fetchLaunchResultPage(
+    selectedLaunch.id,
+    resultPageSize,
+    resultPageCursor,
+    resultQuery,
+    resultStatusFilter
   );
   const launchDetails = launchSummaryToDetails(selectedLaunch, resultsPayload.items);
+  const resultPage = normalizeLaunchResultPage(resultsPayload, resultPageSize, resultPageCursor);
   if (launchDetails.results.length === 0) {
-    throw new Error("No API launch results available");
+    return mapLaunchDetailsToWorkspace({ launchDetails, launches, resultDetails: [], resultPage });
   }
 
   const hydrationReads = await hydrateInitialResults(
     project.id,
     selectedLaunch.id,
-    launchDetails.results
+    launchDetails.results.slice(0, workspaceInitialResultHydrationLimit)
   );
 
   return mapLaunchDetailsToWorkspace({
     ...hydrationReads,
     launchDetails,
-    launches
+    launches,
+    resultPage
   });
 }
 
-function mergeSelectedResultIntoPage(
-  results: ApiNormalizedResultReadModel[],
-  selectedResult: ApiResultDetailsReadModel
-): ApiNormalizedResultReadModel[] {
-  if (results.some((result) => result.uuid === selectedResult.uuid)) {
-    return results;
+async function fetchLaunchResultPage(
+  launchId: string,
+  limit: number,
+  cursor?: string,
+  query?: string,
+  status?: ResultStatus
+): Promise<ApiLaunchResultListReadModel> {
+  if (!Number.isInteger(limit) || limit < 1 || limit > workspaceResultListLimit) {
+    throw new Error(`Result page size must be between 1 and ${workspaceResultListLimit}`);
   }
 
-  return [...results, selectedResult];
+  const cursorQuery = cursor === undefined ? "" : `&cursor=${encodeURIComponent(cursor)}`;
+  const searchQuery = query?.trim() ? `&q=${encodeURIComponent(query.trim())}` : "";
+  const apiStatus = status === "broken" ? "broken,unknown" : status;
+  const statusQuery = apiStatus === undefined ? "" : `&status=${encodeURIComponent(apiStatus)}`;
+  return getJson<ApiLaunchResultListReadModel>(
+    `/api/v1/launches/${encodeURIComponent(launchId)}/results?limit=${limit}${cursorQuery}${searchQuery}${statusQuery}`
+  );
+}
+
+function normalizeLaunchResultPage(
+  payload: ApiLaunchResultListReadModel,
+  requestedLimit: number,
+  requestedCursor?: string
+): LaunchResultPage {
+  const offset = payload.page?.offset ?? Number(requestedCursor ?? 0);
+  const returned = payload.page?.returned ?? payload.items.length;
+  const total = payload.page?.total ?? offset + returned;
+  const nextCursor =
+    payload.page?.nextCursor ?? (offset + returned < total ? String(offset + returned) : null);
+  return {
+    limit: payload.page?.limit ?? requestedLimit,
+    cursor: payload.page?.cursor ?? (offset > 0 ? String(offset) : null),
+    offset,
+    returned,
+    total,
+    nextCursor,
+    hasMore: payload.page?.hasMore ?? nextCursor !== null
+  };
 }
 
 function resultSummaryToDetails(result: ApiNormalizedResultReadModel): ApiResultDetailsReadModel {
@@ -446,6 +555,7 @@ function mapTestCaseSummariesToWorkspace({
   testCases: ApiTestCaseSummaryReadModel[];
 }): M1Workspace {
   return {
+    projectId: launchDetails.projectId,
     launch: mapApiLaunch(launchDetails),
     launchItems: launches.map(mapApiLaunchListItem),
     results: testCases.map(mapApiTestCaseSummary)
@@ -462,6 +572,7 @@ function mapDefectClustersToWorkspace({
   defects: ApiDefectListReadModel["items"];
 }): M1Workspace {
   return {
+    projectId: launchDetails.projectId,
     launch: mapApiLaunch(launchDetails),
     launchItems: launches.map(mapApiLaunchListItem),
     results: defects.map(mapApiDefectCluster)
@@ -531,6 +642,8 @@ export function mapLaunchDetailsToWorkspace({
   historyReads,
   permissionAuditInvariantReads,
   permissionAuditReads,
+  resultPage,
+  selectedResultDetail,
   resultDetails
 }: {
   launchDetails: ApiLaunchDetailsReadModel;
@@ -540,6 +653,8 @@ export function mapLaunchDetailsToWorkspace({
     ApiHistoryComparePermissionAuditInvariantReadModel | undefined
   >;
   permissionAuditReads?: Array<ApiHistoryComparePermissionAuditReadModel | undefined>;
+  resultPage?: LaunchResultPage;
+  selectedResultDetail?: TestResult;
   resultDetails: Array<ApiResultDetailsReadModel | undefined>;
 }): M1Workspace {
   const detailsByUuid = new Map(
@@ -549,94 +664,20 @@ export function mapLaunchDetailsToWorkspace({
   );
 
   return {
+    projectId: launchDetails.projectId,
     launch: mapApiLaunch(launchDetails),
     launchItems: launches.map(mapApiLaunchListItem),
-    results: launchDetails.results.map((result, index) =>
-      mapApiResult(
+    ...(resultPage !== undefined ? { resultPage } : {}),
+    ...(selectedResultDetail !== undefined ? { selectedResultDetail } : {}),
+    results: launchDetails.results.map((result, index) => ({
+      ...mapApiResult(
         result,
         detailsByUuid.get(result.uuid),
         permissionAuditReads?.[index],
         permissionAuditInvariantReads?.[index],
         historyReads?.[index]
-      )
-    )
+      ),
+      launchId: launchDetails.id
+    }))
   };
-}
-
-async function loadTestCaseHistoryRead(
-  projectId: string,
-  result: ApiNormalizedResultReadModel
-): Promise<ApiTestCaseHistoryPageReadModel | undefined> {
-  const testCaseId = stableHistoryLookupId(result);
-  if (testCaseId === undefined) {
-    return undefined;
-  }
-
-  return getJson<ApiTestCaseHistoryPageReadModel>(
-    `/api/v1/test-cases/${encodeURIComponent(testCaseId)}/history?projectId=${encodeURIComponent(
-      projectId
-    )}&limit=${workspaceInitialHistoryLimit}`
-  );
-}
-
-function stableHistoryLookupId(result: ApiNormalizedResultReadModel): string | undefined {
-  const testCaseId = result.testCaseId?.trim();
-  if (testCaseId !== undefined && testCaseId.length > 0) {
-    return testCaseId;
-  }
-
-  const historyId = result.historyId?.trim();
-  if (historyId !== undefined && historyId.length > 0) {
-    return historyId;
-  }
-
-  return undefined;
-}
-
-async function loadHistoryComparePermissionAuditRead(
-  projectId: string,
-  result: ApiNormalizedResultReadModel
-): Promise<ApiHistoryComparePermissionAuditReadModel | undefined> {
-  const testCaseId = result.testCaseId ?? result.historyId ?? result.uuid;
-  if (testCaseId.trim().length === 0) {
-    return undefined;
-  }
-
-  return getJson<ApiHistoryComparePermissionAuditReadModel>(
-    `/api/v1/test-cases/${encodeURIComponent(
-      testCaseId
-    )}/history/compare/permission-audit?projectId=${encodeURIComponent(projectId)}&limit=3`,
-    {
-      headers: {
-        "x-testhistory-scopes": "test-cases:read",
-        "x-testhistory-project-scope": projectId,
-        "x-testhistory-actor-id": "history-compare-ui"
-      }
-    }
-  );
-}
-
-async function loadHistoryComparePermissionAuditInvariantRead(
-  projectId: string,
-  result: ApiNormalizedResultReadModel
-): Promise<ApiHistoryComparePermissionAuditInvariantReadModel | undefined> {
-  const testCaseId = result.testCaseId ?? result.historyId ?? result.uuid;
-  if (testCaseId.trim().length === 0) {
-    return undefined;
-  }
-
-  return getJson<ApiHistoryComparePermissionAuditInvariantReadModel>(
-    `/api/v1/test-cases/${encodeURIComponent(
-      testCaseId
-    )}/history/compare/permission-audit/replay/invariants?projectId=${encodeURIComponent(
-      projectId
-    )}&limit=3`,
-    {
-      headers: {
-        "x-testhistory-scopes": "test-cases:read",
-        "x-testhistory-project-scope": projectId,
-        "x-testhistory-actor-id": "history-compare-ui"
-      }
-    }
-  );
 }

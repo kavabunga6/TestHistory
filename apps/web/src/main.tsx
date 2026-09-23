@@ -12,8 +12,10 @@ import { emptyM1Workspace, resolveLaunchResultId } from "./m1Workspace.js";
 import { AuthPanel } from "./AuthPanel.js";
 import { TypographySettingsDialog } from "./TypographySettingsDialog.js";
 import { getDefaultSelectedResultId, isResultQuarantined } from "./appRoutingHelpers.js";
-import { useCurrentUserAccess } from "./useCurrentUserAccess.js";
+import { useCurrentUserAccess, useProjectDeleteAccess } from "./useCurrentUserAccess.js";
+import { useProjectSelection } from "./useProjectSelection.js";
 import { useWorkspaceData } from "./useWorkspaceData.js";
+import { findWorkspaceResult, updateWorkspaceResults } from "./workspaceResultState.js";
 import { useWorkspaceRoute } from "./useWorkspaceRoute.js";
 import {
   deleteLaunchFromApi,
@@ -26,7 +28,6 @@ import {
 import {
   findLaunchIdForResult,
   getResultIdsForLaunch,
-  withRecomputedLaunchCounters,
   type WorkspaceMode
 } from "./workspaceRouting.js";
 import {
@@ -79,9 +80,30 @@ void legacyRuntimePanelRussianLabels;
 function App() {
   const { route, setRoute } = useWorkspaceRoute();
   const [apiState, setApiState] = useState<ApiState>({ loading: true });
-  const { canDeleteEntities, currentUser } = useCurrentUserAccess();
-  const { refreshWorkspace, selectedId, setSelectedId, setWorkspace, workspace, workspaceLoading } =
-    useWorkspaceData(route, setApiState, currentUser?.id);
+  const { currentUser } = useCurrentUserAccess();
+  const projectSelection = useProjectSelection(currentUser?.id);
+  const canDeleteEntities = useProjectDeleteAccess(currentUser, projectSelection.selectedProjectId);
+  const {
+    refreshWorkspace,
+    resultPageIndex,
+    resultPageSize,
+    resultQuery,
+    resultStatusFilter,
+    selectedId,
+    setResultPageIndex,
+    setResultPageSize,
+    setResultQuery,
+    setResultStatusFilter,
+    setSelectedId,
+    setWorkspace,
+    workspace,
+    workspaceLoading
+  } = useWorkspaceData(
+    route,
+    setApiState,
+    currentUser?.id,
+    projectSelection.status === "ready" ? (projectSelection.selectedProjectId ?? null) : null
+  );
   const [confirmDeleteRequest, setConfirmDeleteRequest] = useState<
     ConfirmDeleteRequest | undefined
   >();
@@ -102,8 +124,20 @@ function App() {
   }, [currentUser?.id]);
 
   useEffect(() => {
+    if (projectSelection.status !== "ready") {
+      if (projectSelection.status === "error") {
+        setApiState({ loading: false });
+      }
+      return;
+    }
+    if (projectSelection.selectedProjectId === undefined) {
+      setApiState({ loading: false });
+      return;
+    }
+
     let active = true;
-    void loadApiState().then((nextState: ApiState) => {
+    setApiState({ loading: true });
+    void loadApiState(projectSelection.selectedProjectId).then((nextState: ApiState) => {
       if (active) {
         setApiState(nextState);
       }
@@ -112,7 +146,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [projectSelection.selectedProjectId, projectSelection.status]);
 
   const setMode = useCallback(
     (nextMode: WorkspaceMode) => {
@@ -148,11 +182,15 @@ function App() {
         ? getDefaultSelectedResultId(nextResults)
         : selectedId;
 
-      return withRecomputedLaunchCounters({
+      const nextWorkspace = {
         ...currentWorkspace,
         launchItems: currentWorkspace.launchItems.filter((launch) => launch.id !== launchId),
         results: nextResults
-      });
+      };
+      if (nextWorkspace.selectedResultDetail?.launchId === launchId) {
+        delete nextWorkspace.selectedResultDetail;
+      }
+      return nextWorkspace;
     });
     setSelectedId(nextSelectedId);
     setRoute({ mode: "launch" });
@@ -183,19 +221,16 @@ function App() {
     try {
       const receipt = await deprecateTestCaseFromApi(resultId);
       setWorkspace((currentWorkspace) =>
-        withRecomputedLaunchCounters({
-          ...currentWorkspace,
-          results: currentWorkspace.results.map((result) =>
-            result.id === resultId
-              ? {
-                  ...result,
-                  deletedAt: receipt.updatedAt,
-                  deletedReason: "Тест-кейс переведён в архивный статус",
-                  workflow: "Deprecated"
-                }
-              : result
-          )
-        })
+        updateWorkspaceResults(currentWorkspace, (result) =>
+          result.id === resultId
+            ? {
+                ...result,
+                deletedAt: receipt.updatedAt,
+                deletedReason: "Тест-кейс переведён в архивный статус",
+                workflow: "Deprecated"
+              }
+            : result
+        )
       );
     } catch (error) {
       setApiState({
@@ -206,7 +241,7 @@ function App() {
   };
   const deleteTestCase = (resultId: string) => {
     requireCurrentUser(() => {
-      const result = workspace.results.find((item) => item.id === resultId);
+      const result = findWorkspaceResult(workspace, resultId);
       setConfirmDeleteRequest({
         body: `Тест-кейс${result?.name ? ` "${result.name}"` : ""} будет помечен как удаленный и исключен из активного списка.`,
         confirmLabel: "Удалить тест-кейс",
@@ -216,7 +251,7 @@ function App() {
     });
   };
   const performUnquarantineResult = async (resultId: string) => {
-    const result = workspace.results.find((item) => item.id === resultId);
+    const result = findWorkspaceResult(workspace, resultId);
     const muteId = result?.defectMute?.id;
     const projectId = workspace.launch.owner;
     if (result === undefined || muteId === undefined || projectId === "") {
@@ -225,24 +260,21 @@ function App() {
     try {
       await removeResultFromQuarantineApi(projectId, muteId);
       setWorkspace((currentWorkspace) =>
-        withRecomputedLaunchCounters({
-          ...currentWorkspace,
-          results: currentWorkspace.results.map((candidate) => {
-            if (candidate.id !== resultId) {
-              return candidate;
-            }
-            const { defectMute: _defectMute, previousStatus: _previousStatus, ...rest } = candidate;
-            void _defectMute;
-            void _previousStatus;
-            return {
-              ...rest,
-              muted: false,
-              status:
-                candidate.status === "muted"
-                  ? (candidate.previousStatus ?? "skipped")
-                  : candidate.status
-            };
-          })
+        updateWorkspaceResults(currentWorkspace, (candidate) => {
+          if (candidate.id !== resultId) {
+            return candidate;
+          }
+          const { defectMute: _defectMute, previousStatus: _previousStatus, ...rest } = candidate;
+          void _defectMute;
+          void _previousStatus;
+          return {
+            ...rest,
+            muted: false,
+            status:
+              candidate.status === "muted"
+                ? (candidate.previousStatus ?? "skipped")
+                : candidate.status
+          };
         })
       );
     } catch (error) {
@@ -254,7 +286,7 @@ function App() {
   };
   const toggleMuteResult = (resultId: string) => {
     requireCurrentUser(() => {
-      const targetResult = workspace.results.find((result) => result.id === resultId);
+      const targetResult = findWorkspaceResult(workspace, resultId);
       if (targetResult === undefined) {
         return;
       }
@@ -286,7 +318,10 @@ function App() {
     const trimmedDefectId = defectId.trim();
     const trimmedReason = reason.trim();
     const trimmedTaskId = taskId.trim();
-    const launchId = route.launchId ?? findLaunchIdForResult(workspace.results, request.result.id);
+    const launchId =
+      route.launchId ??
+      findLaunchIdForResult(workspace.results, request.result.id) ??
+      request.result.launchId;
     if (launchId === undefined) {
       setApiState({ loading: false, error: "Не найден запуск для выбранного результата" });
       return;
@@ -298,30 +333,27 @@ function App() {
         ...(trimmedTaskId !== "" ? { taskId: trimmedTaskId } : {})
       });
       setWorkspace((currentWorkspace) =>
-        withRecomputedLaunchCounters({
-          ...currentWorkspace,
-          results: currentWorkspace.results.map((result) =>
-            result.id !== request.result.id
-              ? result
-              : {
-                  ...result,
-                  defectMute: {
-                    actor:
-                      receipt.mute.origin.type === "actor"
-                        ? receipt.mute.origin.actorId
-                        : receipt.mute.origin.systemId,
-                    affectedTestCaseIds: receipt.mute.affectedTestIds,
-                    id: receipt.mute.id,
-                    mutedAt: receipt.mute.mutedAt,
-                    reason: receipt.mute.reason,
-                    scope: "defect",
-                    ...(receipt.defectId !== undefined ? { defectId: receipt.defectId } : {}),
-                    ...(receipt.taskId !== undefined ? { taskId: receipt.taskId } : {})
-                  },
-                  muted: true
-                }
-          )
-        })
+        updateWorkspaceResults(currentWorkspace, (result) =>
+          result.id !== request.result.id
+            ? result
+            : {
+                ...result,
+                defectMute: {
+                  actor:
+                    receipt.mute.origin.type === "actor"
+                      ? receipt.mute.origin.actorId
+                      : receipt.mute.origin.systemId,
+                  affectedTestCaseIds: receipt.mute.affectedTestIds,
+                  id: receipt.mute.id,
+                  mutedAt: receipt.mute.mutedAt,
+                  reason: receipt.mute.reason,
+                  scope: "defect",
+                  ...(receipt.defectId !== undefined ? { defectId: receipt.defectId } : {}),
+                  ...(receipt.taskId !== undefined ? { taskId: receipt.taskId } : {})
+                },
+                muted: true
+              }
+        )
       );
       setQuarantineRequest(undefined);
     } catch (error) {
@@ -335,9 +367,8 @@ function App() {
     try {
       const receipt = await deleteDefectFromApi(workspace.launch.owner, defectId);
       const removedAt = receipt.event.occurredAt;
-      setWorkspace((currentWorkspace) => ({
-        ...currentWorkspace,
-        results: currentWorkspace.results.map((result) => {
+      setWorkspace((currentWorkspace) =>
+        updateWorkspaceResults(currentWorkspace, (result) => {
           if (result.defect !== defectId && !result.issues.includes(defectId)) {
             return result;
           }
@@ -361,7 +392,7 @@ function App() {
             ]
           };
         })
-      }));
+      );
     } catch (error) {
       setApiState({
         loading: false,
@@ -380,7 +411,11 @@ function App() {
     });
   };
   const performUnlinkResultDefect = async (resultId: string, defectId: string) => {
-    const launchId = findLaunchIdForResult(workspace.results, resultId);
+    const launchId =
+      findLaunchIdForResult(workspace.results, resultId) ??
+      (workspace.selectedResultDetail?.id === resultId
+        ? workspace.selectedResultDetail.launchId
+        : undefined);
     if (launchId === undefined) {
       setApiState({ loading: false, error: "Не удалось определить запуск результата" });
       return;
@@ -394,33 +429,30 @@ function App() {
       );
       const removedAt = receipt.event.occurredAt;
       setWorkspace((currentWorkspace) =>
-        withRecomputedLaunchCounters({
-          ...currentWorkspace,
-          results: currentWorkspace.results.map((result) => {
-            if (result.id !== resultId) {
-              return result;
-            }
-            if (result.defect !== defectId && !result.issues.includes(defectId)) {
-              return result;
-            }
+        updateWorkspaceResults(currentWorkspace, (result) => {
+          if (result.id !== resultId) {
+            return result;
+          }
+          if (result.defect !== defectId && !result.issues.includes(defectId)) {
+            return result;
+          }
 
-            const nextResult = {
-              ...result,
-              issues: result.issues.filter((issue) => issue !== defectId),
-              defectHistory: [
-                ...(result.defectHistory ?? []),
-                { id: defectId, removedAt, title: result.name }
-              ]
-            };
+          const nextResult = {
+            ...result,
+            issues: result.issues.filter((issue) => issue !== defectId),
+            defectHistory: [
+              ...(result.defectHistory ?? []),
+              { id: defectId, removedAt, title: result.name }
+            ]
+          };
 
-            if (result.defect !== defectId) {
-              return nextResult;
-            }
+          if (result.defect !== defectId) {
+            return nextResult;
+          }
 
-            const withoutActiveDefect = { ...nextResult };
-            delete withoutActiveDefect.defect;
-            return withoutActiveDefect;
-          })
+          const withoutActiveDefect = { ...nextResult };
+          delete withoutActiveDefect.defect;
+          return withoutActiveDefect;
         })
       );
     } catch (error) {
@@ -432,7 +464,7 @@ function App() {
   };
   const unlinkResultDefect = (resultId: string, defectId: string) => {
     requireCurrentUser(() => {
-      const result = workspace.results.find((item) => item.id === resultId);
+      const result = findWorkspaceResult(workspace, resultId);
       setConfirmDeleteRequest({
         body: `Связь дефекта "${defectId}" с тест-кейсом${
           result?.name ? ` "${result.name}"` : ""
@@ -476,6 +508,7 @@ function App() {
       >
         <WorkspaceSurface
           apiState={apiState}
+          currentUserId={currentUser.id}
           defectRouteId={route.defectId}
           launchRouteId={route.launchId}
           launchRouteQuery={route.launchQuery}
@@ -483,13 +516,30 @@ function App() {
           launchRouteResultId={route.resultId}
           launchRouteResultTab={route.resultTab}
           mode={route.mode}
+          projectSelection={projectSelection}
           settingsRouteTab={route.settingsTab}
           testCaseRouteId={route.testCaseId}
           testCaseRouteTab={route.testCaseTab}
           selectedId={route.mode === "case" ? (route.testCaseId ?? "") : selectedId}
-          workspace={workspace}
+          resultPageIndex={resultPageIndex}
+          resultPageSize={resultPageSize}
+          resultQuery={resultQuery}
+          resultStatusFilter={resultStatusFilter}
+          workspace={
+            projectSelection.selectedProjectId !== undefined &&
+            workspace.projectId === projectSelection.selectedProjectId
+              ? workspace
+              : emptyM1Workspace
+          }
           workspaceLoading={workspaceLoading || apiState.loading}
           onModeChange={setMode}
+          onRefreshProjects={projectSelection.refreshProjects}
+          onSelectProject={(projectId) => {
+            projectSelection.selectProject(projectId);
+            setWorkspace(emptyM1Workspace);
+            setSelectedId("");
+            setRoute({ mode: "dashboard" });
+          }}
           onSelect={(id) => {
             setSelectedId(id);
             if (route.mode === "case") {
@@ -505,6 +555,10 @@ function App() {
           onRefreshWorkspace={() =>
             void refreshWorkspace({ focusLaunchId: route.launchId, focusResultId: route.resultId })
           }
+          onResultPageIndexChange={setResultPageIndex}
+          onResultPageSizeChange={setResultPageSize}
+          onResultQueryChange={setResultQuery}
+          onResultStatusFilterChange={setResultStatusFilter}
           onOpenLaunchResult={(id, targetLaunchId, targetTestCaseId) => {
             const launchId =
               targetLaunchId ??

@@ -30,7 +30,7 @@ export function createUploadJobRepository(
         `
           SELECT
             id, launch_id, status, received_files, imported_results, duplicate_results,
-            stored_artifacts, errors, lease, source, created_at, updated_at, deleted_at, version
+            stored_artifacts, errors, results, lease, source, created_at, updated_at, deleted_at, version
           FROM ${table(config, "upload_jobs")}
           WHERE launch_id = $1 AND deleted_at IS NULL
           ORDER BY created_at DESC, id ASC
@@ -45,7 +45,7 @@ export function createUploadJobRepository(
         `
           SELECT
             id, launch_id, status, received_files, imported_results, duplicate_results,
-            stored_artifacts, errors, lease, source, created_at, updated_at, deleted_at, version
+            stored_artifacts, errors, results, lease, source, created_at, updated_at, deleted_at, version
           FROM ${table(config, "upload_jobs")}
           WHERE id = $1 AND deleted_at IS NULL
         `,
@@ -96,6 +96,7 @@ export function createUploadJobRepository(
             upload_jobs.duplicate_results,
             upload_jobs.stored_artifacts,
             upload_jobs.errors,
+            upload_jobs.results,
             upload_jobs.lease,
             upload_jobs.source,
             upload_jobs.created_at,
@@ -115,9 +116,9 @@ export function createUploadJobRepository(
           INSERT INTO ${table(config, "upload_jobs")}
             (
               id, launch_id, status, received_files, imported_results, duplicate_results,
-              stored_artifacts, errors, lease, source, created_at, updated_at, deleted_at, version
+              stored_artifacts, errors, results, lease, source, created_at, updated_at, deleted_at, version
             )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11, $12, $13, $14)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12, $13, $14, $15)
           ON CONFLICT (id) DO UPDATE SET
             launch_id = EXCLUDED.launch_id,
             status = EXCLUDED.status,
@@ -126,6 +127,7 @@ export function createUploadJobRepository(
             duplicate_results = EXCLUDED.duplicate_results,
             stored_artifacts = EXCLUDED.stored_artifacts,
             errors = EXCLUDED.errors,
+            results = EXCLUDED.results,
             lease = EXCLUDED.lease,
             source = EXCLUDED.source,
             updated_at = EXCLUDED.updated_at,
@@ -141,6 +143,7 @@ export function createUploadJobRepository(
           job.duplicateResults,
           job.storedArtifacts,
           stringifyJson(job.errors),
+          stringifyJson(job.results ?? []),
           stringifyJson(job.lease ?? null),
           stringifyJson(job.source ?? null),
           job.createdAt,

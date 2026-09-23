@@ -102,7 +102,7 @@ export const defaultThqlFilters: ThqlSavedFilter[] = [
     description: "Результаты в карантине.",
     entity: "launchResults",
     id: "global-quarantine-launch-results",
-    name: "Карантин",
+    name: "В карантине",
     query: "muted = true",
     scope: "global"
   },

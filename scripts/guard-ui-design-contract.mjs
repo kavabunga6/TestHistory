@@ -22,8 +22,16 @@ const sources = new Map([
     read("apps/web/src/referenceScreens/DashboardReferenceScreen.css")
   ],
   [
+    "apps/web/src/referenceScreens/DashboardReferenceDialogs.css",
+    read("apps/web/src/referenceScreens/DashboardReferenceDialogs.css")
+  ],
+  [
     "apps/web/src/referenceScreens/LaunchesReferenceScreen.css",
     read("apps/web/src/referenceScreens/LaunchesReferenceScreen.css")
+  ],
+  [
+    "apps/web/src/referenceScreens/LaunchesReferenceOverview.css",
+    read("apps/web/src/referenceScreens/LaunchesReferenceOverview.css")
   ],
   [
     "apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx",
@@ -36,6 +44,10 @@ const sources = new Map([
   [
     "apps/web/src/referenceScreens/LaunchesReferenceTabs.tsx",
     read("apps/web/src/referenceScreens/LaunchesReferenceTabs.tsx")
+  ],
+  [
+    "apps/web/src/referenceScreens/LaunchesReferenceOverview.tsx",
+    read("apps/web/src/referenceScreens/LaunchesReferenceOverview.tsx")
   ],
   [
     "apps/web/src/referenceScreens/ProjectSettingsReferenceScreen.css",
@@ -142,7 +154,13 @@ for (const snippet of [
 
 for (const file of ["scripts/guard-button-overflow.mjs", "scripts/capture-ui-screenshots.mjs"]) {
   expectSnippet(file, 'from "./ui-api-fixtures.mjs"');
-  expectSnippet(file, "createUiFixtureApiResponse(pathname, method)");
+  if (
+    !/createUiFixtureApiResponse\(\s*pathname,\s*method,\s*request\.postData\(\),\s*url\.search\s*\)/.test(
+      read(file)
+    )
+  ) {
+    throw new Error(`${file} must pass request search params to the UI fixture`);
+  }
   expectSnippet(file, 'from "./preview-server.mjs"');
   expectSnippet(file, "await browser?.close().catch(() => undefined);");
   expectSnippet(file, "stopPreviewServer(server);");
@@ -234,19 +252,24 @@ for (const snippet of [
 }
 
 for (const snippet of [
-  "grid-template-areas:",
-  '"summary unresolved"',
-  '"defects variables"',
-  "gap: 16px;",
-  "background: #f8fafc;",
+  "max-width: 1600px;",
+  ".launches-reference-overview-content",
+  "grid-template-columns: minmax(0, 1.65fr) minmax(350px, 0.9fr);",
+  ".launches-reference-overview-side",
+  "gap: 18px;",
   ".launches-reference-overview-summary-main",
   ".launches-reference-overview-donut",
-  ".launches-reference-overview-legend",
+  ".launches-reference-overview-legend"
+]) {
+  expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceOverview.css", snippet);
+}
+
+for (const snippet of [
+  "background: #f8fafc;",
   "@media (prefers-reduced-motion: reduce)",
   ".launches-reference-compact-results-head",
   ".launches-reference-variables-head",
-  ".launches-reference-section-bar",
-  ".launches-reference-quick-stats"
+  ".launches-reference-section-bar"
 ]) {
   expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceScreen.css", snippet);
 }
@@ -259,17 +282,18 @@ for (const snippet of [
   "overviewStatusOrder",
   "overviewStatusLabels"
 ]) {
-  expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceTabs.tsx", snippet);
+  expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceOverview.tsx", snippet);
 }
 
 for (const snippet of [
   "launches-reference-section-bar",
-  "launches-reference-quick-stats",
   "const primaryTabs = launchTabs;",
-  "среднее время"
+  "resultPage={resultPage}"
 ]) {
   expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx", snippet);
 }
+expectNoSnippet("apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx", "LaunchesRunSummary");
+expectNoSnippet("apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx", "загружено");
 
 expectSnippet(
   "apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx",
@@ -481,7 +505,7 @@ for (const [relativePath, snippets] of [
     ]
   ],
   [
-    "apps/web/src/referenceScreens/DashboardReferenceScreen.css",
+    "apps/web/src/referenceScreens/DashboardReferenceDialogs.css",
     [
       ".dashboard-reference-modal-layer",
       "background: rgb(15 23 42 / 48%);",

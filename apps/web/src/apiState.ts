@@ -15,18 +15,19 @@ import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError } from "./apiPermissions.js";
 import { loadSecurityAuditExportLifecycleInvariantState } from "./apiSecurityAuditState.js";
 
-export async function loadApiState(): Promise<ApiState> {
+export async function loadApiState(projectId?: string): Promise<ApiState> {
   try {
     const capabilities = await getJson<Capabilities>("/api/v1/capabilities");
-    const archiveDiagnosticReplayFixtures = await loadArchiveDiagnosticReplayFixtureState();
-    const archiveUploadStatus = await loadArchiveUploadStatusState();
-    const defectMuteProjection = await loadDefectMuteProjectionState();
-    const defectMuteReplayInvariants = await loadDefectMuteReplayInvariantState();
-    const attachmentPreviewRetention = await loadAttachmentPreviewRetentionState();
+    const archiveDiagnosticReplayFixtures =
+      await loadArchiveDiagnosticReplayFixtureState(projectId);
+    const archiveUploadStatus = await loadArchiveUploadStatusState(projectId);
+    const defectMuteProjection = await loadDefectMuteProjectionState(projectId);
+    const defectMuteReplayInvariants = await loadDefectMuteReplayInvariantState(projectId);
+    const attachmentPreviewRetention = await loadAttachmentPreviewRetentionState(projectId);
     const attachmentPreviewRetentionSchedule =
-      await loadAttachmentPreviewRetentionDryRunScheduleState();
+      await loadAttachmentPreviewRetentionDryRunScheduleState(projectId);
     const securityAuditExportLifecycleInvariants =
-      await loadSecurityAuditExportLifecycleInvariantState();
+      await loadSecurityAuditExportLifecycleInvariantState(projectId);
 
     return {
       archiveDiagnosticReplayFixtures,

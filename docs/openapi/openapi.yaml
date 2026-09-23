@@ -231,6 +231,70 @@ paths:
           description: Actor or API token is not allowed to read analytics data
         "404":
           description: Project or launch not found
+  /api/v1/analytics/results:
+    get:
+      tags: [analytics]
+      operationId: listAnalyticsResults
+      description: Returns full-scope result metrics and top signals with a bounded, redacted page of project or launch results. Requires analytics:read access.
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - name: launchId
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+        - name: q
+          in: query
+          required: false
+          description: Case-insensitive search over result identity, name, suite, owner, tags, issues, test keys, severity, and layer.
+          schema:
+            type: string
+            maxLength: 200
+        - name: status
+          in: query
+          required: false
+          description: Filter by effective status; muted results retain their original Allure status in each item.
+          schema:
+            $ref: "#/components/schemas/AnalyticsResultStatus"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          description: Decimal offset from the previous page's nextCursor.
+          schema:
+            type: string
+            pattern: "^(0|[1-9][0-9]*)$"
+            maxLength: 15
+      responses:
+        "200":
+          description: Full-scope metrics and top signals with a bounded result page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsResultList"
+        "400":
+          description: Invalid analytics result query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsResultQueryError"
+        "403":
+          description: Actor or API token lacks analytics read access
+        "404":
+          description: Project or matching launch not found
   /api/v1/thql/filters:
     get:
       tags: [query]
@@ -1333,11 +1397,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SimpleError"
+  /api/v1/launches/{launchId}/dashboard/aggregate:
+    post:
+      tags: [dashboards, launches]
+      operationId: aggregateLaunchDashboard
+      description: >
+        Evaluates up to 24 dashboard widgets over every result in one launch. Returns complete
+        counts and bounded group/table rows without raw results, steps, parameters, or traces.
+        Unsupported queries are marked per widget; muted results are excluded unless explicitly
+        filtered. Pass rate excludes muted results from its denominator.
+      parameters:
+        - name: launchId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LaunchDashboardAggregateRequest"
+      responses:
+        "200":
+          description: Complete launch-level widget metrics with bounded presentation data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaunchDashboardAggregateReadModel"
+        "400":
+          description: Invalid request shape or request bounds.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedactedError"
+        "403":
+          description: Missing launch read scope or project visibility membership.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermissionDeniedError"
+        "404":
+          description: Launch or project not found.
   /api/v1/launches/{launchId}/results:
     get:
       tags: [launches]
       operationId: listLaunchResults
-      description: Returns paginated result summaries without raw result bodies, steps, parameters, or attachment payload metadata.
+      description: Returns paginated result summaries without raw result bodies, steps, parameters, or attachment payload metadata. Search and status filters run across the full launch before pagination; page.total is the filtered count.
       parameters:
         - name: launchId
           in: path
@@ -1347,8 +1453,10 @@ paths:
         - name: status
           in: query
           required: false
+          description: Raw Allure status, or muted for results in active quarantine.
           schema:
-            $ref: "#/components/schemas/AllureStatus"
+            type: string
+            enum: [failed, broken, passed, skipped, unknown, muted]
         - name: testCaseId
           in: query
           required: false
@@ -1362,13 +1470,17 @@ paths:
         - name: q
           in: query
           required: false
+          description: Plain text search over result identity, name, status, labels, issues, tags, and links. Queries with comparison or boolean operators use launch-result THQL. Incomplete THQL returns no matches.
           schema:
             type: string
+            maxLength: 2000
         - name: search
           in: query
           required: false
+          description: Alias for q; q takes precedence when both are supplied.
           schema:
             type: string
+            maxLength: 2000
         - name: sort
           in: query
           required: false
@@ -1410,7 +1522,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LaunchResultList"
         "400":
-          description: Invalid result list pagination, sort, or order controls; response is redacted and never echoes query values
+          description: Invalid result list pagination, sort, order, or query length; response is redacted and never echoes query values
           content:
             application/json:
               schema:
@@ -1536,7 +1648,7 @@ paths:
     post:
       tags: [uploads]
       operationId: uploadAllureJsonBatch
-      description: Uploads a JSON batch. This endpoint stores every file as an artifact and imports `*-result.json` files.
+      description: Uploads a JSON batch. The response includes each addressable test result's resultId and resultUrl, including idempotent duplicates.
       parameters:
         - name: launchId
           in: path
@@ -2186,7 +2298,7 @@ paths:
     post:
       tags: [uploads]
       operationId: completeChunkedUpload
-      description: Validates a completed chunked upload session and queues a worker-compatible ingestion job without parsing payloads in the HTTP complete request path.
+      description: Validates a completed chunked upload session and returns the upload job ID. Result IDs become available in the completed job/status response after worker processing.
       parameters:
         - name: uploadId
           in: path
@@ -2227,7 +2339,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ChunkedUploadCompleteResponse"
+                $ref: "#/components/schemas/UploadJobProcessResponse"
         "404":
           description: Upload job or retained session payload not found
         "409":
@@ -4667,6 +4779,109 @@ components:
           type: string
         buildNumber:
           type: string
+    LaunchDashboardAggregateRequest:
+      type: object
+      additionalProperties: false
+      required: [widgets]
+      properties:
+        widgets:
+          type: array
+          maxItems: 24
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, kind, metric, groupBy, thql]
+            properties:
+              id: { type: string, minLength: 1, maxLength: 120 }
+              kind: { type: string, enum: [metric, bar, donut, table, line] }
+              metric: { type: string, maxLength: 120 }
+              groupBy: { type: string, maxLength: 120 }
+              thql: { type: string, minLength: 1, maxLength: 2000 }
+              entity: { type: string, maxLength: 120 }
+    LaunchDashboardAggregateReadModel:
+      type: object
+      additionalProperties: false
+      required: [kind, launchId, projectId, totalResults, widgets]
+      properties:
+        kind: { type: string, const: launch-dashboard-aggregate }
+        launchId: { type: string }
+        projectId: { type: string }
+        totalResults: { type: integer }
+        widgets:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/DashboardAggregateReadyWidget"
+              - $ref: "#/components/schemas/DashboardAggregateUnsupportedWidget"
+    DashboardAggregateReadyWidget:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          status,
+          filteredCount,
+          passedCount,
+          passRate,
+          averageDurationMs,
+          averageDuration,
+          retryCount,
+          metricKind,
+          value,
+          groupCount,
+          groupsTruncated,
+          groups,
+          tableRows
+        ]
+      properties:
+        id: { type: string }
+        status: { type: string, const: ready }
+        filteredCount: { type: integer }
+        passedCount: { type: integer }
+        passRate: { type: number }
+        averageDurationMs: { anyOf: [{ type: number }, { type: "null" }] }
+        averageDuration: { type: string }
+        retryCount: { type: "null" }
+        metricKind: { type: string, enum: [count, passRate, averageDuration, retryCount] }
+        value: { type: string }
+        groupCount: { type: integer }
+        groupsTruncated: { type: boolean }
+        groups:
+          type: array
+          maxItems: 30
+          items:
+            type: object
+            additionalProperties: false
+            required: [key, label, value, percent]
+            properties:
+              key: { type: string }
+              label: { type: string }
+              value: { type: integer }
+              percent: { type: number }
+              status: { type: string, enum: [failed, broken, passed, skipped, unknown, muted] }
+        tableRows:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, uuid, launchId, name, status, duration]
+            properties:
+              id: { type: string }
+              uuid: { type: string }
+              launchId: { type: string }
+              name: { type: string }
+              status: { type: string, enum: [failed, broken, passed, skipped, unknown, muted] }
+              duration: { type: string }
+              durationMs: { type: number }
+    DashboardAggregateUnsupportedWidget:
+      type: object
+      additionalProperties: false
+      required: [id, status, reason]
+      properties:
+        id: { type: string }
+        status: { type: string, const: unsupported }
+        reason: { type: string }
     QueryRequest:
       type: object
       additionalProperties: false
@@ -4800,6 +5015,172 @@ components:
                     additionalProperties: true
                   count:
                     type: integer
+    AnalyticsResultStatus:
+      type: string
+      enum: [failed, broken, passed, skipped, unknown, muted]
+    AnalyticsResultSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          uuid,
+          launchId,
+          projectId,
+          name,
+          status,
+          tags,
+          issues,
+          testKeys,
+          muted,
+          flaky,
+          flakyKnown,
+          history
+        ]
+      properties:
+        uuid:
+          type: string
+        launchId:
+          type: string
+        projectId:
+          type: string
+        name:
+          type: string
+        fullName:
+          type: string
+        historyId:
+          type: string
+        testCaseId:
+          type: string
+        status:
+          type: string
+          enum: [failed, broken, passed, skipped, unknown]
+        durationMs:
+          type: number
+        owner:
+          type: string
+        severity:
+          type: string
+        layer:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        issues:
+          type: array
+          items:
+            type: string
+        testKeys:
+          type: array
+          items:
+            type: string
+        muted:
+          type: boolean
+        flaky:
+          type: boolean
+        flakyKnown:
+          type: boolean
+          description: False when no stable Allure identity or explicit flaky marker is available.
+        history:
+          type: array
+          description: Up to five observed statuses for a stable identity across this project.
+          items:
+            type: string
+            enum: [failed, broken, passed, skipped, unknown]
+    AnalyticsResultList:
+      type: object
+      additionalProperties: false
+      required: [kind, projectId, page, metrics, prioritySignals, slowSignals, items]
+      properties:
+        kind:
+          type: string
+          enum: [analytics-result-list]
+        projectId:
+          type: string
+        launchId:
+          type: string
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+        metrics:
+          type: object
+          additionalProperties: false
+          required:
+            [
+              total,
+              matched,
+              statusCounters,
+              averageDurationMs,
+              flakyCount,
+              flakyDataComplete,
+              slowCount,
+              openRisks
+            ]
+          properties:
+            total:
+              type: integer
+              description: All results in the requested project or launch before search and status filtering.
+            matched:
+              type: integer
+              description: Results after search and status filtering, before pagination.
+            statusCounters:
+              type: object
+              additionalProperties: false
+              required: [failed, broken, passed, skipped, unknown, muted]
+              properties:
+                failed:
+                  type: integer
+                broken:
+                  type: integer
+                passed:
+                  type: integer
+                skipped:
+                  type: integer
+                unknown:
+                  type: integer
+                muted:
+                  type: integer
+            averageDurationMs:
+              type: number
+              nullable: true
+            flakyCount:
+              type: integer
+            flakyDataComplete:
+              type: boolean
+              description: False when any matched result lacks stable identity and an explicit flaky marker.
+            slowCount:
+              type: integer
+              description: Number of matched results lasting at least 2000 milliseconds.
+            openRisks:
+              type: integer
+              description: Failed or broken matched results excluding active quarantine.
+        prioritySignals:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/AnalyticsResultSummary"
+        slowSignals:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/AnalyticsResultSummary"
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/AnalyticsResultSummary"
+    AnalyticsResultQueryError:
+      type: object
+      additionalProperties: false
+      required: [code, message, redacted]
+      properties:
+        code:
+          type: string
+          enum: [analytics.results.invalid]
+        message:
+          type: string
+        redacted:
+          type: boolean
+          enum: [true]
     ThqlFilterScope:
       type: string
       enum: [global, personal, project]
@@ -6127,6 +6508,7 @@ components:
           importedResults,
           duplicateResults,
           storedArtifacts,
+          results,
           errors,
           createdAt,
           updatedAt
@@ -6151,6 +6533,11 @@ components:
         storedArtifacts:
           type: integer
           minimum: 0
+        results:
+          type: array
+          description: Addressable result IDs populated once this job finishes parsing result files.
+          items:
+            $ref: "#/components/schemas/UploadResultReference"
         errors:
           type: array
           items:
@@ -6706,7 +7093,7 @@ components:
                   type: string
     UploadIngestionStatusReadModel:
       type: object
-      required: [id, kind, launchId, status, progress, diagnostics, queue, links]
+      required: [id, kind, launchId, status, progress, diagnostics, results, queue, links]
       properties:
         id:
           type: string
@@ -6735,6 +7122,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UploadDiagnostic"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadResultReference"
         queue:
           $ref: "#/components/schemas/QueueWorkerStatus"
         session:
@@ -6819,14 +7210,30 @@ components:
             duplicateResults:
               type: integer
               minimum: 0
+    UploadResultReference:
+      type: object
+      required: [path, resultId, resultUrl, status]
+      properties:
+        path:
+          type: string
+        resultId:
+          type: string
+          description: Stable result UUID for result routes; distinct from the upload job ID.
+        resultUrl:
+          type: string
+          description: Relative API URL for GET of the imported result.
+        status:
+          type: string
+          enum: [imported, duplicate]
     UploadBatchResponse:
       type: object
-      required: [job, imported, compatibilityFiles, artifacts, checksumDuplicates, launch]
+      required: [job, imported, results, compatibilityFiles, artifacts, checksumDuplicates, launch]
       properties:
         job:
           $ref: "#/components/schemas/UploadJobReadModel"
         imported:
           type: array
+          description: Legacy imported-file list; uuid remains for compatibility.
           items:
             type: object
             required: [path, uuid, warnings]
@@ -6839,6 +7246,11 @@ components:
                 type: array
                 items:
                   type: string
+        results:
+          type: array
+          description: IDs and detail URLs for imported results and accepted idempotent duplicates.
+          items:
+            $ref: "#/components/schemas/UploadResultReference"
         compatibilityFiles:
           type: array
           description: Import diagnostics for supported Allure result side files in the upload.
@@ -8510,6 +8922,7 @@ components:
           id,
           launchId,
           status,
+          results,
           phase,
           progress,
           archive,
@@ -8533,6 +8946,11 @@ components:
         status:
           type: string
           enum: [queued, processing, completed, completed_with_errors, failed]
+        results:
+          type: array
+          description: Result IDs are populated only if an archive worker imports result payloads.
+          items:
+            $ref: "#/components/schemas/UploadResultReference"
         phase:
           type: string
           enum: [queued, processing, completed, partial_success, failed]
@@ -8666,24 +9084,39 @@ components:
           items:
             $ref: "#/components/schemas/ArchiveUploadStatusReadModel"
     ChunkedUploadCompleteResponse:
-      allOf:
+      type: object
+      required: [session, job, accepted, processing, links]
+      description: The HTTP request queues parsing. job.id is available immediately; job.results is empty until processing completes.
+      properties:
+        session:
+          $ref: "#/components/schemas/UploadSessionReadModel"
+        job:
+          $ref: "#/components/schemas/UploadJobReadModel"
+        accepted:
+          type: boolean
+        processing:
+          type: object
+          additionalProperties: true
+        links:
+          type: object
+          additionalProperties:
+            type: string
+    UploadJobProcessResponse:
+      oneOf:
         - $ref: "#/components/schemas/UploadBatchResponse"
         - type: object
-          required: [session, job]
+          required: [job, status, results, idempotent]
           properties:
-            session:
-              $ref: "#/components/schemas/UploadSessionReadModel"
             job:
               $ref: "#/components/schemas/UploadJobReadModel"
-            accepted:
+            status:
+              $ref: "#/components/schemas/UploadIngestionStatusReadModel"
+            results:
+              type: array
+              items:
+                $ref: "#/components/schemas/UploadResultReference"
+            idempotent:
               type: boolean
-            processing:
-              type: object
-              additionalProperties: true
-            links:
-              type: object
-              additionalProperties:
-                type: string
     ArtifactKind:
       type: string
       enum:

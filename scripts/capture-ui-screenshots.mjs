@@ -17,8 +17,42 @@ const screens = [
   { name: "projects", hash: "#projects" },
   { name: "dashboard", hash: "#dashboard" },
   { name: "launches", hash: "#launch" },
-  { name: "launch-detail", hash: "#launch/L-1289" },
-  { name: "launch-results", hash: "#launch/L-1289/results" },
+  {
+    name: "launch-detail",
+    hash: "#launch/L-1289",
+    verify: async (page) => {
+      await page
+        .locator('.launches-reference-overview-donut[aria-label="Результаты запуска: 100 тестов"]')
+        .waitFor();
+      for (const [status, count] of [
+        ["passed", "62"],
+        ["failed", "18"],
+        ["broken", "12"],
+        ["skipped", "8"]
+      ]) {
+        const actual = await page
+          .locator(`.launches-reference-overview-legend-item.is-${status} strong`)
+          .textContent();
+        if (actual?.trim() !== count) {
+          throw new Error(`Launch overview screenshot has ${status}=${actual}, expected ${count}`);
+        }
+      }
+    }
+  },
+  {
+    name: "launch-results",
+    hash: "#launch/L-1289/results",
+    verify: async (page) => {
+      await page.locator(".launches-reference-result-table > button").first().waitFor();
+      const rowCount = await page.locator(".launches-reference-result-table > button").count();
+      const pageRange = await page.locator(".launches-results-pagination-range").textContent();
+      if (rowCount !== 25 || !/1\s*[–-]\s*25\s+из\s+100/.test(pageRange ?? "")) {
+        throw new Error(
+          `Launch results screenshot requires 25 of 100 rows; got ${rowCount}, ${pageRange}`
+        );
+      }
+    }
+  },
   { name: "launch-result-history", hash: "#launch/L-1289/result/PAY-1042/history" },
   { name: "launch-result-defects", hash: "#launch/L-1289/result/PAY-1042/defects" },
   { name: "selected-test-case", hash: "#case/PAY-1042/overview" },
@@ -163,6 +197,9 @@ try {
     if (typeof screen.prepare === "function") {
       await screen.prepare(page);
       await page.waitForTimeout(350);
+    }
+    if (typeof screen.verify === "function") {
+      await screen.verify(page);
     }
     const screenshotPath = path.join(outputDir, `${screen.name}.png`);
     await page.screenshot({
@@ -354,7 +391,12 @@ async function installApiMocks(page) {
       });
     }
 
-    const fixtureResponse = createUiFixtureApiResponse(pathname, method);
+    const fixtureResponse = createUiFixtureApiResponse(
+      pathname,
+      method,
+      request.postData(),
+      url.search
+    );
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify(fixtureResponse ?? createEmptyUiApiResponse(pathname))

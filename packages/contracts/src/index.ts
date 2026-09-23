@@ -1,5 +1,7 @@
 export * from "./core.js";
 export * from "./launches.js";
+export * from "./analyticsResults.js";
+export * from "./dashboardAggregate.js";
 export * from "./uploads.js";
 export * from "./artifacts.js";
 export * from "./testCases.js";

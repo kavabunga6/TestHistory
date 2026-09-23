@@ -58,7 +58,9 @@ try {
   await ensureLocalProject(apiUrl);
   if (seedEvidence) {
     const { importLocalAllureEvidence } = await import("./import-local-allure-evidence.mjs");
-    await importLocalAllureEvidence({ baseUrl: apiUrl });
+    const evidence = await importLocalAllureEvidence({ baseUrl: apiUrl });
+    const { seedLocalNestedSteps } = await import("./seed-local-nested-steps.mjs");
+    await seedLocalNestedSteps({ baseUrl: apiUrl, projectId: evidence.projectId });
   }
 
   if (withWorker) {

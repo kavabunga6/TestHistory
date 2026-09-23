@@ -221,6 +221,7 @@ export function toPersistentUploadJob(row: UploadJobRow): PersistentUploadJob {
     duplicateResults: row.duplicate_results,
     storedArtifacts: row.stored_artifacts,
     errors: row.errors,
+    results: row.results ?? [],
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
     version: row.version
