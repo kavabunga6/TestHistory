@@ -1,7 +1,13 @@
 import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function ResultIdCopy({ resultId }: { resultId: string }) {
+export function ResultIdCopy({
+  label = "ID результата",
+  resultId
+}: {
+  label?: string;
+  resultId: string;
+}) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   useEffect(() => setCopyState("idle"), [resultId]);
@@ -17,11 +23,13 @@ export function ResultIdCopy({ resultId }: { resultId: string }) {
 
   return (
     <div className="tc-detail-reference-result-id">
-      <code title={resultId}>ID результата: {resultId}</code>
+      <code title={resultId}>
+        {label}: {resultId}
+      </code>
       <button
-        aria-label={`Скопировать ID результата ${resultId}`}
+        aria-label={`Скопировать ${label} ${resultId}`}
         onClick={() => void copyId()}
-        title="Скопировать ID результата"
+        title={`Скопировать ${label}`}
         type="button"
       >
         <Copy aria-hidden="true" size={14} />

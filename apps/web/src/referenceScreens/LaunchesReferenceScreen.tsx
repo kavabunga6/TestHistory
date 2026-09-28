@@ -1,8 +1,15 @@
 ﻿import { ChevronRight, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import type { LaunchListItem, LaunchResultPage, ResultStatus, TestResult } from "../m1Workspace.js";
+import type {
+  LaunchListItem,
+  LaunchResultPage,
+  ResultStatus,
+  TestResult,
+  WorkspaceListPage
+} from "../m1Workspace.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
+import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 import { formatLaunchId } from "./LaunchesReferenceFormatters.js";
 import {
   filterLaunchItems,
@@ -24,6 +31,7 @@ import {
 } from "./LaunchesReferenceModel.js";
 
 import { ReferenceRouteState } from "./LaunchesReferenceRouteState.js";
+import { ReferenceListPagination, useReferenceListPagination } from "./ReferenceListPagination.js";
 import { LaunchComparisonScreen, type LaunchComparisonSession } from "./LaunchComparisonCard.js";
 import {
   ChartsTab,
@@ -59,11 +67,17 @@ export function LaunchesReferenceScreen({
   integrationProviders = [],
   launchDetailLoading = false,
   launchItems,
+  launchPage,
+  launchPageIndex = 0,
+  launchPageSize = 25,
   launchListLoading = false,
   launchListPartial,
   loadingScope,
   onOpenLaunch,
   onOpenLaunchList,
+  onLaunchPageIndexChange,
+  onLaunchPageSizeChange,
+  onLaunchQueryChange,
   onOpenResult,
   onOpenResultTab,
   onOpenTab,
@@ -96,12 +110,18 @@ export function LaunchesReferenceScreen({
   launchDetailLoading?: boolean | undefined;
   launchDetailPartial?: LaunchesReferencePartialState | undefined;
   launchItems: LaunchListItem[];
+  launchPage?: WorkspaceListPage | undefined;
+  launchPageIndex?: number | undefined;
+  launchPageSize?: number | undefined;
   launchListLoading?: boolean | undefined;
   launchListPartial?: LaunchesReferencePartialState | undefined;
   loadingScope?: LaunchesReferenceLoadingScope | LaunchesReferenceLoadingScope[] | undefined;
   onDeleteLaunch?: ((id: string) => void) | undefined;
   onOpenLaunch?: ((id: string) => void) | undefined;
   onOpenLaunchList?: (() => void) | undefined;
+  onLaunchPageIndexChange?: ((index: number) => void) | undefined;
+  onLaunchPageSizeChange?: ((size: number) => void) | undefined;
+  onLaunchQueryChange?: ((query: string) => void) | undefined;
   onOpenResult?: ((id: string) => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
   onOpenTab?: ((tab: string) => void) | undefined;
@@ -173,9 +193,13 @@ export function LaunchesReferenceScreen({
       resultPage === undefined ? filterResults(launchResults, query, statusFilter) : launchResults,
     [launchResults, query, resultPage, statusFilter]
   );
+  const launchQueryIsThql = isLikelyThqlQuery(launchQuery);
   const filteredLaunchItems = useMemo(
-    () => filterLaunchItems(launchItems, launchQuery),
-    [launchItems, launchQuery]
+    () =>
+      launchPage !== undefined && !launchQueryIsThql
+        ? launchItems
+        : filterLaunchItems(launchItems, launchQuery),
+    [launchItems, launchPage, launchQuery, launchQueryIsThql]
   );
   const resultListNavigationKey = JSON.stringify([
     selectedLaunch?.id,
@@ -473,15 +497,26 @@ export function LaunchesReferenceScreen({
         activeFilterId={activeLaunchFilterId}
         actorId={actorId}
         launchItems={filteredLaunchItems}
+        launchPage={launchQueryIsThql ? undefined : launchPage}
+        launchPageIndex={launchPageIndex}
+        launchPageSize={launchPageSize}
+        localFilterNotice={launchQueryIsThql && launchPage !== undefined}
         projectId={projectId}
         query={launchQuery}
         onActiveFilterChange={setActiveLaunchFilterId}
-        onQueryChange={setLaunchQuery}
+        onQueryChange={(nextQuery) => {
+          setLaunchQuery(nextQuery);
+          onLaunchQueryChange?.(nextQuery);
+        }}
+        onLaunchPageIndexChange={onLaunchPageIndexChange}
+        onLaunchPageSizeChange={onLaunchPageSizeChange}
         onRefresh={onRefresh}
         onSelectLaunch={openLaunchDetail}
         partial={launchListPartial}
         loading={isLaunchListLoading}
-        totalCount={launchItems.length}
+        totalCount={
+          launchQueryIsThql ? filteredLaunchItems.length : (launchPage?.total ?? launchItems.length)
+        }
       />
     );
   }
@@ -684,8 +719,14 @@ function LaunchListView({
   activeFilterId,
   actorId,
   launchItems,
+  launchPage,
+  launchPageIndex,
+  launchPageSize,
   loading,
+  localFilterNotice,
   onActiveFilterChange,
+  onLaunchPageIndexChange,
+  onLaunchPageSizeChange,
   onQueryChange,
   onRefresh,
   onSelectLaunch,
@@ -697,8 +738,14 @@ function LaunchListView({
   activeFilterId?: string | undefined;
   actorId: string;
   launchItems: LaunchListItem[];
+  launchPage?: WorkspaceListPage | undefined;
+  launchPageIndex: number;
+  launchPageSize: number;
   loading: boolean;
+  localFilterNotice: boolean;
   onActiveFilterChange: (id: string | undefined) => void;
+  onLaunchPageIndexChange?: ((index: number) => void) | undefined;
+  onLaunchPageSizeChange?: ((size: number) => void) | undefined;
   onQueryChange: (query: string) => void;
   onRefresh?: (() => void) | undefined;
   onSelectLaunch: (launchId: string) => void;
@@ -707,7 +754,23 @@ function LaunchListView({
   query: string;
   totalCount: number;
 }) {
-  const visibleLaunchItems = launchItems.slice(0, 50);
+  const localPagination = useReferenceListPagination({
+    context: `${projectId}\u0000${activeFilterId ?? ""}\u0000${query}`,
+    count: launchItems.length,
+    selectedIndex: -1
+  });
+  const serverPagination = launchPage !== undefined;
+  const page = serverPagination ? launchPageIndex : localPagination.page;
+  const pageSize = serverPagination
+    ? launchPageSize === 50 || launchPageSize === 100
+      ? launchPageSize
+      : 25
+    : localPagination.pageSize;
+  const setPage = serverPagination ? onLaunchPageIndexChange : localPagination.setPage;
+  const setPageSize = serverPagination ? onLaunchPageSizeChange : localPagination.setPageSize;
+  const visibleLaunchItems = serverPagination
+    ? launchItems
+    : launchItems.slice(page * pageSize, (page + 1) * pageSize);
   const partialMessage = getPartialStateMessage(
     partial,
     "Показана загруженная часть списка запусков. Полный объем еще не подтвержден."
@@ -767,6 +830,11 @@ function LaunchListView({
               text={partialMessage}
             />
           ) : null}
+          {localFilterNotice ? (
+            <div className="launches-reference-list-window-note" role="status">
+              THQL-фильтр применяется к текущей странице запусков.
+            </div>
+          ) : null}
 
           {visibleLaunchItems.map((launch) => {
             const metadata = parseLaunchMetadata(launch);
@@ -817,14 +885,6 @@ function LaunchListView({
             );
           })}
 
-          {launchItems.length > visibleLaunchItems.length ? (
-            <div className="launches-reference-list-window-note">
-              Показаны первые {visibleLaunchItems.length.toLocaleString("ru-RU")} из{" "}
-              {launchItems.length.toLocaleString("ru-RU")} запусков. Используйте поиск для уточнения
-              списка.
-            </div>
-          ) : null}
-
           {launchItems.length === 0 && !loading ? (
             <div className="launches-reference-state-empty">
               <strong>Запуски не найдены</strong>
@@ -832,6 +892,16 @@ function LaunchListView({
             </div>
           ) : null}
         </div>
+        {totalCount > 0 && setPage !== undefined && setPageSize !== undefined ? (
+          <ReferenceListPagination
+            count={totalCount}
+            label="Запуски"
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            page={page}
+            pageSize={pageSize}
+          />
+        ) : null}
       </article>
     </section>
   );

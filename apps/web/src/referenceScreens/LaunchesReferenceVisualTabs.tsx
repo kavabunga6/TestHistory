@@ -164,6 +164,13 @@ export function LaunchProgressBar({
   total: number;
 }) {
   const visibleStatuses = analyticsStatusOrder.filter((status) => counters[status] > 0);
+  const legendLabels: Record<ResultStatus, string> = {
+    broken: "Сломаны/неизв.",
+    failed: "Провалены",
+    muted: "В карантине",
+    passed: "Успешные",
+    skipped: "Пропущены"
+  };
 
   return (
     <div className="launches-reference-progress-wrap" aria-label="Распределение статусов">
@@ -171,19 +178,31 @@ export function LaunchProgressBar({
         {visibleStatuses.map((status) => {
           const value = counters[status];
           const showCount = total > 0 && value / total >= 0.12;
+          const statusLabel = status === "broken" ? "Сломаны и неизвестны" : formatStatus(status);
 
           return (
             <span
               className={`is-${status}`}
               key={status}
-              aria-label={`${formatStatus(status)}: ${value}`}
+              aria-label={`${statusLabel}: ${value}`}
               style={{ flexBasis: 0, flexGrow: value }}
-              title={`${formatStatus(status)}: ${value}`}
+              title={`${statusLabel}: ${value}`}
             >
               {showCount ? value.toLocaleString("ru-RU") : null}
             </span>
           );
         })}
+      </div>
+      <div className="launches-reference-progress-legend" aria-label="Значения цветов статусов">
+        {visibleStatuses.map((status) => (
+          <span
+            key={status}
+            title={`${status === "broken" ? "Сломаны и неизвестны" : formatStatus(status)}: ${counters[status]}`}
+          >
+            <i className={`is-${status}`} aria-hidden="true" />
+            {legendLabels[status]} {counters[status].toLocaleString("ru-RU")}
+          </span>
+        ))}
       </div>
     </div>
   );

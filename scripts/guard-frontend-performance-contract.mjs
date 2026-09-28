@@ -34,20 +34,30 @@ const sourceChecks = [
       workspaceInitialDefectLimit: 100
     },
     requiredFragments: [
-      "launches?limit=${workspaceInitialLaunchLimit}",
+      "launchPageSize ?? workspaceInitialLaunchLimit",
+      "launches?${listPageParameters(",
       "resultsPayload.items.slice(0, workspaceInitialResultHydrationLimit)",
       "limit > workspaceResultListLimit",
       "results?limit=${limit}",
-      "test-cases?projectId=${encodeURIComponent(",
-      "limit=${workspaceInitialTestCaseLimit}",
+      "test-cases?${listPageParameters(listPageSize, listPageCursor, listQuery, project.id)}",
       "test-case-detail",
-      "defects?projectId=${encodeURIComponent(",
-      "limit=${workspaceInitialDefectLimit}",
+      "defects?${listPageParameters(listPageSize, listPageCursor, listQuery, project.id)}",
       "defect-detail",
       'return "result-detail"',
       "preferredResultId",
       'from "./m1WorkspaceHistoryReads.js"',
       "limit=${workspaceInitialHistoryLimit}"
+    ]
+  },
+  {
+    file: "apps/web/src/m1WorkspaceCatalog.ts",
+    constants: {},
+    requiredFragments: [
+      "Number.isInteger(limit)",
+      "limit > 500",
+      'parameters.set("limit", String(limit))',
+      'parameters.set("cursor", cursor)',
+      'parameters.set("q", query)'
     ]
   },
   {
@@ -57,17 +67,19 @@ const sourceChecks = [
   },
   {
     file: "apps/web/src/referenceScreens/DefectsReferenceScreen.tsx",
-    constants: {
-      DEFECT_REFERENCE_PAGE_SIZE: 100
-    },
-    requiredFragments: ["filteredDefects.slice(0, DEFECT_REFERENCE_PAGE_SIZE)"]
+    constants: {},
+    requiredFragments: [
+      "useReferenceListPagination({",
+      "filteredDefects.slice(page * pageSize, (page + 1) * pageSize)"
+    ]
   },
   {
     file: "apps/web/src/referenceScreens/TestCaseDetailReferenceScreen.tsx",
-    constants: {
-      TEST_CASE_REFERENCE_PAGE_SIZE: 100
-    },
-    requiredFragments: ["filteredResults.slice(0, TEST_CASE_REFERENCE_PAGE_SIZE)"]
+    constants: {},
+    requiredFragments: [
+      "useReferenceListPagination({",
+      "filteredResults.slice(page * pageSize, (page + 1) * pageSize)"
+    ]
   },
   {
     file: "apps/api/src/routes/launchHelpers.ts",

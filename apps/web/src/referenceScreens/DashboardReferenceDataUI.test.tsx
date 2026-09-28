@@ -39,7 +39,7 @@ describe("dashboard aggregate states", () => {
       await Promise.resolve();
     });
     const text = container.textContent?.replaceAll("\u00a0", " ");
-    expect(text).toContain("10 000 результатов · весь запуск");
+    expect(text).toContain("10 000 результатов · Nightly");
     expect(text).toContain("Успешных результатов: 9 000");
     expect(container.textContent).not.toContain("Ретраи 0");
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -73,7 +73,7 @@ describe("dashboard aggregate states", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(container.textContent).toContain("1 результат · весь запуск");
+    expect(container.textContent).toContain("1 результат · Nightly");
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
@@ -91,7 +91,7 @@ describe("dashboard aggregate states", () => {
         />
       )
     );
-    expect(container.textContent).toContain("1 результат · весь запуск");
+    expect(container.textContent).toContain("1 результат · First");
 
     const select = container.querySelector<HTMLSelectElement>(
       ".dashboard-reference-launch-picker select"
@@ -101,7 +101,7 @@ describe("dashboard aggregate states", () => {
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
     expect(container.textContent).toContain("Second");
-    expect(container.textContent).toContain("2 результата · весь запуск");
+    expect(container.textContent).toContain("2 результата · Second");
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toContain(
       "/api/v1/launches/launch-2/dashboard/aggregate"
     );

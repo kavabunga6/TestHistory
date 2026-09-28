@@ -16,6 +16,13 @@ const screens = [
   { name: "auth-login", hash: "#launch", auth: false },
   { name: "projects", hash: "#projects" },
   { name: "dashboard", hash: "#dashboard" },
+  {
+    name: "test-cases",
+    hash: "#case?list=1",
+    interact: async (page) => {
+      await page.getByRole("searchbox", { name: "THQL поиск тест-кейсов" }).fill("Оплата");
+    }
+  },
   { name: "launches", hash: "#launch" },
   {
     name: "launch-detail",
@@ -59,6 +66,7 @@ const screens = [
   { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
   { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
   { name: "defects", hash: "#defects/PAY-337" },
+  { name: "automation", hash: "#automation" },
   { name: "analytics", hash: "#analytics" },
   {
     name: "dialog-dashboard-widget-delete",
@@ -110,13 +118,7 @@ const screens = [
         .click();
     }
   },
-  {
-    name: "dialog-quarantine",
-    hash: "#launch/L-1289/result/PAY-1042",
-    prepare: async (page) => {
-      await page.getByRole("button", { name: "В карантин" }).first().click();
-    }
-  },
+  { name: "quarantine-empty", hash: "#launch/L-1289/results?query=muted+%3D+true" },
   {
     name: "dialog-delete-launch",
     hash: "#launch/L-1289",
@@ -194,6 +196,10 @@ try {
       waitUntil: "domcontentloaded"
     });
     await page.waitForTimeout(750);
+    if (typeof screen.interact === "function") {
+      await screen.interact(page);
+      await page.waitForTimeout(350);
+    }
     if (typeof screen.prepare === "function") {
       await screen.prepare(page);
       await page.waitForTimeout(350);

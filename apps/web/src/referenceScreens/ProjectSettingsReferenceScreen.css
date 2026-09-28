@@ -66,12 +66,37 @@
   font-size: 14px;
 }
 
-.project-settings__eyebrow {
-  color: #3157a8;
+.project-settings__breadcrumb {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.project-settings__breadcrumb a {
+  color: #2b5da8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.project-settings__breadcrumb a:hover,
+.project-settings__breadcrumb a:focus-visible {
+  text-decoration: underline;
+}
+
+.project-settings__breadcrumb > span {
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-settings__breadcrumb strong {
+  color: #334155;
+  font-weight: 600;
 }
 
 .project-settings__summary {
@@ -230,13 +255,13 @@
 }
 
 .project-settings__tabs button.active {
-  color: #172033;
+  color: #1d4ed8;
 }
 
 .project-settings__tabs button.active::after {
   position: absolute;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   left: 0;
   height: 2px;
   background: #2563eb;
@@ -1004,8 +1029,8 @@
   display: grid;
   grid-template-columns:
     minmax(160px, 0.9fr) minmax(150px, 0.8fr) minmax(260px, 1.5fr)
-    112px 84px;
-  min-width: 760px;
+    144px 84px;
+  min-width: 792px;
   align-items: center;
   column-gap: 14px;
   padding: 0 14px;
@@ -1015,8 +1040,8 @@
 .project-settings__integrations-table--readonly .project-settings__integrations-table-row {
   grid-template-columns:
     minmax(160px, 0.9fr) minmax(150px, 0.8fr) minmax(260px, 1.5fr)
-    112px;
-  min-width: 660px;
+    144px;
+  min-width: 692px;
 }
 
 .project-settings__integrations-table-head {

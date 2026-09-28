@@ -173,7 +173,9 @@ function MetricWidget({ evaluation }: { evaluation: DashboardAggregateReadyWidge
       <strong>{evaluation.value}</strong>
       <span>{description}</span>
       <div className="dashboard-reference-metric-strip">
-        <span className="is-passed">Успешность {formatPercent(evaluation.passRate)}</span>
+        {evaluation.metricKind !== "passRate" ? (
+          <span className="is-passed">Успешность {formatPercent(evaluation.passRate)}</span>
+        ) : null}
         <span>Среднее {evaluation.averageDuration}</span>
         {evaluation.retryCount !== null ? <span>Ретраи {evaluation.retryCount}</span> : null}
       </div>

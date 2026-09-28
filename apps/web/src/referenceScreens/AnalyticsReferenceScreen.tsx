@@ -91,8 +91,12 @@ export function AnalyticsReferenceScreen({
     >
       <header className="analytics-reference-header">
         <div className="analytics-reference-header-copy">
-          <p className="analytics-reference-kicker">Рабочая аналитика</p>
-          <h1>Аналитика</h1>
+          <div className="analytics-reference-title-row">
+            <h1>Аналитика</h1>
+            <span className="analytics-reference-scope">
+              {serverReady ? "Проект · за всё время" : "Загруженные данные"}
+            </span>
+          </div>
           <span>
             {serverReady ? (
               <>
@@ -167,7 +171,7 @@ export function AnalyticsReferenceScreen({
           <div
             className="analytics-reference-trend-bars"
             style={{
-              gridTemplateColumns: `repeat(${Math.min(12, trendRead.series.length)}, minmax(120px, 1fr))`
+              gridTemplateColumns: `repeat(${Math.min(12, trendRead.series.length)}, minmax(0, 1fr))`
             }}
           >
             {trendRead.series.slice(-12).map((point) => {
@@ -202,7 +206,10 @@ export function AnalyticsReferenceScreen({
       ) : null}
 
       <div className="analytics-reference-grid">
-        <section className="analytics-reference-panel" aria-label="Статусы результатов">
+        <section
+          className="analytics-reference-panel analytics-reference-status-panel"
+          aria-label="Статусы результатов"
+        >
           <div className="analytics-reference-panel-title">
             <BarChart3 size={18} />
             <h3>Статусы</h3>

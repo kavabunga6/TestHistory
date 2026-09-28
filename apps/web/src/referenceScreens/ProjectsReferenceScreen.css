@@ -128,29 +128,29 @@
 
 .projects-reference__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  padding: 16px;
-  background: #f4f7fb;
+  gap: 0;
+  padding: 0;
+  background: #ffffff;
 }
 
 .projects-reference__card {
   min-width: 0;
   display: grid;
-  gap: 18px;
-  grid-template-rows: auto 1fr auto;
-  border: 1px solid #dbe3ed;
-  border-radius: 9px;
-  padding: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.6fr) auto;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #e3e9f1;
+  padding: 16px 20px;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
+}
+
+.projects-reference__card:last-child {
+  border-bottom: 0;
 }
 
 .projects-reference__card[aria-current="true"] {
-  border-color: #bfdbfe;
-  box-shadow:
-    inset 3px 0 0 #2563eb,
-    0 2px 6px rgb(15 23 42 / 8%);
+  background: #f4f8ff;
+  box-shadow: inset 3px 0 0 #2563eb;
 }
 
 .projects-reference__project-cell {
@@ -217,8 +217,6 @@
 .projects-reference__project-meta {
   display: grid;
   gap: 4px;
-  border-top: 1px solid #e3e9f1;
-  padding-top: 14px;
   color: #65738a;
   font-size: 12px;
 }
@@ -251,6 +249,10 @@
   font-weight: 600;
 }
 
+.projects-reference__open {
+  min-width: 166px;
+}
+
 .projects-reference__open:hover,
 .projects-reference__empty button:hover {
   background: #1d4ed8;
@@ -280,13 +282,10 @@
 }
 
 .projects-reference__empty {
-  grid-column: 1 / -1;
   display: grid;
   min-height: 180px;
   place-content: center;
   gap: 6px;
-  border: 1px dashed #cbd5e1;
-  border-radius: 9px;
   padding: 32px;
   background: #ffffff;
   color: #65738a;
@@ -305,12 +304,19 @@
 }
 
 @media (max-width: 900px) {
-  .projects-reference {
-    padding: var(--workspace-page-gutter, 16px);
+  .projects-reference__card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 16px;
   }
 
-  .projects-reference__grid {
-    grid-template-columns: minmax(0, 1fr);
+  .projects-reference__project-meta {
+    grid-column: 1;
+    padding-left: 54px;
+  }
+
+  .projects-reference__open {
+    grid-column: 2;
+    grid-row: 1 / 3;
   }
 }
 
@@ -327,8 +333,7 @@
     max-width: 32ch;
   }
 
-  .projects-reference__search,
-  .projects-reference__grid {
+  .projects-reference__search {
     padding: 12px;
   }
 
@@ -337,7 +342,20 @@
   }
 
   .projects-reference__card {
-    padding: 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .projects-reference__project-meta {
+    grid-column: auto;
+    padding-left: 54px;
+  }
+
+  .projects-reference__open {
+    width: 100%;
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 

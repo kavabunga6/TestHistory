@@ -147,12 +147,6 @@ export function DashboardReferenceScreen({
 
   return (
     <main className="dashboard-reference-screen" aria-label="Дашборды">
-      <div className="dashboard-reference-crumbs">
-        <strong>TestHistory</strong>
-        <span>/</span>
-        <span>Дашборды</span>
-      </div>
-
       <section className="dashboard-reference-frame" aria-labelledby="dashboard-reference-title">
         <header className="dashboard-reference-head">
           <div>
@@ -305,8 +299,8 @@ function DashboardDataContent({
   return (
     <>
       <div className="dashboard-reference-data-summary">
-        <strong>{launchName ?? "Выбранный запуск"}</strong>
-        <span>{formatResultCount(aggregate.totalResults)} · весь запуск</span>
+        <strong>{formatResultCount(aggregate.totalResults)}</strong>
+        <span title={launchName}> · {launchName ?? "весь запуск"}</span>
         <button aria-label="Обновить данные дашборда" onClick={onRetry} type="button">
           <RefreshCw aria-hidden="true" size={14} />
           Обновить

@@ -13,9 +13,11 @@ import {
   emptyM1Workspace,
   loadLaunchResultDetail,
   loadM1Workspace,
-  workspaceDefaultResultPageSize
+  workspaceDefaultResultPageSize,
+  workspaceInitialLaunchLimit
 } from "./m1Workspace.js";
 import type { ResultStatus } from "./m1Workspace.js";
+import { isLikelyThqlQuery } from "./thqlQueryDetection.js";
 import type { WorkspaceRoute } from "./workspaceRouting.js";
 
 export type RefreshWorkspaceOptions = {
@@ -53,6 +55,20 @@ export function useWorkspaceData(
   const resultQuery = resultFilter.scope === paginationScope ? resultFilter.query : "";
   const resultStatusFilter =
     resultFilter.scope === paginationScope ? resultFilter.status : undefined;
+  const listScope = `${projectId ?? ""}:${route.mode}`;
+  const [listPagination, setListPagination] = useState({
+    index: 0,
+    scope: listScope,
+    size: workspaceInitialLaunchLimit
+  });
+  const listPageIndex = listPagination.scope === listScope ? listPagination.index : 0;
+  const listPageSize =
+    listPagination.scope === listScope ? listPagination.size : workspaceInitialLaunchLimit;
+  const [listFilter, setListFilter] = useState({ scope: listScope, query: "" });
+  const listQuery = listFilter.scope === listScope ? listFilter.query : "";
+  const [debouncedListFilter, setDebouncedListFilter] = useState({ scope: listScope, query: "" });
+  const debouncedListQuery =
+    debouncedListFilter.scope === listScope ? debouncedListFilter.query : "";
   const [debouncedQueryState, setDebouncedQueryState] = useState({
     scope: paginationScope,
     query: ""
@@ -69,6 +85,50 @@ export function useWorkspaceData(
     }, 200);
     return () => window.clearTimeout(timer);
   }, [debouncedResultQuery, paginationScope, resultQuery]);
+
+  useEffect(() => {
+    if (debouncedListQuery === listQuery) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setDebouncedListFilter({ scope: listScope, query: listQuery });
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [debouncedListQuery, listQuery, listScope]);
+
+  const setListPageSize = useCallback(
+    (size: number) => {
+      if (size !== 25 && size !== 50 && size !== 100) {
+        return;
+      }
+      if (size !== listPageSize) {
+        setListPagination({ index: 0, scope: listScope, size });
+      }
+    },
+    [listPageSize, listScope]
+  );
+
+  const setListPageIndex = useCallback(
+    (index: number) => {
+      if (!Number.isInteger(index) || index < 0 || index === listPageIndex) {
+        return;
+      }
+      setListPagination({ index, scope: listScope, size: listPageSize });
+    },
+    [listPageIndex, listPageSize, listScope]
+  );
+
+  const setListQuery = useCallback(
+    (query: string) => {
+      if (query === listQuery) {
+        return;
+      }
+      setListFilter({ scope: listScope, query });
+      setListPagination({ index: 0, scope: listScope, size: listPageSize });
+      refreshSequenceRef.current += 1;
+    },
+    [listPageSize, listQuery, listScope]
+  );
 
   const setResultPageSize = useCallback(
     (size: number) => {
@@ -145,12 +205,37 @@ export function useWorkspaceData(
         const focusLaunchId = options.focusLaunchId ?? route.launchId;
         const focusResultId = options.focusResultId ?? route.resultId;
         const loadResultPage = route.mode === "launch" && focusLaunchId !== undefined;
+        const loadListPage =
+          route.mode === "case" ||
+          route.mode === "defects" ||
+          (route.mode === "launch" && focusLaunchId === undefined);
+        const serverListQuery = isLikelyThqlQuery(debouncedListQuery)
+          ? undefined
+          : debouncedListQuery.trim() || undefined;
         const nextWorkspace = await loadM1Workspace({
           ...(projectId !== undefined ? { projectId } : {}),
           preferredLaunchId: focusLaunchId,
           preferredResultId: focusResultId,
           preferredTestCaseId: route.testCaseId,
           preferredDefectId: route.defectId,
+          ...(loadListPage
+            ? {
+                ...(route.mode === "launch"
+                  ? {
+                      launchPageSize: listPageSize,
+                      ...(listPageIndex > 0
+                        ? { launchPageCursor: String(listPageIndex * listPageSize) }
+                        : {})
+                    }
+                  : {
+                      listPageSize,
+                      ...(listPageIndex > 0
+                        ? { listPageCursor: String(listPageIndex * listPageSize) }
+                        : {})
+                    }),
+                ...(serverListQuery !== undefined ? { listQuery: serverListQuery } : {})
+              }
+            : {}),
           ...(loadResultPage
             ? {
                 resultPageSize,
@@ -170,6 +255,23 @@ export function useWorkspaceData(
           })
         });
         if (refreshSequence !== refreshSequenceRef.current) {
+          return;
+        }
+        const currentListPage =
+          route.mode === "case"
+            ? nextWorkspace.testCasePage
+            : route.mode === "defects"
+              ? nextWorkspace.defectPage
+              : route.mode === "launch" && focusLaunchId === undefined
+                ? nextWorkspace.launchPage
+                : undefined;
+        if (
+          currentListPage !== undefined &&
+          currentListPage.total > 0 &&
+          currentListPage.offset >= currentListPage.total &&
+          listPageIndex > 0
+        ) {
+          setListPageIndex(Math.ceil(currentListPage.total / listPageSize) - 1);
           return;
         }
         setWorkspace(nextWorkspace);
@@ -208,6 +310,9 @@ export function useWorkspaceData(
     [
       projectId,
       debouncedResultQuery,
+      debouncedListQuery,
+      listPageIndex,
+      listPageSize,
       resultPageIndex,
       resultPageSize,
       resultStatusFilter,
@@ -216,6 +321,7 @@ export function useWorkspaceData(
       route.mode,
       route.resultId,
       route.testCaseId,
+      setListPageIndex,
       setApiState
     ]
   );
@@ -227,10 +333,22 @@ export function useWorkspaceData(
     if (route.mode === "launch" && resultQuery !== debouncedResultQuery) {
       return;
     }
+    if (
+      (route.mode === "case" ||
+        route.mode === "defects" ||
+        (route.mode === "launch" && route.launchId === undefined)) &&
+      listQuery !== debouncedListQuery
+    ) {
+      return;
+    }
     void refreshWorkspaceRef.current();
   }, [
     authenticationIdentity,
     debouncedResultQuery,
+    debouncedListQuery,
+    listPageIndex,
+    listPageSize,
+    listQuery,
     projectId,
     resultPageIndex,
     resultPageSize,
@@ -322,6 +440,9 @@ export function useWorkspaceData(
   }, [projectId, route.launchId, route.mode, route.resultId, setApiState]);
 
   return {
+    listPageIndex,
+    listPageSize,
+    listQuery,
     refreshWorkspace,
     resultPageIndex,
     resultPageSize,
@@ -332,6 +453,9 @@ export function useWorkspaceData(
     setResultPageSize,
     setResultQuery,
     setResultStatusFilter,
+    setListPageIndex,
+    setListPageSize,
+    setListQuery,
     setSelectedId,
     setWorkspace,
     workspace,

@@ -4,6 +4,27 @@ This audit captures the current TestHistory UI review direction. It is based on 
 `docs/screenshots/final/*` evidence and the Allure/TestOps-like reference target: dense operational
 screens, clear list/detail hierarchy, restrained cards, and readable tables.
 
+## Review Update · 2026-09-29
+
+The current pass was reviewed from the 1440×1000 synthetic screenshot set by an ordinary-user
+reviewer and a UI/UX reviewer, and checked against the official [TestOps 26.3 release notes](https://docs.qameta.io/reference/release-notes/),
+[launches](https://docs.qameta.io/use-testops/test-plans-and-launches/launches-overview/),
+[test results](https://docs.qameta.io/use-testops/results-and-analytics/test-results/), and
+[dashboards](https://docs.qameta.io/use-testops/results-and-analytics/dashboards/) documentation.
+This is a workflow and hierarchy comparison, not a claim of full feature parity.
+
+Implemented in this pass: consistent 25/50/100 list pagination with server totals for launches,
+test cases, and defects; selected-item context across pages; denser list/detail screens; aligned
+navigation and status cues; a color legend for launch results; a jump from the result diagnostic
+to the failed scenario step; and expanded screenshot coverage for test cases and automation.
+Result durations use the same Russian units across detail surfaces.
+
+Product gaps visible in the comparison: dashboard widgets currently aggregate one selected
+launch, while project-wide analysis lives on a separate Analytics screen; the comparison view
+does not yet provide a TestOps-style multi-launch matrix; automation has a good empty state but
+needs a populated fixture for a meaningful visual review. Those items need product and data-model
+work beyond this visual pass.
+
 ## Target UI Contract
 
 - Use one application rhythm: left rail, breadcrumb/title, toolbar or tabs, then list/detail or

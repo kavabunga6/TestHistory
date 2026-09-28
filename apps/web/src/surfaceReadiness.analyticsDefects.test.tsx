@@ -108,7 +108,7 @@ describe("analytics and defects surface readiness", () => {
 
     expect(markup).toContain("analytics-reference-screen");
     expect(text).toContain("Аналитика");
-    expect(text).toContain("Рабочая аналитика");
+    expect(text).toContain("Загруженные данные");
     expect(text).toContain("Успешность");
     expect(text).toContain("Открытые риски");
     expect(text).toContain("Средняя длительность");
@@ -170,7 +170,7 @@ describe("analytics and defects surface readiness", () => {
     expect(defectsText).toContain("Результаты");
     expect(defectsText).not.toContain("Выберите дефект для отображения");
     expect(analyticsText).toContain("Аналитика");
-    expect(analyticsText).toContain("Рабочая аналитика");
+    expect(analyticsText).toContain("Загруженные данные");
     expect(analyticsText).toContain("Открытые риски");
     expect(analyticsText).toContain("Приоритетные сигналы");
     expect(analyticsText).not.toContain("Карантины гейта");
@@ -625,7 +625,7 @@ describe("analytics and defects surface readiness", () => {
     expect(visibleText(blockedDefectsMarkup)).not.toContain("Контракт чтения недоступен");
     expect(visibleText(blockedDefectsMarkup)).not.toContain("Capabilities не объявляет defects");
     expect(visibleText(blockedAnalyticsMarkup)).toContain("Аналитика");
-    expect(visibleText(blockedAnalyticsMarkup)).toContain("Рабочая аналитика");
+    expect(visibleText(blockedAnalyticsMarkup)).toContain("Загруженные данные");
     expect(visibleText(blockedAnalyticsMarkup)).toContain("Открытые риски");
     expect(visibleText(combinedBlockedMarkup)).not.toContain("Capabilities не объявляет");
 
@@ -650,7 +650,7 @@ describe("analytics and defects surface readiness", () => {
     const text = visibleText(renderWorkspaceSurface("analytics", onlineApiState, cleanWorkspace));
 
     expect(text).toContain("Аналитика");
-    expect(text).toContain("Рабочая аналитика");
+    expect(text).toContain("Загруженные данные");
     expect(text).toContain("Успешность 100%");
     expect(text).toContain("Открытые риски 0");
     expect(text).toContain("Нет медленных тестов в текущем фильтре");
@@ -721,10 +721,11 @@ describe("analytics and defects surface readiness", () => {
     const searchField = markup.match(/<label class="thql-search__field">[\s\S]*?<\/label>/)?.[0];
 
     expect(countMatches(markup, /<article class="tc-detail-reference-row /g)).toBeLessThanOrEqual(
-      50
+      25
     );
-    expect(text).toContain("Показано 50 из 10 000 тест-кейсов");
-    expect(text).not.toContain("50 shown of 10,000");
+    expect(text).toContain("Найдено 10 000 из 10 000 тест-кейсов");
+    expect(text).toContain("1–25 из 10000");
+    expect(text).not.toContain("25 shown of 10,000");
     expect(markup).toContain("thql-search");
     expect(markup).not.toContain("tc-detail-reference-filter-chips");
     expect(markup).not.toContain("tc-detail-reference-base-filter");

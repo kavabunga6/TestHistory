@@ -32,6 +32,7 @@ afterEach(async () => {
   root = undefined;
   loadM1WorkspaceMock.mockReset();
   loadLaunchResultDetailMock.mockReset();
+  vi.useRealTimers();
 });
 
 describe("useWorkspaceData", () => {
@@ -231,6 +232,59 @@ describe("useWorkspaceData", () => {
       expect.objectContaining({ resultPageSize: 25, resultStatusFilter: "failed" })
     );
   });
+
+  it("does not carry case page size into defects navigation or search", async () => {
+    vi.useFakeTimers();
+    loadM1WorkspaceMock.mockResolvedValue(workspaceWithResult("catalog-row"));
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root?.render(<CatalogPaginationHarness route={{ mode: "case" }} />);
+    });
+    await act(async () => {
+      container?.querySelector<HTMLButtonElement>("[data-action='size-100']")?.click();
+    });
+    expect(loadM1WorkspaceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ listPageSize: 100, routeScope: "test-case-list" })
+    );
+
+    await act(async () => {
+      root?.render(<CatalogPaginationHarness route={{ mode: "defects" }} />);
+    });
+    expect(container.querySelector("[data-field='list-size']")?.textContent).toBe("25");
+    await act(async () => {
+      container?.querySelector<HTMLButtonElement>("[data-action='next-list-page']")?.click();
+    });
+    expect(loadM1WorkspaceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        listPageSize: 25,
+        listPageCursor: "25",
+        routeScope: "defect-list"
+      })
+    );
+
+    await act(async () => {
+      container?.querySelector<HTMLButtonElement>("[data-action='search-list']")?.click();
+      await vi.advanceTimersByTimeAsync(220);
+    });
+    expect(container.querySelector("[data-field='list-size']")?.textContent).toBe("25");
+    expect(container.querySelector("[data-field='list-index']")?.textContent).toBe("0");
+    expect(loadM1WorkspaceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ listPageSize: 25, listQuery: "runtime", routeScope: "defect-list" })
+    );
+
+    await act(async () => {
+      container?.querySelector<HTMLButtonElement>("[data-action='thql-list']")?.click();
+      await vi.advanceTimersByTimeAsync(220);
+    });
+    expect(loadM1WorkspaceMock.mock.lastCall?.[0]).toMatchObject({
+      listPageSize: 25,
+      routeScope: "defect-list"
+    });
+    expect(loadM1WorkspaceMock.mock.lastCall?.[0]).not.toHaveProperty("listQuery");
+  });
 });
 
 const stableApiStateSetter = vi.fn<Dispatch<SetStateAction<ApiState>>>();
@@ -264,6 +318,33 @@ function PaginationHarness({ route }: { route: WorkspaceRoute }) {
       <output data-field="row-count">{workspace.results.length}</output>
       <output data-field="selected-detail">{workspace.selectedResultDetail?.id}</output>
       <output data-field="step">{workspace.results[0]?.steps[0]?.name}</output>
+    </div>
+  );
+}
+
+function CatalogPaginationHarness({ route }: { route: WorkspaceRoute }) {
+  const { listPageIndex, listPageSize, setListPageIndex, setListPageSize, setListQuery } =
+    useWorkspaceData(route, stableApiStateSetter, undefined, "project-1");
+  return (
+    <div>
+      <button data-action="size-100" onClick={() => setListPageSize(100)} type="button">
+        100 per page
+      </button>
+      <button data-action="next-list-page" onClick={() => setListPageIndex(1)} type="button">
+        Next page
+      </button>
+      <button data-action="search-list" onClick={() => setListQuery("runtime")} type="button">
+        Search
+      </button>
+      <button
+        data-action="thql-list"
+        onClick={() => setListQuery('status = "failed"')}
+        type="button"
+      >
+        THQL
+      </button>
+      <output data-field="list-size">{listPageSize}</output>
+      <output data-field="list-index">{listPageIndex}</output>
     </div>
   );
 }

@@ -60,4 +60,85 @@ describe("launch results navigation", () => {
       "/api/v1/thql/filters?entity=launchResults&projectId=project-sandbox"
     );
   });
+
+  it("keeps launches after the first 50 available through pagination", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const launchItems = Array.from({ length: 63 }, (_, index) => ({
+      ...demoM1Workspace.launchItems[0]!,
+      id: `launch-${index + 1}`,
+      name: `Запуск ${index + 1}`
+    }));
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={launchItems}
+          projectId="project-sandbox"
+          results={[]}
+        />
+      )
+    );
+    expect(container.querySelectorAll(".launches-reference-list-row")).toHaveLength(25);
+
+    const nextPage = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Следующая страница: Запуски"]'
+    );
+    await act(async () => nextPage!.click());
+    await act(async () => nextPage!.click());
+
+    const rows = container.querySelectorAll<HTMLButtonElement>(".launches-reference-list-row");
+    expect(rows).toHaveLength(13);
+    expect(rows[0]!.textContent).toContain("Запуск 51");
+    expect(rows[12]!.textContent).toContain("Запуск 63");
+  });
+
+  it("uses the server page count and requests the next launch page", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const onLaunchPageIndexChange = vi.fn();
+    const launchItems = Array.from({ length: 25 }, (_, index) => ({
+      ...demoM1Workspace.launchItems[0]!,
+      id: `launch-${index + 26}`,
+      name: `Запуск ${index + 26}`
+    }));
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={launchItems}
+          launchPage={{
+            cursor: "25",
+            hasMore: true,
+            limit: 25,
+            nextCursor: "50",
+            offset: 25,
+            returned: 25,
+            total: 63
+          }}
+          launchPageIndex={1}
+          launchPageSize={25}
+          onLaunchPageIndexChange={onLaunchPageIndexChange}
+          onLaunchPageSizeChange={vi.fn()}
+          projectId="project-sandbox"
+          results={[]}
+        />
+      )
+    );
+
+    expect(container.querySelectorAll(".launches-reference-list-row")).toHaveLength(25);
+    expect(container.querySelector(".reference-list-pagination__range")?.textContent).toBe(
+      "26–50 из 63"
+    );
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>('button[aria-label="Следующая страница: Запуски"]')!
+        .click()
+    );
+    expect(onLaunchPageIndexChange).toHaveBeenCalledWith(2);
+  });
 });

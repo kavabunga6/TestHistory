@@ -26,10 +26,6 @@
     padding: 12px;
   }
 
-  .dashboard-reference-crumbs {
-    display: none;
-  }
-
   .dashboard-reference-head,
   .dashboard-reference-composer-footer {
     align-items: flex-start;

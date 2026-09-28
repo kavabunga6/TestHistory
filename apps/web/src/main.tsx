@@ -84,6 +84,9 @@ function App() {
   const projectSelection = useProjectSelection(currentUser?.id);
   const canDeleteEntities = useProjectDeleteAccess(currentUser, projectSelection.selectedProjectId);
   const {
+    listPageIndex,
+    listPageSize,
+    listQuery,
     refreshWorkspace,
     resultPageIndex,
     resultPageSize,
@@ -94,6 +97,9 @@ function App() {
     setResultPageSize,
     setResultQuery,
     setResultStatusFilter,
+    setListPageIndex,
+    setListPageSize,
+    setListQuery,
     setSelectedId,
     setWorkspace,
     workspace,
@@ -521,6 +527,9 @@ function App() {
           testCaseRouteId={route.testCaseId}
           testCaseRouteTab={route.testCaseTab}
           selectedId={route.mode === "case" ? (route.testCaseId ?? "") : selectedId}
+          listPageIndex={listPageIndex}
+          listPageSize={listPageSize}
+          listQuery={listQuery}
           resultPageIndex={resultPageIndex}
           resultPageSize={resultPageSize}
           resultQuery={resultQuery}
@@ -555,6 +564,9 @@ function App() {
           onRefreshWorkspace={() =>
             void refreshWorkspace({ focusLaunchId: route.launchId, focusResultId: route.resultId })
           }
+          onListPageIndexChange={setListPageIndex}
+          onListPageSizeChange={setListPageSize}
+          onListQueryChange={setListQuery}
           onResultPageIndexChange={setResultPageIndex}
           onResultPageSizeChange={setResultPageSize}
           onResultQueryChange={setResultQuery}

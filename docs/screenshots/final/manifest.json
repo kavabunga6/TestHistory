@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-23T22:40:53.152Z",
+  "generatedAt": "2026-09-28T22:43:19.941Z",
   "viewport": {
     "width": 1440,
     "height": 1000
   },
-  "count": 25,
+  "count": 27,
   "files": [
     {
       "file": "auth-login.png",
@@ -16,21 +16,28 @@
     {
       "file": "projects.png",
       "hash": "#projects",
-      "bytes": 64966,
+      "bytes": 63442,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dashboard.png",
       "hash": "#dashboard",
-      "bytes": 147167,
+      "bytes": 140531,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "test-cases.png",
+      "hash": "#case?list=1",
+      "bytes": 215364,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launches.png",
       "hash": "#launch",
-      "bytes": 65891,
+      "bytes": 75787,
       "auth": true,
       "dialog": false
     },
@@ -44,135 +51,142 @@
     {
       "file": "launch-results.png",
       "hash": "#launch/L-1289/results",
-      "bytes": 258260,
+      "bytes": 259794,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-result-history.png",
       "hash": "#launch/L-1289/result/PAY-1042/history",
-      "bytes": 204876,
+      "bytes": 212324,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-result-defects.png",
       "hash": "#launch/L-1289/result/PAY-1042/defects",
-      "bytes": 202144,
+      "bytes": 209511,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case.png",
       "hash": "#case/PAY-1042/overview",
-      "bytes": 210662,
+      "bytes": 214771,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-history.png",
       "hash": "#case/PAY-1042/history",
-      "bytes": 166807,
+      "bytes": 170152,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-defects.png",
       "hash": "#case/PAY-1042/defects",
-      "bytes": 162228,
+      "bytes": 165561,
       "auth": true,
       "dialog": false
     },
     {
       "file": "defects.png",
       "hash": "#defects/PAY-337",
-      "bytes": 136418,
+      "bytes": 182649,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "automation.png",
+      "hash": "#automation",
+      "bytes": 73837,
       "auth": true,
       "dialog": false
     },
     {
       "file": "analytics.png",
       "hash": "#analytics",
-      "bytes": 192102,
+      "bytes": 214770,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dialog-dashboard-widget-delete.png",
       "hash": "#dashboard",
-      "bytes": 111761,
+      "bytes": 105052,
       "auth": true,
       "dialog": true
     },
     {
       "file": "settings-access.png",
       "hash": "#settings/access",
-      "bytes": 109953,
+      "bytes": 113483,
       "auth": true,
       "dialog": false
     },
     {
       "file": "settings-tokens.png",
       "hash": "#settings/tokens",
-      "bytes": 105437,
+      "bytes": 108823,
       "auth": true,
       "dialog": false
     },
     {
       "file": "settings-integrations.png",
       "hash": "#settings/integrations",
-      "bytes": 88018,
+      "bytes": 92098,
       "auth": true,
       "dialog": false
     },
     {
       "file": "settings-retention.png",
       "hash": "#settings/retention",
-      "bytes": 100717,
+      "bytes": 104295,
       "auth": true,
       "dialog": false
     },
     {
       "file": "settings-fields.png",
       "hash": "#settings/fields",
-      "bytes": 78013,
+      "bytes": 81704,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dialog-role-matrix.png",
       "hash": "#settings/access",
-      "bytes": 112255,
+      "bytes": 115894,
       "auth": true,
       "dialog": true
     },
     {
       "file": "dialog-member-edit.png",
       "hash": "#settings/access",
-      "bytes": 114035,
+      "bytes": 117255,
       "auth": true,
       "dialog": true
     },
     {
       "file": "dialog-integration-edit.png",
       "hash": "#settings/integrations",
-      "bytes": 122230,
+      "bytes": 126054,
       "auth": true,
       "dialog": true
     },
     {
       "file": "dialog-api-token.png",
       "hash": "#settings/tokens",
-      "bytes": 150909,
+      "bytes": 154460,
       "auth": true,
       "dialog": true
     },
     {
-      "file": "dialog-quarantine.png",
-      "hash": "#launch/L-1289/result/PAY-1042",
-      "bytes": 94157,
+      "file": "quarantine-empty.png",
+      "hash": "#launch/L-1289/results?query=muted+%3D+true",
+      "bytes": 105920,
       "auth": true,
-      "dialog": true
+      "dialog": false
     },
     {
       "file": "dialog-delete-launch.png",

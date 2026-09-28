@@ -89,6 +89,70 @@
   font-size: 12px;
 }
 
+.launches-reference-result-context {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.launches-reference-result-context > span {
+  min-height: 23px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e4eaf2;
+  border-radius: 4px;
+  padding: 2px 7px;
+  background: #f7f9fc;
+  color: #53647b;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.launches-reference-result-fields-link {
+  min-height: 24px;
+  border: 0;
+  padding: 2px 4px;
+  background: transparent;
+  color: #2255a4;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.launches-reference-result-fields-link:hover,
+.launches-reference-result-fields-link:focus-visible {
+  color: #0d3d83;
+  text-decoration: underline;
+}
+
+.launches-reference-jump-failure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  min-height: 28px;
+  margin: 0 0 10px;
+  border: 1px solid #f0c5c2;
+  border-radius: 5px;
+  padding: 3px 9px;
+  background: #fff8f7;
+  color: #a3312b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.launches-reference-jump-failure:hover,
+.launches-reference-jump-failure:focus-visible {
+  border-color: #df9a95;
+  background: #fff1ef;
+}
+
 .launches-reference-result-tabs-wrap {
   min-width: 0;
   min-height: 46px;

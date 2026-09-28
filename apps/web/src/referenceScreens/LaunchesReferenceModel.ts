@@ -9,6 +9,7 @@ import type {
 } from "../m1Workspace.js";
 import { filterRecordsByQuery } from "../analyticsQuery.js";
 import { collapseHistoryToFinalRunResults, getCurrentRunRetryCount } from "../resultHistory.js";
+import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 import {
   formatDurationSeconds,
   formatHistoryDate,
@@ -86,8 +87,7 @@ export const resultReportTabs: Array<{
   {
     id: "defects",
     label: "Дефекты",
-    count: (result) =>
-      result.issues.length + (result.defect ? 1 : 0) + (result.defectHistory?.length ?? 0)
+    count: (result) => getActiveDefectValues(result).length + (result.defectHistory?.length ?? 0)
   },
   { id: "fields", label: "Поля и связи" },
   {
@@ -369,10 +369,6 @@ function toLaunchSearchRecord(launch: LaunchListItem) {
     tags: metadata.tags,
     total: getLaunchTotal(launch)
   };
-}
-
-function isLikelyThqlQuery(query: string): boolean {
-  return /(?:=|!=|~=|>=|<=|>|<|\bin\b|\band\b|\bor\b|\bnot\b|\[|\])/i.test(query);
 }
 
 export function hasLoadingScope(

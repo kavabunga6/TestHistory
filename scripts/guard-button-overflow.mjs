@@ -17,6 +17,7 @@ const allScreens = [
   { name: "auth-login", hash: "#launch", auth: false },
   { name: "projects", hash: "#projects" },
   { name: "dashboard", hash: "#dashboard" },
+  { name: "test-cases", hash: "#case?list=1" },
   { name: "launches", hash: "#launch" },
   { name: "launch-detail", hash: "#launch/L-1289" },
   { name: "launch-results", hash: "#launch/L-1289/results" },
@@ -26,6 +27,7 @@ const allScreens = [
   { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
   { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
   { name: "defects", hash: "#defects/PAY-337" },
+  { name: "automation", hash: "#automation" },
   { name: "analytics", hash: "#analytics" },
   { name: "settings-access", hash: "#settings/access" },
   { name: "settings-tokens", hash: "#settings/tokens" },
@@ -69,29 +71,7 @@ const allScreens = [
         .click();
     }
   },
-  {
-    name: "dialog-quarantine",
-    hash: "#launch/L-1289/result/PAY-1042",
-    prepare: async (page) => {
-      const action = page.locator(".launches-reference-result-action");
-      try {
-        await action.first().click();
-      } catch (error) {
-        const routeState = await page
-          .locator(".launches-reference-route-state")
-          .allTextContents()
-          .catch(() => []);
-        const visibleText = await page
-          .locator("main")
-          .innerText()
-          .then((text) => text.replace(/\s+/g, " ").slice(0, 800))
-          .catch(() => "unavailable");
-        throw new Error(
-          `Quarantine action is unavailable. Route state: ${routeState.join(" | ") || "none"}. Visible UI: ${visibleText}. ${formatGuardError(error)}`
-        );
-      }
-    }
-  },
+  { name: "quarantine-empty", hash: "#launch/L-1289/results?query=muted+%3D+true" },
   {
     name: "dialog-delete-launch",
     hash: "#launch/L-1289",

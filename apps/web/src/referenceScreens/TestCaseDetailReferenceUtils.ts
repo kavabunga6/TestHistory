@@ -1,5 +1,6 @@
 import type { ResultAttachment, ResultStatus, ScenarioStep, TestResult } from "../m1Workspace.js";
 import { filterResultsByQuery } from "../analyticsQuery.js";
+import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 
 export function downloadAttachment(attachment: ResultAttachment) {
   const body = getAttachmentDownloadBody(attachment);
@@ -108,10 +109,6 @@ export function filterResults(results: TestResult[], query: string): TestResult[
 
     return matchesQuery;
   });
-}
-
-function isLikelyThqlQuery(query: string): boolean {
-  return /(?:=|!=|~=|>=|<=|>|<|\bin\b|\band\b|\bor\b|\bnot\b|\[|\])/i.test(query);
 }
 
 export function findMostInformativeResult(results: TestResult[]): TestResult | undefined {

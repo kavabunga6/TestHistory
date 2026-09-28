@@ -158,6 +158,36 @@
   border-radius: 6px;
 }
 
+.defects-reference-page-search-note {
+  margin: -6px 20px 12px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.defects-reference-pinned {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  border-top: 1px solid #d7e1ee;
+  border-left: 3px solid #2563eb;
+  padding: 9px 17px;
+  background: #f4f8ff;
+}
+
+.defects-reference-pinned small {
+  color: #526172;
+  font-size: 11px;
+}
+
+.defects-reference-pinned strong {
+  overflow: hidden;
+  color: #172033;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .defects-reference-list {
   min-height: 0;
   flex: 1;
@@ -167,24 +197,16 @@
   border-top: 1px solid #e8edf3;
 }
 
-.defects-reference-footer {
-  border-top: 1px solid #e8edf3;
-  padding: 10px 16px;
-  color: #526172;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
 .defects-reference-row {
   width: 100%;
-  min-height: 82px;
+  min-height: 72px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 10px;
   border: 0;
   border-bottom: 1px solid #e8edf3;
-  padding: 14px 20px;
+  padding: 10px 16px;
   background: #ffffff;
   color: inherit;
   cursor: pointer;
@@ -244,7 +266,7 @@
   display: grid;
   grid-column: 1;
   grid-row: 1;
-  gap: 4px;
+  gap: 3px;
 }
 
 .defects-reference-row-copy strong {
@@ -450,6 +472,48 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
+}
+
+.defects-reference-description,
+.defects-reference-diagnostic {
+  min-width: 0;
+  margin-bottom: 20px;
+  border: 1px solid #d7e1ee;
+  border-radius: 7px;
+  padding: 12px 16px;
+  background: #f8fafc;
+}
+
+.defects-reference-diagnostic {
+  border-color: #f0c9c6;
+  border-left: 3px solid #dc574d;
+  background: #fff8f7;
+}
+
+.defects-reference-description h3,
+.defects-reference-diagnostic h3 {
+  margin: 0 0 5px;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.defects-reference-diagnostic h3 {
+  color: #a92f28;
+}
+
+.defects-reference-description p,
+.defects-reference-diagnostic p {
+  margin: 0;
+  color: #3b4b61;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.defects-reference-diagnostic p {
+  color: #5d3431;
 }
 
 .defects-reference-detail-grid {
@@ -782,6 +846,11 @@
 
   .defects-reference-list-panel .thql-search {
     margin: 0 12px 12px;
+  }
+
+  .defects-reference-page-search-note {
+    margin-right: 12px;
+    margin-left: 12px;
   }
 
   .defects-reference-row {

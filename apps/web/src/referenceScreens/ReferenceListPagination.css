@@ -1,0 +1,82 @@
+.reference-list-pagination {
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid #dfe7f0;
+  padding: 8px 12px;
+  background: #f8fafc;
+  color: #526172;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-list-pagination__size,
+.reference-list-pagination__actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.reference-list-pagination__size select,
+.reference-list-pagination__actions button {
+  min-height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+}
+
+.reference-list-pagination__size select {
+  min-width: 58px;
+  padding: 0 4px;
+}
+
+.reference-list-pagination__range {
+  min-width: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.reference-list-pagination__actions button {
+  width: 32px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.reference-list-pagination__actions button:hover:not(:disabled) {
+  border-color: #93b4ed;
+  background: #e8f1ff;
+  color: #1d4ed8;
+}
+
+.reference-list-pagination__actions button:focus-visible,
+.reference-list-pagination__size select:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.reference-list-pagination__actions button:disabled {
+  color: #a3afbf;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .reference-list-pagination {
+    flex-wrap: wrap;
+  }
+
+  .reference-list-pagination__range {
+    margin-left: 0;
+  }
+
+  .reference-list-pagination__actions {
+    margin-left: auto;
+  }
+}

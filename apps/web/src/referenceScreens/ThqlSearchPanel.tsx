@@ -6,6 +6,7 @@ import "./ThqlSearchPanel.css";
 
 import { validateDashboardQuery } from "../analyticsQuery.js";
 import { demoProjectSettings, getProjectSettingsAccess } from "../projectSettings.js";
+import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 import {
   createThqlFilterInApi,
   deleteThqlFilterFromApi,
@@ -95,7 +96,7 @@ export function ThqlSearchPanel({
     activeFilterId
   );
   const validation = validateDashboardQuery(query);
-  const showValidation = query.trim().length > 0 && isLikelyThql(query);
+  const showValidation = query.trim().length > 0 && isLikelyThqlQuery(query);
   const manageFiltersButton = (
     <button
       aria-label="Фильтры: настроить быстрые фильтры"
@@ -540,10 +541,6 @@ function readCurrentUserRole(): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-function isLikelyThql(query: string): boolean {
-  return /(?:=|!=|~=|>=|<=|>|<|\bin\b|\band\b|\bor\b|\bnot\b|\[|\])/i.test(query);
 }
 
 export function splitVisibleThqlFilters(

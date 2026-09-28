@@ -354,7 +354,29 @@ export function ResultsTab({
             />
           ) : null}
           {filteredResults.length === 0 && !loading ? (
-            <p className="launches-reference-list-empty">Ничего не найдено</p>
+            <div className="launches-reference-list-empty" role="status">
+              <strong>
+                {query.trim() || activeStatusFilter
+                  ? "Нет результатов по выбранному фильтру"
+                  : "В запуске пока нет результатов"}
+              </strong>
+              {query.trim() || activeStatusFilter ? (
+                <>
+                  <span>Измените запрос или покажите все результаты запуска.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onQueryChange("");
+                      onClearStatusFilter();
+                    }}
+                  >
+                    Сбросить фильтр
+                  </button>
+                </>
+              ) : (
+                <span>Они появятся здесь после загрузки тестового отчета.</span>
+              )}
+            </div>
           ) : (
             filteredResults.map((result) => (
               <button
@@ -418,7 +440,16 @@ export function ResultsTab({
         ) : selectedResult === undefined ? (
           <div className="launches-reference-empty-selection">
             <MousePointer2 size={42} />
-            <span>Выберите результат теста для отображения отчета</span>
+            <strong>
+              {filteredResults.length === 0
+                ? "Нет результатов для просмотра"
+                : "Результат не выбран"}
+            </strong>
+            <span>
+              {filteredResults.length === 0
+                ? "Проверьте фильтры слева, чтобы открыть отчет теста."
+                : "Выберите тест слева, чтобы открыть его отчет."}
+            </span>
           </div>
         ) : (
           <ResultReport

@@ -1,9 +1,24 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode
+} from "react";
 import { Bug, Trash2 } from "lucide-react";
 
 import { filterRecordsByQuery } from "../analyticsQuery.js";
 import type { TestResult } from "../m1Workspace.js";
+import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 import { getHashFromRoute } from "../workspaceRouting.js";
+import { formatResultDuration } from "./LaunchesResultDuration.js";
+import {
+  ReferenceListPagination,
+  referenceListPageSize,
+  useReferenceListPagination,
+  type ReferenceListPage
+} from "./ReferenceListPagination.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 import { useResizableListWidth } from "./useResizableListWidth.js";
 
@@ -17,6 +32,7 @@ export type DefectSummary = {
   title: string;
   results: TestResult[];
   testCaseCount: number;
+  affectedTestIds: string[];
   tags: string[];
   owners: string[];
   links: string[];
@@ -41,7 +57,6 @@ type DefectResultLink = {
   tags: string;
 };
 
-const DEFECT_REFERENCE_PAGE_SIZE = 50;
 const DEFECT_LIST_WIDTH_KEY = "testhistory:defect-list-width";
 const DEFECT_LIST_DEFAULT_WIDTH = 420;
 const DEFECT_LIST_MIN_WIDTH = 360;
@@ -50,19 +65,38 @@ const DEFECT_LIST_MAX_WIDTH = 720;
 export function DefectsReferenceScreen({
   onDeleteDefect,
   onOpenDefect,
+  onPageIndexChange,
+  onPageSizeChange,
+  page: serverPage,
+  pageIndex: serverPageIndex,
+  pageSize: serverPageSize,
   projectId = "ws",
+  query: controlledQuery,
+  onQueryChange,
   routeDefectId,
-  results
+  results,
+  selectedDetail
 }: {
   onDeleteDefect?: ((id: string) => void) | undefined;
   onOpenDefect?: ((id: string) => void) | undefined;
+  onPageIndexChange?: ((index: number) => void) | undefined;
+  onPageSizeChange?: ((size: number) => void) | undefined;
+  page?: ReferenceListPage | undefined;
+  pageIndex?: number | undefined;
+  pageSize?: number | undefined;
   projectId?: string | undefined;
+  query?: string | undefined;
+  onQueryChange?: ((query: string) => void) | undefined;
   routeDefectId?: string | undefined;
   results: TestResult[];
+  selectedDetail?: TestResult | undefined;
 }) {
-  const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
+  const query = controlledQuery ?? localQuery;
+  const setQuery = onQueryChange ?? setLocalQuery;
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
   const [selectedDefectId, setSelectedDefectId] = useState<string | undefined>();
+  const listRef = useRef<HTMLDivElement>(null);
   const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
     useResizableListWidth({
       bodyClass: "defects-reference-is-resizing",
@@ -73,20 +107,56 @@ export function DefectsReferenceScreen({
     });
 
   const defects = useMemo(() => buildDefectSummaries(results), [results]);
-  const filteredDefects = useMemo(() => filterDefects(defects, query, "all"), [defects, query]);
+  const searchOnCurrentPage =
+    serverPage !== undefined && (onQueryChange === undefined || isLikelyThqlQuery(query));
+  const filteredDefects = useMemo(
+    () =>
+      serverPage !== undefined && !searchOnCurrentPage
+        ? defects
+        : filterDefects(defects, query, "all"),
+    [defects, query, searchOnCurrentPage, serverPage]
+  );
   const effectiveSelectedDefectId = routeDefectId ?? selectedDefectId;
-  const firstDefects = filteredDefects.slice(0, DEFECT_REFERENCE_PAGE_SIZE);
-  const requestedDefect = filteredDefects.find((defect) => defect.id === effectiveSelectedDefectId);
-  const visibleDefects =
-    requestedDefect !== undefined && !firstDefects.includes(requestedDefect)
-      ? [requestedDefect, ...firstDefects.slice(0, DEFECT_REFERENCE_PAGE_SIZE - 1)]
-      : firstDefects;
+  const localPagination = useReferenceListPagination({
+    context: JSON.stringify([effectiveSelectedDefectId, query, projectId]),
+    count: filteredDefects.length,
+    selectedIndex: filteredDefects.findIndex((defect) => defect.id === effectiveSelectedDefectId)
+  });
+  const page = serverPage
+    ? (serverPageIndex ?? Math.floor(serverPage.offset / serverPage.limit))
+    : localPagination.page;
+  const pageSize = serverPage
+    ? referenceListPageSize(serverPageSize ?? serverPage.limit)
+    : localPagination.pageSize;
+  const visibleDefects = serverPage
+    ? filteredDefects
+    : filteredDefects.slice(page * pageSize, (page + 1) * pageSize);
+  const total = serverPage?.total ?? filteredDefects.length;
   const actorId =
     typeof window === "undefined"
       ? "admin"
       : (window.localStorage.getItem("testhistory.actorId") ?? "admin");
   const selectedDefect =
-    visibleDefects.find((defect) => defect.id === effectiveSelectedDefectId) ?? visibleDefects[0];
+    filteredDefects.find((defect) => defect.id === effectiveSelectedDefectId) ??
+    (selectedDetail !== undefined && selectedDetail.id === effectiveSelectedDefectId
+      ? buildDefectSummaries([selectedDetail])[0]
+      : undefined) ??
+    (routeDefectId ? undefined : visibleDefects[0]);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const selectedRow = list?.querySelector<HTMLElement>('button[aria-pressed="true"]');
+    if (list === null || selectedRow === null || selectedRow === undefined) {
+      return;
+    }
+
+    const listBounds = list.getBoundingClientRect();
+    const rowBounds = selectedRow.getBoundingClientRect();
+    if (rowBounds.top < listBounds.top || rowBounds.bottom > listBounds.bottom) {
+      list.scrollTop +=
+        rowBounds.top - listBounds.top - (list.clientHeight - selectedRow.clientHeight) / 2;
+    }
+  }, [selectedDefect?.id, visibleDefects]);
 
   const screenStyle = {
     "--defects-reference-list-width": `${listWidth}px`
@@ -116,9 +186,13 @@ export function DefectsReferenceScreen({
               <span>Дефекты</span>
               <span
                 className="defects-reference-count"
-                title={`Найдено дефектов: ${formatCount(filteredDefects.length)}`}
+                title={
+                  serverPage
+                    ? `${searchOnCurrentPage ? "Всего" : "Найдено"} дефектов в проекте: ${formatCount(total)}`
+                    : `Найдено дефектов: ${formatCount(total)}`
+                }
               >
-                {formatCount(filteredDefects.length)}
+                {formatCount(total)}
               </span>
             </h1>
           </header>
@@ -132,8 +206,25 @@ export function DefectsReferenceScreen({
             onActiveFilterChange={setActiveFilterId}
             onQueryChange={setQuery}
           />
+          {serverPage ? (
+            <p className="defects-reference-page-search-note">
+              {searchOnCurrentPage ? "THQL-фильтр на текущей странице" : "Поиск по всему проекту"}
+              {searchOnCurrentPage && query.trim()
+                ? ` · найдено ${filteredDefects.length} из ${defects.length}`
+                : ""}
+            </p>
+          ) : null}
 
-          <div className="defects-reference-list">
+          {selectedDetail !== undefined &&
+          selectedDetail.id === effectiveSelectedDefectId &&
+          !defects.some((defect) => defect.id === effectiveSelectedDefectId) ? (
+            <div className="defects-reference-pinned" role="status">
+              <small>Выбранный дефект вне текущей страницы</small>
+              <strong>{selectedDetail.name}</strong>
+            </div>
+          ) : null}
+
+          <div className="defects-reference-list" ref={listRef}>
             {visibleDefects.map((defect) => (
               <button
                 aria-pressed={selectedDefect?.id === defect.id}
@@ -151,7 +242,16 @@ export function DefectsReferenceScreen({
                 <span className="defects-reference-row-copy">
                   <strong title={defect.title}>{defect.title}</strong>
                   <small title={defect.id}>#{formatDefectId(defect.id)}</small>
-                  <small>Тест-кейсы: {defect.testCaseCount}</small>
+                  {defect.affectedTestIds.length > 0 ? (
+                    <small title={defect.affectedTestIds.join(", ")}>
+                      Кейсы: {defect.affectedTestIds.slice(0, 2).join(", ")}
+                      {defect.affectedTestIds.length > 2
+                        ? ` +${defect.affectedTestIds.length - 2}`
+                        : ""}
+                    </small>
+                  ) : (
+                    <small>Тест-кейсы: {defect.testCaseCount}</small>
+                  )}
                 </span>
               </button>
             ))}
@@ -160,16 +260,25 @@ export function DefectsReferenceScreen({
               <div className="defects-reference-list-empty">
                 <Bug size={18} />
                 <strong>Дефекты не найдены</strong>
-                <span>Измените поиск, чтобы увидеть связанные дефекты.</span>
+                <span>
+                  {searchOnCurrentPage && query.trim()
+                    ? "На этой странице совпадений нет. Перейдите на другую страницу или измените поиск."
+                    : "Измените поиск, чтобы увидеть связанные дефекты."}
+                </span>
               </div>
             ) : null}
           </div>
 
-          {filteredDefects.length > DEFECT_REFERENCE_PAGE_SIZE ? (
-            <footer className="defects-reference-footer">
-              Показано {formatCount(visibleDefects.length)} из {formatCount(filteredDefects.length)}
-            </footer>
-          ) : null}
+          <ReferenceListPagination
+            count={total}
+            label="Дефекты"
+            offset={serverPage?.offset}
+            returned={serverPage?.returned}
+            onPageChange={onPageIndexChange ?? localPagination.setPage}
+            onPageSizeChange={onPageSizeChange ?? localPagination.setPageSize}
+            page={page}
+            pageSize={pageSize}
+          />
         </aside>
 
         <button
@@ -186,7 +295,7 @@ export function DefectsReferenceScreen({
         />
 
         {selectedDefect === undefined ? (
-          <DefectEmptyState />
+          <DefectEmptyState requestedId={routeDefectId} />
         ) : (
           <DefectDetails defect={selectedDefect} onDeleteDefect={onDeleteDefect} />
         )}
@@ -195,12 +304,13 @@ export function DefectsReferenceScreen({
   );
 }
 
-function DefectEmptyState() {
+function DefectEmptyState({ requestedId }: { requestedId?: string | undefined }) {
   return (
     <section className="defects-reference-detail-panel empty" aria-label="Детали дефекта">
       <div className="defects-reference-empty-state">
         <Bug size={28} />
-        <strong>Выберите дефект для отображения</strong>
+        <strong>{requestedId ? "Дефект не найден" : "Выберите дефект для отображения"}</strong>
+        {requestedId ? <span>Проверьте ссылку или выберите дефект из списка.</span> : null}
       </div>
     </section>
   );
@@ -213,6 +323,14 @@ function DefectDetails({
   defect: DefectSummary;
   onDeleteDefect?: ((id: string) => void) | undefined;
 }) {
+  const description = defect.results.find((result) => result.id === defect.id)?.description?.trim();
+  const diagnostic = defect.results
+    .find(
+      (result) =>
+        (result.status === "failed" || result.status === "broken") && result.trace?.message.trim()
+    )
+    ?.trace?.message.trim();
+
   return (
     <section className="defects-reference-detail-panel" aria-label="Информация о выбранном дефекте">
       <header className="defects-reference-detail-header">
@@ -254,6 +372,20 @@ function DefectDetails({
           <dd>{defect.id}</dd>
         </div>
       </dl>
+
+      {description && description !== defect.title ? (
+        <section className="defects-reference-description" aria-label="Описание дефекта">
+          <h3>Описание дефекта</h3>
+          <p>{description}</p>
+        </section>
+      ) : null}
+
+      {diagnostic ? (
+        <section className="defects-reference-diagnostic" aria-label="Причина сбоя">
+          <h3>Причина сбоя</h3>
+          <p>{diagnostic}</p>
+        </section>
+      ) : null}
 
       <div className="defects-reference-detail-grid">
         <DefectSection className="wide" title="Результаты тестов">
@@ -366,7 +498,7 @@ function DefectResultList({ defect }: { defect: DefectSummary }) {
             <strong>{result.owner}</strong>
             <small>{result.tags}</small>
           </span>
-          <time>{result.duration}</time>
+          <time>{formatResultDuration(result.duration)}</time>
         </a>
       ))}
     </div>
@@ -386,18 +518,25 @@ export function buildDefectSummaries(results: TestResult[]): DefectSummary[] {
 
   return [...groups.entries()]
     .map(([id, groupedResults]) => {
+      const cluster = groupedResults.find((result) => result.id === id && result.defectStatus);
+      const affectedTestIds = uniqueValues(groupedResults.flatMap((result) => result.testKeys));
       const quarantine = groupedResults.find(
         (result) => result.defectMute !== undefined
       )?.defectMute;
       const hasActiveFailure = groupedResults.some(
         (result) => result.status === "failed" || result.status === "broken"
       );
-      const status: DefectStatus = hasActiveFailure ? "open" : "closed";
+      const status: DefectStatus =
+        cluster?.defectStatus ??
+        groupedResults.find((result) => result.defectStatus)?.defectStatus ??
+        (hasActiveFailure ? "open" : "closed");
       const base = {
         id,
-        title: groupedResults[0]?.name ?? id,
+        title: cluster?.name ?? groupedResults[0]?.name ?? id,
         results: groupedResults,
-        testCaseCount: new Set(groupedResults.map((result) => result.id)).size,
+        testCaseCount:
+          affectedTestIds.length || new Set(groupedResults.map((result) => result.id)).size,
+        affectedTestIds,
         tags: uniqueValues(groupedResults.flatMap((result) => result.tags)),
         owners: uniqueValues(groupedResults.map((result) => result.owner)),
         links: uniqueValues(
@@ -445,6 +584,7 @@ export function filterDefects(
         ...defect.tags,
         ...defect.owners,
         ...defect.links,
+        ...defect.affectedTestIds,
         ...defect.results.map((result) => result.name)
       ]
         .join(" ")
@@ -476,10 +616,6 @@ function toDefectSearchRecord(defect: DefectSummary) {
     testcasecount: defect.testCaseCount,
     title: defect.title
   };
-}
-
-function isLikelyThqlQuery(query: string): boolean {
-  return /(?:=|!=|~=|>=|<=|>|<|\bin\b|\band\b|\bor\b|\bnot\b|\[|\])/i.test(query);
 }
 
 function collectLaunchLinks(defect: DefectSummary): Array<{ id: string; label: string }> {

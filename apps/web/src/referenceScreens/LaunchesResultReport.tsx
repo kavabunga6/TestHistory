@@ -1,7 +1,7 @@
-import { AlertCircle, LockKeyhole } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, ArrowDown, LockKeyhole } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-import type { TestResult } from "../m1Workspace.js";
+import type { ScenarioStep, TestResult } from "../m1Workspace.js";
 import { resolveIssueTrackerLink } from "../projectSettings.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
 import {
@@ -102,6 +102,33 @@ export function ResultReport({
               {formatResultDuration(result.duration)}
             </span>
           </div>
+          <div
+            className="launches-reference-result-context"
+            aria-label="Ключевые данные результата"
+          >
+            <span>Слой: {result.layer}</span>
+            <span>Серьезность: {formatSeverity(result.severity)}</span>
+            {result.tags.slice(0, 2).map((tag) => (
+              <span key={tag} title={`Тег: ${tag}`}>
+                {tag}
+              </span>
+            ))}
+            {result.tags.length > 2 ? (
+              <span title={result.tags.slice(2).join(", ")}>+{result.tags.length - 2} тега</span>
+            ) : null}
+            {activeResultTab !== "fields" ? (
+              <button
+                className="launches-reference-result-fields-link"
+                type="button"
+                onClick={() => {
+                  setActiveResultTab("fields");
+                  onOpenTab?.("fields");
+                }}
+              >
+                Все поля и связи
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -152,12 +179,32 @@ function ResultOverviewTab({
   results: TestResult[];
 }) {
   const quarantineSummary = getQuarantineSummary(result);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const hasFailedStep = hasTerminalFailure(result.steps);
+
+  const jumpToFailure = () => {
+    const failurePanels = mainRef.current?.querySelectorAll<HTMLElement>(
+      ".launches-reference-step-failure"
+    );
+    const target =
+      failurePanels?.item(failurePanels.length - 1) ??
+      mainRef.current?.querySelector<HTMLElement>(
+        ".launches-reference-step-node.is-failed.is-leaf, .launches-reference-step-node.is-broken.is-leaf"
+      );
+    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    target?.focus({ preventScroll: true });
+  };
 
   return (
     <div className="launches-reference-result-overview">
-      <div className="launches-reference-result-main">
+      <div className="launches-reference-result-main" ref={mainRef}>
         {result.trace !== undefined || result.status === "failed" || result.status === "broken" ? (
           <ResultDiagnostics key={result.id} result={result} />
+        ) : null}
+        {hasFailedStep ? (
+          <button className="launches-reference-jump-failure" onClick={jumpToFailure} type="button">
+            <ArrowDown aria-hidden="true" size={15} />К шагу с ошибкой
+          </button>
         ) : null}
         <ScenarioSection result={result} />
       </div>
@@ -196,6 +243,13 @@ function ResultOverviewTab({
         />
       </aside>
     </div>
+  );
+}
+
+function hasTerminalFailure(steps: ScenarioStep[]): boolean {
+  return steps.some(
+    (step) =>
+      step.status === "failed" || step.status === "broken" || hasTerminalFailure(step.steps ?? [])
   );
 }
 

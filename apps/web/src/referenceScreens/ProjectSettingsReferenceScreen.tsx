@@ -1,5 +1,6 @@
 ﻿import { Database, Eye, KeyRound, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 import {
   createPersonalToken,
@@ -319,7 +320,13 @@ export function ProjectSettingsReferenceScreen({
       <section className="project-settings__workspace" aria-labelledby="project-settings-title">
         <header className="project-settings__header">
           <div>
-            <span className="project-settings__eyebrow">{effectiveSettings.project.key}</span>
+            <nav className="project-settings__breadcrumb" aria-label="Путь к настройкам проекта">
+              <a href="#projects">Проекты</a>
+              <ChevronRight aria-hidden="true" size={14} />
+              <span title={effectiveSettings.project.name}>{effectiveSettings.project.name}</span>
+              <ChevronRight aria-hidden="true" size={14} />
+              <strong>Настройки</strong>
+            </nav>
             <h1 id="project-settings-title">Настройки проекта</h1>
             <p>{effectiveSettings.project.name}</p>
           </div>

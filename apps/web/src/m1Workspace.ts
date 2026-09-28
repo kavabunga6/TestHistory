@@ -33,7 +33,8 @@
   TestCaseIdentityAudit,
   TestCaseIdentityState,
   TestResult,
-  TestResultAttempt
+  TestResultAttempt,
+  WorkspaceListPage
 } from "./m1WorkspaceTypes.js";
 export { assertM1SurfaceContract, M1_SURFACE_CONTRACT } from "./m1WorkspaceTypes.js";
 export { mergeHistoryComparePermissionAuditRead } from "./m1WorkspacePermissionAudit.js";
@@ -43,7 +44,8 @@ import type {
   M1Workspace,
   M1WorkspaceResponse,
   ResultStatus,
-  TestResult
+  TestResult,
+  WorkspaceListPage
 } from "./m1WorkspaceTypes.js";
 import { mockM1WorkspaceResponse } from "./m1WorkspaceMock.js";
 import { defaultResultSteps } from "./m1WorkspaceMockPreview.js";
@@ -53,8 +55,14 @@ import {
   loadTestCaseHistoryRead,
   workspaceInitialHistoryLimit
 } from "./m1WorkspaceHistoryReads.js";
+import {
+  defectReadHeaders,
+  emptyLaunchDetails,
+  listPageParameters,
+  mapDefectClustersToWorkspace,
+  mapTestCaseSummariesToWorkspace
+} from "./m1WorkspaceCatalog.js";
 import type {
-  ApiDefectClusterReadModel,
   ApiDefectListReadModel,
   ApiHistoryComparePermissionAuditInvariantReadModel,
   ApiHistoryComparePermissionAuditReadModel,
@@ -69,13 +77,7 @@ import type {
   ApiTestCaseListReadModel,
   ApiTestCaseSummaryReadModel
 } from "./m1WorkspaceApiTypes.js";
-import {
-  mapApiLaunch,
-  mapApiLaunchListItem,
-  mapApiDefectCluster,
-  mapApiResult,
-  mapApiTestCaseSummary
-} from "./m1WorkspaceMappers.js";
+import { mapApiLaunch, mapApiLaunchListItem, mapApiResult } from "./m1WorkspaceMappers.js";
 
 export function mapM1WorkspaceResponse(response: M1WorkspaceResponse): M1Workspace {
   return {
@@ -109,8 +111,8 @@ export const workspaceInitialResultHydrationLimit = 25;
 export const workspaceResultListLimit = 100;
 export const workspaceDefaultResultPageSize = 25;
 export { workspaceInitialHistoryLimit };
-export const workspaceInitialTestCaseLimit = 50;
-export const workspaceInitialDefectLimit = 50;
+export const workspaceInitialTestCaseLimit = 25;
+export const workspaceInitialDefectLimit = 25;
 
 export type M1WorkspaceRouteScope =
   | "defect-list"
@@ -122,6 +124,11 @@ export type M1WorkspaceRouteScope =
   | "test-case-detail";
 
 export type LoadM1WorkspaceOptions = {
+  launchPageSize?: number | undefined;
+  launchPageCursor?: string | undefined;
+  listQuery?: string | undefined;
+  listPageSize?: number | undefined;
+  listPageCursor?: string | undefined;
   projectId?: string | undefined;
   preferredLaunchId?: string | undefined;
   preferredResultId?: string | undefined;
@@ -182,6 +189,8 @@ export async function resolveLaunchResultId(
 
 export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Promise<M1Workspace> {
   const routeScope = resolveM1WorkspaceRouteScope(options);
+  const listPageCursor = options.listPageCursor;
+  const listQuery = options.listQuery?.trim();
   const resultPageSize = options.resultPageSize ?? workspaceResultListLimit;
   const resultPageCursor = options.resultPageCursor;
   const resultQuery = options.resultQuery;
@@ -194,9 +203,20 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
     throw new Error("No API projects available");
   }
 
+  const launchPageSize =
+    routeScope === "launch-list"
+      ? (options.launchPageSize ?? workspaceInitialLaunchLimit)
+      : workspaceInitialLaunchLimit;
+  const launchPageCursor = routeScope === "launch-list" ? options.launchPageCursor : undefined;
+  const launchListQuery = routeScope === "launch-list" ? listQuery : undefined;
   const launchesPayload = await getJson<ApiLaunchReadModel[] | ApiPagedList<ApiLaunchReadModel>>(
-    `/api/v1/projects/${encodeURIComponent(project.id)}/launches?limit=${workspaceInitialLaunchLimit}`
+    `/api/v1/projects/${encodeURIComponent(project.id)}/launches?${listPageParameters(
+      launchPageSize,
+      launchPageCursor,
+      launchListQuery
+    )}`
   );
+  const launchPage = Array.isArray(launchesPayload) ? undefined : launchesPayload.page;
   const launches = (Array.isArray(launchesPayload) ? launchesPayload : launchesPayload.items)
     .slice()
     .sort((left, right) => Date.parse(right.createdAt ?? "") - Date.parse(left.createdAt ?? ""));
@@ -218,22 +238,35 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
     launches.unshift(requestedLaunch);
     selectedLaunch = requestedLaunch;
   }
-  if (selectedLaunch === undefined) {
-    return { ...emptyM1Workspace, projectId: project.id };
+  const catalogRoute =
+    routeScope === "test-case-list" ||
+    routeScope === "test-case-detail" ||
+    routeScope === "defect-list" ||
+    routeScope === "defect-detail";
+  if (selectedLaunch === undefined && !catalogRoute) {
+    return {
+      ...emptyM1Workspace,
+      projectId: project.id,
+      ...(launchPage !== undefined ? { launchPage } : {})
+    };
   }
+  const catalogLaunchDetails =
+    selectedLaunch === undefined
+      ? emptyLaunchDetails(project.id)
+      : launchSummaryToDetails(selectedLaunch, []);
 
   if (routeScope === "defect-list") {
+    const listPageSize = options.listPageSize ?? workspaceInitialDefectLimit;
     const defectsPayload = await getJson<ApiDefectListReadModel>(
-      `/api/v1/defects?projectId=${encodeURIComponent(
-        project.id
-      )}&limit=${workspaceInitialDefectLimit}`,
+      `/api/v1/defects?${listPageParameters(listPageSize, listPageCursor, listQuery, project.id)}`,
       { headers: defectReadHeaders(project.id) }
     );
 
     return mapDefectClustersToWorkspace({
-      launchDetails: launchSummaryToDetails(selectedLaunch, []),
+      launchDetails: catalogLaunchDetails,
       launches,
-      defects: defectsPayload.items
+      defects: defectsPayload.items,
+      page: defectsPayload.page
     });
   }
 
@@ -243,11 +276,10 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
       throw new Error("No API defect selected");
     }
 
+    const listPageSize = options.listPageSize ?? workspaceInitialDefectLimit;
     const [defectsPayload, selectedDefectPayload] = await Promise.all([
       getJson<ApiDefectListReadModel>(
-        `/api/v1/defects?projectId=${encodeURIComponent(
-          project.id
-        )}&limit=${workspaceInitialDefectLimit}`,
+        `/api/v1/defects?${listPageParameters(listPageSize, listPageCursor, listQuery, project.id)}`,
         { headers: defectReadHeaders(project.id) }
       ),
       getJson<ApiDefectListReadModel>(
@@ -257,31 +289,30 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
         { headers: defectReadHeaders(project.id) }
       )
     ]);
-    const selectedDefect =
-      selectedDefectPayload.items.find((defect) => defect.id === preferredDefectId) ??
-      selectedDefectPayload.items[0];
+    const selectedDefect = selectedDefectPayload.items.find(
+      (defect) => defect.id === preferredDefectId
+    );
 
     return mapDefectClustersToWorkspace({
-      launchDetails: launchSummaryToDetails(selectedLaunch, []),
+      launchDetails: catalogLaunchDetails,
       launches,
-      defects:
-        selectedDefect === undefined
-          ? defectsPayload.items
-          : mergeSelectedDefectIntoPage(defectsPayload.items, selectedDefect)
+      defects: defectsPayload.items,
+      page: defectsPayload.page,
+      selectedDefect
     });
   }
 
   if (routeScope === "test-case-list") {
+    const listPageSize = options.listPageSize ?? workspaceInitialTestCaseLimit;
     const testCasesPayload = await getJson<ApiTestCaseListReadModel>(
-      `/api/v1/test-cases?projectId=${encodeURIComponent(
-        project.id
-      )}&limit=${workspaceInitialTestCaseLimit}`
+      `/api/v1/test-cases?${listPageParameters(listPageSize, listPageCursor, listQuery, project.id)}`
     );
 
     return mapTestCaseSummariesToWorkspace({
-      launchDetails: launchSummaryToDetails(selectedLaunch, []),
+      launchDetails: catalogLaunchDetails,
       launches,
-      testCases: testCasesPayload.items
+      testCases: testCasesPayload.items,
+      page: testCasesPayload.page
     });
   }
 
@@ -291,11 +322,10 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
       throw new Error("No API test case selected");
     }
 
+    const listPageSize = options.listPageSize ?? workspaceInitialTestCaseLimit;
     const [testCasesPayload, testCase, history] = await Promise.all([
       getJson<ApiTestCaseListReadModel>(
-        `/api/v1/test-cases?projectId=${encodeURIComponent(
-          project.id
-        )}&limit=${workspaceInitialTestCaseLimit}`
+        `/api/v1/test-cases?${listPageParameters(listPageSize, listPageCursor, listQuery, project.id)}`
       ),
       getJson<ApiTestCaseSummaryReadModel>(
         `/api/v1/test-cases/${encodeURIComponent(
@@ -312,16 +342,23 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
       history.points.length > 0 ? { ...testCase, history: history.points } : testCase;
 
     return mapTestCaseSummariesToWorkspace({
-      launchDetails: launchSummaryToDetails(selectedLaunch, []),
+      launchDetails: catalogLaunchDetails,
       launches,
-      testCases: mergeSelectedTestCaseIntoPage(testCasesPayload.items, hydratedTestCase)
+      testCases: testCasesPayload.items,
+      page: testCasesPayload.page,
+      selectedTestCase: hydratedTestCase
     });
+  }
+
+  if (selectedLaunch === undefined) {
+    return { ...emptyM1Workspace, projectId: project.id };
   }
 
   if (routeScope === "launch-list") {
     return mapLaunchDetailsToWorkspace({
       launchDetails: launchSummaryToDetails(selectedLaunch, []),
       launches,
+      launchPage,
       resultDetails: []
     });
   }
@@ -477,40 +514,6 @@ async function loadSelectedResultDetails(
   }
 }
 
-function mergeSelectedTestCaseIntoPage(
-  testCases: ApiTestCaseSummaryReadModel[],
-  selectedTestCase: ApiTestCaseSummaryReadModel
-): ApiTestCaseSummaryReadModel[] {
-  let selectedIncluded = false;
-  const merged = testCases.map((testCase) => {
-    if (testCase.id !== selectedTestCase.id) {
-      return testCase;
-    }
-
-    selectedIncluded = true;
-    return selectedTestCase;
-  });
-
-  return selectedIncluded ? merged : [...merged, selectedTestCase];
-}
-
-function mergeSelectedDefectIntoPage(
-  defects: ApiDefectClusterReadModel[],
-  selectedDefect: ApiDefectClusterReadModel
-): ApiDefectClusterReadModel[] {
-  let selectedIncluded = false;
-  const merged = defects.map((defect) => {
-    if (defect.id !== selectedDefect.id) {
-      return defect;
-    }
-
-    selectedIncluded = true;
-    return selectedDefect;
-  });
-
-  return selectedIncluded ? merged : [...merged, selectedDefect];
-}
-
 function resolveM1WorkspaceRouteScope(options: LoadM1WorkspaceOptions): M1WorkspaceRouteScope {
   if (options.routeScope !== undefined) {
     return options.routeScope;
@@ -542,48 +545,6 @@ function launchSummaryToDetails(
   return {
     ...launch,
     results
-  };
-}
-
-function mapTestCaseSummariesToWorkspace({
-  launchDetails,
-  launches,
-  testCases
-}: {
-  launchDetails: ApiLaunchDetailsReadModel;
-  launches: ApiLaunchReadModel[];
-  testCases: ApiTestCaseSummaryReadModel[];
-}): M1Workspace {
-  return {
-    projectId: launchDetails.projectId,
-    launch: mapApiLaunch(launchDetails),
-    launchItems: launches.map(mapApiLaunchListItem),
-    results: testCases.map(mapApiTestCaseSummary)
-  };
-}
-
-function mapDefectClustersToWorkspace({
-  launchDetails,
-  launches,
-  defects
-}: {
-  launchDetails: ApiLaunchDetailsReadModel;
-  launches: ApiLaunchReadModel[];
-  defects: ApiDefectListReadModel["items"];
-}): M1Workspace {
-  return {
-    projectId: launchDetails.projectId,
-    launch: mapApiLaunch(launchDetails),
-    launchItems: launches.map(mapApiLaunchListItem),
-    results: defects.map(mapApiDefectCluster)
-  };
-}
-
-function defectReadHeaders(projectId: string) {
-  return {
-    "x-testhistory-actor-id": "defects-ui",
-    "x-testhistory-project-scope": projectId,
-    "x-testhistory-scopes": "defects:read"
   };
 }
 
@@ -639,6 +600,7 @@ async function hydrateInitialResults(
 export function mapLaunchDetailsToWorkspace({
   launchDetails,
   launches,
+  launchPage,
   historyReads,
   permissionAuditInvariantReads,
   permissionAuditReads,
@@ -648,6 +610,7 @@ export function mapLaunchDetailsToWorkspace({
 }: {
   launchDetails: ApiLaunchDetailsReadModel;
   launches: ApiLaunchReadModel[];
+  launchPage?: WorkspaceListPage | undefined;
   historyReads?: Array<ApiTestCaseHistoryPageReadModel | undefined>;
   permissionAuditInvariantReads?: Array<
     ApiHistoryComparePermissionAuditInvariantReadModel | undefined
@@ -667,6 +630,7 @@ export function mapLaunchDetailsToWorkspace({
     projectId: launchDetails.projectId,
     launch: mapApiLaunch(launchDetails),
     launchItems: launches.map(mapApiLaunchListItem),
+    ...(launchPage !== undefined ? { launchPage } : {}),
     ...(resultPage !== undefined ? { resultPage } : {}),
     ...(selectedResultDetail !== undefined ? { selectedResultDetail } : {}),
     results: launchDetails.results.map((result, index) => ({

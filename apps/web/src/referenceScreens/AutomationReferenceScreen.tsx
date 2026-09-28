@@ -44,7 +44,7 @@ export function AutomationReferenceScreen({ projectId }: { projectId?: string | 
     requestSequence.current = sequence;
     setLoading(true);
     setError(undefined);
-    setData(undefined);
+    setData((current) => (current?.projectId === projectId ? current : undefined));
     if (projectId === undefined) {
       setError("Выберите проект, чтобы открыть автоматизацию.");
       setLoading(false);
@@ -74,7 +74,7 @@ export function AutomationReferenceScreen({ projectId }: { projectId?: string | 
   }, [refresh]);
 
   return (
-    <section className="automation-screen">
+    <section className="automation-screen" aria-busy={loading}>
       <header className="automation-header">
         <div>
           <span className="reference-eyebrow">Автоматизация</span>
@@ -87,7 +87,7 @@ export function AutomationReferenceScreen({ projectId }: { projectId?: string | 
           type="button"
           onClick={() => void refresh()}
         >
-          <RefreshCw size={16} /> Обновить
+          <RefreshCw size={16} aria-hidden="true" /> {loading ? "Обновляем…" : "Обновить"}
         </button>
       </header>
 

@@ -700,6 +700,48 @@
   background: #eef2f6;
 }
 
+.launches-reference-progress-legend {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.launches-reference-progress-legend > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.launches-reference-progress-legend i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.launches-reference-progress-legend .is-failed {
+  background: #d95752;
+}
+
+.launches-reference-progress-legend .is-broken {
+  background: #d39a43;
+}
+
+.launches-reference-progress-legend .is-passed {
+  background: #4eab77;
+}
+
+.launches-reference-progress-legend .is-skipped {
+  background: #97a4b6;
+}
+
 .launches-reference-progress span {
   min-width: 0;
   display: inline-flex;
@@ -2019,7 +2061,7 @@ body.launches-reference-is-resizing * {
 }
 
 .launches-reference-result-table-head,
-.launches-reference-result-table button {
+.launches-reference-result-table > button {
   min-width: 0;
   display: grid;
   grid-template-columns: 50px 42px minmax(0, 1fr) 60px;
@@ -2052,7 +2094,7 @@ body.launches-reference-is-resizing * {
   text-transform: none;
 }
 
-.launches-reference-result-table button {
+.launches-reference-result-table > button {
   min-height: calc(48px + var(--th-font-body-delta));
   border: 0;
   border-bottom: 1px solid #e6ebf1;
@@ -2065,22 +2107,22 @@ body.launches-reference-is-resizing * {
   cursor: pointer;
 }
 
-.launches-reference-result-table button:nth-of-type(even) {
+.launches-reference-result-table > button:nth-of-type(even) {
   background: #fbfcfe;
 }
 
-.launches-reference-result-table button:hover {
+.launches-reference-result-table > button:hover {
   background: #f5f8fc;
 }
 
-.launches-reference-result-table button.selected {
+.launches-reference-result-table > button.selected {
   background: #eaf2ff;
   box-shadow:
     inset 3px 0 #2563eb,
     inset 0 -1px #d3e4ff;
 }
 
-.launches-reference-result-table button:focus-visible {
+.launches-reference-result-table > button:focus-visible {
   position: relative;
   z-index: 1;
   outline: 2px solid #2563eb;
@@ -2179,9 +2221,29 @@ body.launches-reference-is-resizing * {
 .launches-reference-result-table .launches-reference-list-empty {
   margin: 0;
   border-bottom: 1px solid #e6ebf1;
-  padding: 13px 12px;
+  display: grid;
+  gap: 8px;
+  padding: 18px 16px;
   color: #64748b;
   font-size: 13px;
+}
+
+.launches-reference-result-table .launches-reference-list-empty strong {
+  color: #334155;
+  font-size: 13px;
+}
+
+.launches-reference-result-table .launches-reference-list-empty button {
+  width: fit-content;
+  min-height: 30px;
+  border: 1px solid #cbd9ef;
+  border-radius: 5px;
+  padding: 4px 9px;
+  background: #ffffff;
+  color: #1d4ed8;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
 }
 
 .launches-reference-detail-pane {
@@ -4453,7 +4515,7 @@ body.launches-reference-is-resizing * {
   }
 
   .launches-reference-result-table-head,
-  .launches-reference-result-table button {
+  .launches-reference-result-table > button {
     grid-template-columns: 50px 34px minmax(0, 1fr) 52px;
     gap: 4px;
     padding-right: 8px;

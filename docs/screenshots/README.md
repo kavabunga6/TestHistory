@@ -20,12 +20,14 @@ Expected final screen set:
 - Auth login
 - Projects
 - Dashboard
+- Test case list
 - Launch list
 - Launch detail
 - Launch result tabs
 - Selected test case
 - Selected test case tabs
 - Defects
+- Automation
 - Analytics
 - Project settings tabs
 - Main dialogs
@@ -46,10 +48,12 @@ blocked, use the CI `ui-screenshot-evidence` artifact.
 | ------------------------------ | ------------------ | --------------------------------------------------------------------------------- |
 | `final/projects.png`           | Projects           | Project navigation and project state surface.                                     |
 | `final/dashboard.png`          | Dashboard          | Default THQL widgets: pass-rate metric, status distribution, and slow/risk table. |
+| `final/test-cases.png`         | Test case list     | Search, selection, and list pagination.                                           |
 | `final/launches.png`           | Launch list        | Launch table, filters, counters, and lifecycle state.                             |
 | `final/launch-detail.png`      | Launch detail      | A 100-result launch with status counters, artifacts, and close/upload context.    |
 | `final/selected-test-case.png` | Selected test case | History, retries/flaky state, metadata, and detail tabs.                          |
 | `final/defects.png`            | Defects            | Defect grouping, mute/readiness state, and operational actions.                   |
+| `final/automation.png`         | Automation         | Test plans, CI tasks, integrations, and empty states.                             |
 | `final/analytics.png`          | Analytics          | Analytics metrics, risk signals, and table output.                                |
 
 The capture script also records deeper route and dialog states for design review and CI evidence:
@@ -71,7 +75,7 @@ The capture script also records deeper route and dialog states for design review
 - `final/dialog-member-edit.png`
 - `final/dialog-integration-edit.png`
 - `final/dialog-api-token.png`
-- `final/dialog-quarantine.png`
+- `final/quarantine-empty.png` shows the empty filtered state with a reset action.
 - `final/dialog-delete-launch.png`
 
 CI attempts to upload the same set as the one-day `ui-screenshot-evidence` artifact. The upload is supplemental and best effort because GitHub storage quota can reject it after all browser checks and screenshot capture have passed; the committed set and its checked `manifest.json` remain the required evidence.

@@ -110,6 +110,9 @@ function ScenarioStepNode({
     <li
       className={`launches-reference-step-node ${expandable ? "is-group" : "is-leaf"} is-${step.status}`}
       style={depthStyle}
+      tabIndex={
+        !expandable && (step.status === "failed" || step.status === "broken") ? -1 : undefined
+      }
     >
       {expandable ? (
         <details open={expanded} onToggle={(event) => setExpanded(event.currentTarget.open)}>
@@ -159,6 +162,7 @@ function StepFailure({
     <section
       aria-label={`Диагностика шага ${path}`}
       className={`launches-reference-step-failure is-${status}`}
+      tabIndex={-1}
     >
       <span className="launches-reference-step-failure-label">
         {status === "broken" ? "Сбой на шаге" : "Ошибка на шаге"}

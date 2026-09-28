@@ -93,6 +93,9 @@ export function WorkspaceSurface({
   projectSelection,
   settingsRouteTab,
   selectedId,
+  listPageIndex,
+  listPageSize,
+  listQuery,
   resultPageIndex,
   resultPageSize,
   resultQuery,
@@ -115,6 +118,9 @@ export function WorkspaceSurface({
   onOpenTypographySettings,
   onOpenTestCaseTab,
   onRefreshWorkspace,
+  onListPageIndexChange,
+  onListPageSizeChange,
+  onListQueryChange,
   onResultPageIndexChange,
   onResultPageSizeChange,
   onResultQueryChange,
@@ -138,6 +144,9 @@ export function WorkspaceSurface({
   projectSelection?: ProjectSelection | undefined;
   settingsRouteTab?: string | undefined;
   selectedId: string;
+  listPageIndex?: number | undefined;
+  listPageSize?: number | undefined;
+  listQuery?: string | undefined;
   resultPageIndex?: number | undefined;
   resultPageSize?: number | undefined;
   resultQuery?: string | undefined;
@@ -160,6 +169,9 @@ export function WorkspaceSurface({
   onOpenTypographySettings?: (() => void) | undefined;
   onOpenTestCaseTab?: ((tab: string) => void) | undefined;
   onRefreshWorkspace?: (() => void) | undefined;
+  onListPageIndexChange?: ((index: number) => void) | undefined;
+  onListPageSizeChange?: ((size: number) => void) | undefined;
+  onListQueryChange?: ((query: string) => void) | undefined;
   onResultPageIndexChange?: ((index: number) => void) | undefined;
   onResultPageSizeChange?: ((size: number) => void) | undefined;
   onResultQueryChange?: ((query: string) => void) | undefined;
@@ -280,6 +292,9 @@ export function WorkspaceSurface({
                   launchRouteId
                 )}
                 launchItems={workspace.launchItems}
+                launchPage={workspace.launchPage}
+                launchPageIndex={listPageIndex}
+                launchPageSize={listPageSize}
                 launchListLoading={workspaceLoading && launchRouteId === undefined}
                 launchListPartial={
                   workspace.launchItems.length >= LIST_PAGE_SIZE
@@ -318,6 +333,9 @@ export function WorkspaceSurface({
                 selectedResultDetail={workspace.selectedResultDetail}
                 selectedResultId={selectedId}
                 onOpenLaunch={onOpenLaunch}
+                onLaunchPageIndexChange={onListPageIndexChange}
+                onLaunchPageSizeChange={onListPageSizeChange}
+                onLaunchQueryChange={onListQueryChange}
                 onOpenLaunchList={onOpenLaunchList}
                 onOpenResult={onOpenLaunchResult}
                 onOpenResultTab={onOpenLaunchResultTab}
@@ -336,10 +354,18 @@ export function WorkspaceSurface({
               <TestCaseDetailReferenceScreen
                 integrationProviders={integrationProviders}
                 projectId={projectSelection?.selectedProjectId ?? workspace.projectId}
+                page={workspace.testCasePage}
+                pageIndex={listPageIndex}
+                pageSize={listPageSize}
+                query={listQuery}
+                selectedDetail={workspace.selectedTestCaseDetail}
                 routeTab={testCaseRouteTab}
                 results={workspace.results}
                 selectedId={testCaseRouteId ?? selectedId}
                 onSelect={onSelect}
+                onPageIndexChange={onListPageIndexChange}
+                onPageSizeChange={onListPageSizeChange}
+                onQueryChange={onListQueryChange}
                 onOpenResult={onOpenLaunchResult}
                 onOpenLaunchResultsByTag={onOpenLaunchResultsByTag}
                 onOpenTab={onOpenTestCaseTab}
@@ -350,9 +376,17 @@ export function WorkspaceSurface({
             ) : mode === "defects" ? (
               <DefectsReferenceScreen
                 projectId={projectSelection?.selectedProjectId ?? workspace.projectId}
+                page={workspace.defectPage}
+                pageIndex={listPageIndex}
+                pageSize={listPageSize}
+                query={listQuery}
+                selectedDetail={workspace.selectedDefectDetail}
                 routeDefectId={defectRouteId}
                 results={workspace.results}
                 onDeleteDefect={onDeleteDefect}
+                onPageIndexChange={onListPageIndexChange}
+                onPageSizeChange={onListPageSizeChange}
+                onQueryChange={onListQueryChange}
                 onOpenDefect={onOpenDefect}
               />
             ) : mode === "automation" ? (

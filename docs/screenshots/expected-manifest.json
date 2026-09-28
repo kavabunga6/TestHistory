@@ -4,6 +4,7 @@
     { "name": "auth-login", "hash": "#launch", "auth": false, "dialog": false },
     { "name": "projects", "hash": "#projects", "auth": true, "dialog": false },
     { "name": "dashboard", "hash": "#dashboard", "auth": true, "dialog": false },
+    { "name": "test-cases", "hash": "#case?list=1", "auth": true, "dialog": false },
     { "name": "launches", "hash": "#launch", "auth": true, "dialog": false },
     { "name": "launch-detail", "hash": "#launch/L-1289", "auth": true, "dialog": false },
     { "name": "launch-results", "hash": "#launch/L-1289/results", "auth": true, "dialog": false },
@@ -38,6 +39,7 @@
       "dialog": false
     },
     { "name": "defects", "hash": "#defects/PAY-337", "auth": true, "dialog": false },
+    { "name": "automation", "hash": "#automation", "auth": true, "dialog": false },
     { "name": "analytics", "hash": "#analytics", "auth": true, "dialog": false },
     {
       "name": "dialog-dashboard-widget-delete",
@@ -70,10 +72,10 @@
     },
     { "name": "dialog-api-token", "hash": "#settings/tokens", "auth": true, "dialog": true },
     {
-      "name": "dialog-quarantine",
-      "hash": "#launch/L-1289/result/PAY-1042",
+      "name": "quarantine-empty",
+      "hash": "#launch/L-1289/results?query=muted+%3D+true",
       "auth": true,
-      "dialog": true
+      "dialog": false
     },
     { "name": "dialog-delete-launch", "hash": "#launch/L-1289", "auth": true, "dialog": true }
   ]

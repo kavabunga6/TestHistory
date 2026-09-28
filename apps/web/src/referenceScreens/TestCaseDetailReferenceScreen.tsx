@@ -27,6 +27,8 @@ import {
   getCurrentRunRetryCount
 } from "../resultHistory.js";
 import { shouldExpandScenarioStep } from "../scenarioStepTree.js";
+import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
+import { formatResultDuration } from "./LaunchesResultDuration.js";
 import {
   collectAttachments,
   filterResults,
@@ -40,6 +42,12 @@ import {
   uniqueStrings
 } from "./TestCaseDetailReferenceUtils.js";
 import { ResultIdCopy } from "./ResultIdCopy.js";
+import {
+  ReferenceListPagination,
+  referenceListPageSize,
+  useReferenceListPagination,
+  type ReferenceListPage
+} from "./ReferenceListPagination.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 import { useResizableListWidth } from "./useResizableListWidth.js";
 
@@ -62,7 +70,9 @@ const detailTabs: Array<{ key: DetailTab; label: string; count?: (result: TestRe
     {
       key: "defects",
       label: "Дефекты",
-      count: (result) => result.issues.length + (result.defect ? 1 : 0)
+      count: (result) =>
+        uniqueStrings([result.defect ?? "", ...result.issues]).length +
+        (result.defectHistory?.length ?? 0)
     },
     {
       key: "quarantine",
@@ -70,7 +80,6 @@ const detailTabs: Array<{ key: DetailTab; label: string; count?: (result: TestRe
       count: (result) => (isResultQuarantined(result) ? 1 : 0)
     }
   ];
-const TEST_CASE_REFERENCE_PAGE_SIZE = 50;
 const TEST_CASE_LIST_WIDTH_KEY = "testhistory:test-case-list-width";
 const TEST_CASE_LIST_DEFAULT_WIDTH = 420;
 const TEST_CASE_LIST_MIN_WIDTH = 390;
@@ -82,6 +91,8 @@ function parseDetailTab(value: string | undefined): DetailTab {
 
 export function TestCaseDetailReferenceScreen({
   integrationProviders = [],
+  onPageIndexChange,
+  onPageSizeChange,
   onDeleteTestCase,
   onOpenResult,
   onOpenLaunchResultsByTag,
@@ -89,12 +100,20 @@ export function TestCaseDetailReferenceScreen({
   onSelect,
   onToggleMuteResult,
   onUnlinkResultDefect,
+  page: serverPage,
+  pageIndex: serverPageIndex,
+  pageSize: serverPageSize,
   projectId = "ws",
+  query: controlledQuery,
+  onQueryChange,
   results,
   routeTab,
+  selectedDetail,
   selectedId
 }: {
   integrationProviders?: IntegrationLinkProvider[] | undefined;
+  onPageIndexChange?: ((index: number) => void) | undefined;
+  onPageSizeChange?: ((size: number) => void) | undefined;
   onDeleteTestCase?: ((id: string) => void) | undefined;
   onOpenResult?: OpenTestResult | undefined;
   onOpenLaunchResultsByTag?: ((tag: string, resultId: string) => void) | undefined;
@@ -102,12 +121,20 @@ export function TestCaseDetailReferenceScreen({
   onSelect?: ((id: string) => void) | undefined;
   onToggleMuteResult?: ((id: string) => void) | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
+  page?: ReferenceListPage | undefined;
+  pageIndex?: number | undefined;
+  pageSize?: number | undefined;
   projectId?: string | undefined;
+  query?: string | undefined;
+  onQueryChange?: ((query: string) => void) | undefined;
   results: TestResult[];
   routeTab?: string | undefined;
+  selectedDetail?: TestResult | undefined;
   selectedId?: string;
 }) {
-  const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
+  const query = controlledQuery ?? localQuery;
+  const setQuery = onQueryChange ?? setLocalQuery;
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
   const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
     useResizableListWidth({
@@ -118,16 +145,34 @@ export function TestCaseDetailReferenceScreen({
       storageKey: TEST_CASE_LIST_WIDTH_KEY
     });
 
-  const filteredResults = useMemo(() => filterResults(results, query), [query, results]);
-  const firstResults = filteredResults.slice(0, TEST_CASE_REFERENCE_PAGE_SIZE);
-  const requestedResult = filteredResults.find((result) => result.id === selectedId);
-  const visibleResults =
-    requestedResult !== undefined && !firstResults.includes(requestedResult)
-      ? [requestedResult, ...firstResults.slice(0, TEST_CASE_REFERENCE_PAGE_SIZE - 1)]
-      : firstResults;
+  const searchOnCurrentPage =
+    serverPage !== undefined && (onQueryChange === undefined || isLikelyThqlQuery(query));
+  const filteredResults = useMemo(
+    () =>
+      serverPage !== undefined && !searchOnCurrentPage ? results : filterResults(results, query),
+    [query, results, searchOnCurrentPage, serverPage]
+  );
+  const localPagination = useReferenceListPagination({
+    context: JSON.stringify([selectedId, query, projectId]),
+    count: filteredResults.length,
+    selectedIndex: filteredResults.findIndex((result) => result.id === selectedId)
+  });
+  const page = serverPage
+    ? (serverPageIndex ?? Math.floor(serverPage.offset / serverPage.limit))
+    : localPagination.page;
+  const pageSize = serverPage
+    ? referenceListPageSize(serverPageSize ?? serverPage.limit)
+    : localPagination.pageSize;
+  const visibleResults = serverPage
+    ? filteredResults
+    : filteredResults.slice(page * pageSize, (page + 1) * pageSize);
+  const total = serverPage?.total ?? filteredResults.length;
   const hasRequestedResult = selectedId !== undefined && selectedId.trim().length > 0;
   const selectedResult =
     filteredResults.find((result) => result.id === selectedId) ??
+    (selectedDetail !== undefined && selectedDetail.id === selectedId
+      ? selectedDetail
+      : undefined) ??
     results.find((result) => result.id === selectedId) ??
     (hasRequestedResult
       ? undefined
@@ -159,14 +204,19 @@ export function TestCaseDetailReferenceScreen({
             <span>Тест-кейсы</span>
             <span
               className="tc-detail-reference-count-badge"
-              title={`Показано ${visibleResults.length.toLocaleString("ru-RU")} из ${results.length.toLocaleString("ru-RU")}`}
+              title={
+                serverPage
+                  ? `${searchOnCurrentPage ? "Всего" : "Найдено"} тест-кейсов в проекте: ${total.toLocaleString("ru-RU")}`
+                  : `Найдено ${total.toLocaleString("ru-RU")} из ${results.length.toLocaleString("ru-RU")}`
+              }
               aria-hidden="true"
             >
-              {filteredResults.length.toLocaleString("ru-RU")}
+              {total.toLocaleString("ru-RU")}
             </span>
             <span className="tc-detail-reference-sr-only">
-              Показано {visibleResults.length.toLocaleString("ru-RU")} из{" "}
-              {results.length.toLocaleString("ru-RU")} тест-кейсов
+              {serverPage
+                ? `${searchOnCurrentPage ? "Всего" : "Найдено"} ${total.toLocaleString("ru-RU")} тест-кейсов в проекте`
+                : `Найдено ${total.toLocaleString("ru-RU")} из ${results.length.toLocaleString("ru-RU")} тест-кейсов`}
             </span>
           </h1>
         </header>
@@ -181,7 +231,24 @@ export function TestCaseDetailReferenceScreen({
             onActiveFilterChange={setActiveFilterId}
             onQueryChange={setQuery}
           />
+          {serverPage ? (
+            <p className="tc-detail-reference-page-search-note">
+              {searchOnCurrentPage ? "THQL-фильтр на текущей странице" : "Поиск по всему проекту"}
+              {searchOnCurrentPage && query.trim()
+                ? ` · найдено ${filteredResults.length} из ${results.length}`
+                : ""}
+            </p>
+          ) : null}
         </div>
+
+        {selectedDetail !== undefined &&
+        selectedDetail.id === selectedId &&
+        !results.some((result) => result.id === selectedId) ? (
+          <div className="tc-detail-reference-pinned" role="status">
+            <small>Выбранный кейс вне текущей страницы</small>
+            <strong>{selectedDetail.name}</strong>
+          </div>
+        ) : null}
 
         <div className="tc-detail-reference-list">
           {visibleResults.map((result) => (
@@ -226,10 +293,24 @@ export function TestCaseDetailReferenceScreen({
           {filteredResults.length === 0 ? (
             <div className="tc-detail-reference-empty">
               <strong>Нет тест-кейсов</strong>
-              <span>Измените фильтр или строку поиска.</span>
+              <span>
+                {searchOnCurrentPage && query.trim()
+                  ? "На этой странице совпадений нет. Перейдите на другую страницу или измените поиск."
+                  : "Измените фильтр или строку поиска."}
+              </span>
             </div>
           ) : null}
         </div>
+        <ReferenceListPagination
+          count={total}
+          label="Тест-кейсы"
+          offset={serverPage?.offset}
+          returned={serverPage?.returned}
+          onPageChange={onPageIndexChange ?? localPagination.setPage}
+          onPageSizeChange={onPageSizeChange ?? localPagination.setPageSize}
+          page={page}
+          pageSize={pageSize}
+        />
       </aside>
 
       <button
@@ -312,10 +393,12 @@ function TestCaseDetails({
       <header className="tc-detail-reference-detail-header">
         <div className="tc-detail-reference-title-row">
           <div className="tc-detail-reference-identifiers">
-            <span className="tc-detail-reference-id" title={result.allureId || result.id}>
-              #{result.allureId || result.id}
-            </span>
-            <ResultIdCopy resultId={result.id} />
+            {result.allureId && result.allureId !== result.id ? (
+              <span className="tc-detail-reference-id" title={result.allureId}>
+                Allure ID: {result.allureId}
+              </span>
+            ) : null}
+            <ResultIdCopy label="ID тест-кейса" resultId={result.id} />
           </div>
           {onToggleMuteResult !== undefined ||
           (onDeleteTestCase !== undefined && result.deletedAt === undefined) ? (
@@ -358,6 +441,21 @@ function TestCaseDetails({
             </span>
             {isQuarantined ? <span className="muted">Карантин</span> : null}
           </div>
+        </div>
+        <div className="tc-detail-reference-highlights" aria-label="Основные данные тест-кейса">
+          {result.duration && result.duration !== "n/a" ? (
+            <span>
+              Длительность: <strong>{formatResultDuration(result.duration)}</strong>
+            </span>
+          ) : null}
+          <span>
+            Слой: <strong>{result.layer}</strong>
+          </span>
+          {result.owner && result.owner !== "Unassigned" ? (
+            <span>
+              Владелец: <strong>{result.owner}</strong>
+            </span>
+          ) : null}
         </div>
       </header>
 
@@ -463,7 +561,7 @@ function OverviewTab({
 
         <section className="tc-detail-reference-rail-card tc-detail-reference-duration-card">
           <h3>Длительность</h3>
-          <strong>{result.duration}</strong>
+          <strong>{formatResultDuration(result.duration)}</strong>
         </section>
 
         <div className="tc-detail-reference-rail-card" role="group" aria-label="Теги">
@@ -606,7 +704,7 @@ function HistoryTab({
                       {point.flaky ? " · нестабилен" : ""}
                     </small>
                   </span>
-                  <em>{point.duration}</em>
+                  <em>{formatResultDuration(point.duration)}</em>
                 </button>
               );
             })}
@@ -658,7 +756,7 @@ function RetryAttemptsSection({ result }: { result: TestResult }) {
                 {attempt.message ? ` · ${attempt.message}` : ""}
               </small>
             </div>
-            <em>{attempt.duration}</em>
+            <em>{formatResultDuration(attempt.duration)}</em>
           </article>
         ))}
       </div>
@@ -847,7 +945,9 @@ function StepTreeItem({
             {attachments.length}
           </span>
         ) : null}
-        <span className="tc-detail-reference-step-duration">{step.duration}</span>
+        <span className="tc-detail-reference-step-duration">
+          {formatResultDuration(step.duration)}
+        </span>
       </div>
 
       {expanded ? (

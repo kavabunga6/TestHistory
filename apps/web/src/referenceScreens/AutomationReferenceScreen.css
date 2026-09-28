@@ -1,6 +1,6 @@
 /* Automated test plans and external CI executions. */
 .automation-screen {
-  min-height: 100vh;
+  min-height: 100%;
   min-width: 0;
   padding: var(--workspace-page-gutter, 16px);
   background: #f4f7fb;
@@ -47,16 +47,18 @@
   min-height: 48px;
   padding: 0 4px;
   border-bottom: 1px solid #dbe3ee;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .automation-tabs button {
+  position: relative;
   align-self: stretch;
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
   gap: 8px;
   border: 0;
-  border-bottom: 2px solid transparent;
   padding: 0 4px;
   color: #52647c;
   background: transparent;
@@ -65,8 +67,17 @@
 }
 
 .automation-tabs button.active {
-  border-bottom-color: #2563eb;
   color: #1456d9;
+}
+
+.automation-tabs button.active::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: #2563eb;
+  content: "";
 }
 
 .automation-tabs button span {
@@ -274,8 +285,15 @@
   color: #718197;
 }
 
+.automation-table-row strong,
+.automation-table-row small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .automation-table-row a {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: 5px;
   color: #1456d9;
@@ -476,7 +494,7 @@
 
 @media (max-width: 900px) {
   .automation-screen {
-    min-height: calc(100dvh - 56px);
+    min-height: 100%;
     padding: var(--workspace-page-gutter, 12px);
   }
 

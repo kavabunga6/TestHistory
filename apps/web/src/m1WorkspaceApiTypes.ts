@@ -326,6 +326,7 @@ export type ApiTestCaseSummaryReadModel = {
 export type ApiTestCaseListReadModel = {
   kind: "test-case-list";
   projectId?: string;
+  page?: ApiPageReadModel;
   items: ApiTestCaseSummaryReadModel[];
 };
 
@@ -359,6 +360,7 @@ export type ApiDefectClusterReadModel = {
 export type ApiDefectListReadModel = {
   kind: "defect-list";
   projectId?: string;
+  page?: ApiPageReadModel;
   items: ApiDefectClusterReadModel[];
 };
 
@@ -427,17 +429,20 @@ export type ApiResultDetailsReadModel = ApiNormalizedResultReadModel & {
 
 export type ApiPagedList<T> = {
   items: T[];
+  page?: ApiPageReadModel;
+};
+
+export type ApiPageReadModel = {
+  limit: number;
+  cursor: string | null;
+  offset: number;
+  returned: number;
+  total: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 };
 
 export type ApiLaunchResultListReadModel = {
   items: ApiNormalizedResultReadModel[];
-  page?: {
-    limit: number;
-    cursor: string | null;
-    offset: number;
-    returned: number;
-    total: number;
-    nextCursor: string | null;
-    hasMore: boolean;
-  };
+  page?: ApiPageReadModel;
 };

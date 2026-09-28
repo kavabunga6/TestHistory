@@ -196,13 +196,15 @@ export function mapApiDefectCluster(cluster: ApiDefectClusterReadModel): TestRes
       ...(cluster.results ?? []).map((result) => result.testId)
     ])
   ].filter((testId) => testId.trim().length > 0);
-  const status =
-    cluster.status === "closed" ? "passed" : mapResultStatus(firstResult?.status ?? "failed");
+  const status = mapResultStatus(
+    firstResult?.status ?? (cluster.status === "closed" ? "passed" : "failed")
+  );
+  const defectStatus = cluster.status === "closed" ? "closed" : "open";
 
   return {
     id: cluster.id,
     allureId: affectedTests[0] ?? cluster.signature?.hash ?? cluster.id,
-    name: affectedTests[0] ?? cluster.title,
+    name: cluster.title,
     suite: firstResult?.launchName ?? cluster.lifecycleState ?? "Defect cluster",
     status,
     duration: "n/a",
@@ -230,7 +232,8 @@ export function mapApiDefectCluster(cluster: ApiDefectClusterReadModel): TestRes
     parameters: [],
     attachments: [],
     description: cluster.signature?.reason ?? cluster.title,
-    defect: cluster.id
+    defect: cluster.id,
+    defectStatus
   };
 }
 

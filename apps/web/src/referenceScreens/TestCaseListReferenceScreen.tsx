@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import type { TestResult } from "../m1Workspace.js";
+import { ReferenceListPagination, useReferenceListPagination } from "./ReferenceListPagination.js";
 import { filterResults } from "./TestCaseDetailReferenceUtils.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 
@@ -26,6 +27,12 @@ export function TestCaseListReferenceScreen({
       ? "admin"
       : (window.localStorage.getItem("testhistory.actorId") ?? "admin");
   const visibleResults = useMemo(() => filterResults(results, query), [query, results]);
+  const { page, pageSize, setPage, setPageSize } = useReferenceListPagination({
+    context: JSON.stringify([selectedId, query, projectId]),
+    count: visibleResults.length,
+    selectedIndex: visibleResults.findIndex((result) => result.id === selectedId)
+  });
+  const pageResults = visibleResults.slice(page * pageSize, (page + 1) * pageSize);
 
   function handleRowClick(id: string) {
     setSelectedId(id);
@@ -39,7 +46,7 @@ export function TestCaseListReferenceScreen({
           <span>Тест-кейсы</span>
           <span
             className="test-case-list-reference-count"
-            title={`Показано ${visibleResults.length.toLocaleString("ru-RU")} из ${results.length.toLocaleString("ru-RU")}`}
+            title={`Найдено ${visibleResults.length.toLocaleString("ru-RU")} из ${results.length.toLocaleString("ru-RU")}`}
             aria-hidden="true"
           >
             {visibleResults.length.toLocaleString("ru-RU")}
@@ -60,7 +67,7 @@ export function TestCaseListReferenceScreen({
       </section>
 
       <div className="test-case-list-reference-list" role="list" aria-label="Тест-кейсы">
-        {visibleResults.map((result) => (
+        {pageResults.map((result) => (
           <button
             className={`test-case-list-reference-row ${selectedId === result.id ? "selected" : ""}`}
             key={result.id}
@@ -89,6 +96,14 @@ export function TestCaseListReferenceScreen({
           <div className="test-case-list-reference-empty-state">Ничего не найдено</div>
         ) : null}
       </div>
+      <ReferenceListPagination
+        count={visibleResults.length}
+        label="Тест-кейсы"
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        page={page}
+        pageSize={pageSize}
+      />
     </section>
   );
 }

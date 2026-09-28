@@ -358,6 +358,7 @@ export type TestResult = {
   trace?: ResultTrace;
   description?: string;
   defect?: string;
+  defectStatus?: "open" | "closed";
   deletedAt?: string;
   deletedReason?: string;
   defectHistory?: Array<{
@@ -396,12 +397,17 @@ export type M1Workspace = {
   projectId?: string;
   launch: Launch;
   launchItems: LaunchListItem[];
+  launchPage?: WorkspaceListPage;
   results: TestResult[];
+  testCasePage?: WorkspaceListPage;
+  defectPage?: WorkspaceListPage;
   resultPage?: LaunchResultPage;
+  selectedTestCaseDetail?: TestResult;
+  selectedDefectDetail?: TestResult;
   selectedResultDetail?: TestResult;
 };
 
-export type LaunchResultPage = {
+export type WorkspaceListPage = {
   limit: number;
   cursor: string | null;
   offset: number;
@@ -410,6 +416,8 @@ export type LaunchResultPage = {
   nextCursor: string | null;
   hasMore: boolean;
 };
+
+export type LaunchResultPage = WorkspaceListPage;
 
 type ApiLaunch = Launch;
 type ApiLaunchListItem = LaunchListItem;
