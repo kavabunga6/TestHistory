@@ -1,4 +1,4 @@
-export function expectScreenshotEvidence(docs, workflows, screenshotScript) {
+export function expectScreenshotEvidence(docs, workflows, screenshotScript, screenshotScreens) {
   const screenshotDocs = docs.get("docs/screenshots/README.md") ?? "";
   const ciWorkflow = workflows.get(".github/workflows/ci.yml") ?? "";
 
@@ -9,11 +9,16 @@ export function expectScreenshotEvidence(docs, workflows, screenshotScript) {
     "bytes: stats.size",
     'dialog: typeof screen.prepare === "function"',
     "launchChromiumWithFallback",
-    "#case/PAY-1042/history",
-    "#defects/PAY-337"
+    'import { screens } from "./ui-screenshot-screens.mjs"'
   ]) {
     if (!screenshotScript.includes(snippet)) {
       throw new Error(`scripts/capture-ui-screenshots.mjs is missing evidence snippet: ${snippet}`);
+    }
+  }
+
+  for (const snippet of ["#case/PAY-1042/history", "#defects/PAY-337"]) {
+    if (!screenshotScreens.includes(snippet)) {
+      throw new Error(`scripts/ui-screenshot-screens.mjs is missing evidence snippet: ${snippet}`);
     }
   }
 

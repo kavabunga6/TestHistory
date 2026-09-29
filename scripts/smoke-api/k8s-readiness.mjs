@@ -73,6 +73,10 @@ export function smokeK8sReadiness() {
     path.join(repoRoot, "scripts", "capture-ui-screenshots.mjs"),
     "utf8"
   );
+  const screenshotScreens = readFileSync(
+    path.join(repoRoot, "scripts", "ui-screenshot-screens.mjs"),
+    "utf8"
+  );
   const workflows = new Map([
     [
       ".github/workflows/ci.yml",
@@ -124,7 +128,7 @@ export function smokeK8sReadiness() {
   expectKubernetesOverlays(repoRoot, packageJson, docs);
   expectApiDocumentation(docs, packageJson);
   expectReleaseEvidenceSummary(docs);
-  expectScreenshotEvidence(docs, workflows, screenshotScript);
+  expectScreenshotEvidence(docs, workflows, screenshotScript, screenshotScreens);
   expectKubernetesWrappers(packageJson, k8sPowerShell, localStackPowerShell, {
     k8sWrapper,
     localStackWrapper
