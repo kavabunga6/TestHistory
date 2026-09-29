@@ -398,9 +398,9 @@
 
 .launches-reference-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   border-top: 0;
-  padding: 16px 24px 24px;
+  padding: 12px 16px 16px;
   background: #f4f7fb;
 }
 
@@ -412,15 +412,15 @@
     "meta progress";
   grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
   align-items: start;
-  gap: 10px 20px;
+  gap: 7px 16px;
   border: 1px solid #d7e1ee;
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-radius: 6px;
+  padding: 11px 14px;
   background: #ffffff;
   color: #303642;
   font: inherit;
   text-align: left;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 3%);
+  box-shadow: none;
   cursor: pointer;
   transition:
     border-color 120ms ease,
@@ -461,12 +461,18 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.launches-reference-progress-empty {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 12px;
+}
+
 .launches-reference-list-main,
 .launches-reference-list-main strong,
 .launches-reference-list-meta > span {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .launches-reference-list-main {
@@ -477,9 +483,9 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   color: #172033;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -508,8 +514,8 @@
 }
 
 .launches-reference-list-main strong em.state-closed {
-  background: #dcfce7;
-  color: #14532d;
+  background: #eef2f7;
+  color: #526075;
 }
 
 .launches-reference-list-main small,
@@ -529,9 +535,8 @@
   display: grid;
   grid-area: meta;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px 14px;
-  border-top: 1px solid #e8edf3;
-  padding-top: 8px;
+  gap: 5px 12px;
+  padding-top: 0;
 }
 
 .launches-reference-list-tags {
@@ -4237,6 +4242,7 @@ body.launches-reference-is-resizing * {
 .launches-reference-chart-card-head h2 {
   min-height: 0;
   display: block;
+  overflow: visible;
   margin: 0;
   border: 0;
   padding: 0;
@@ -4245,6 +4251,8 @@ body.launches-reference-is-resizing * {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.04em;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .launches-reference-chart-card-head span {
@@ -4388,6 +4396,77 @@ body.launches-reference-is-resizing * {
   font-style: normal;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.launches-reference-chart-insights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid #e5ebf2;
+  background: #fbfcfe;
+}
+
+.launches-reference-chart-insights > div {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 14px 20px;
+}
+
+.launches-reference-chart-insights > div + div {
+  border-left: 1px solid #e5ebf2;
+}
+
+.launches-reference-chart-insights small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.launches-reference-chart-insights strong {
+  overflow: hidden;
+  color: #172033;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.launches-reference-chart-insights span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.launches-reference-chart-scroll-hint {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .launches-reference-chart-scroll-hint {
+    display: block;
+    margin: -6px 20px 12px 66px;
+    color: #64748b;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 600px) {
+  .launches-reference-chart-insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .launches-reference-chart-insights > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .launches-reference-chart-insights > div + div {
+    border-top: 1px solid #e5ebf2;
+    border-left: 0;
+  }
+
+  .launches-reference-chart-insights > div:last-child {
+    border-left: 1px solid #e5ebf2;
+  }
 }
 
 .launches-reference-timeline {
@@ -4816,7 +4895,11 @@ body.launches-reference-is-resizing * {
   }
 
   .launches-reference-list-meta {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+  }
+
+  .launches-reference-list-meta > span:last-child {
+    grid-column: 1 / -1;
   }
 }

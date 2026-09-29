@@ -319,7 +319,8 @@ describe("settings table readability contracts", () => {
     expect(source).toContain("<span>Результат</span>");
     expect(source).toContain("<span>Владелец / теги</span>");
     expect(source).toContain("<span>Длительность</span>");
-    expect(resultHeadBlock).toContain("82px minmax(0, 1fr) minmax(0, 1fr) 86px");
+    expect(resultHeadBlock).toContain("50px minmax(0, 1fr) minmax(0, 0.75fr) 106px");
+    expect(resultHeadBlock).toContain("min-width: 0");
     expect(styles).toContain(".defects-reference-result-tags");
     expect(resultHeadOwnBlock).toContain("min-height: 38px");
     expect(resultHeadOwnBlock).toContain("font-size: 11px");
@@ -370,7 +371,11 @@ describe("settings table readability contracts", () => {
       ".tc-detail-reference-overview-main section",
       "border-bottom:"
     );
-    const railBlock = extractExactCssBlock(styles, ".tc-detail-reference-side-rail");
+    const railBlock = extractCssBlockContaining(
+      styles,
+      ".tc-detail-reference-side-rail",
+      "position: static"
+    );
     const tabsBlock = extractExactCssBlock(styles, ".tc-detail-reference-tabs");
     const narrowTabsBlock = extractCssBlockContaining(
       styles,
@@ -401,10 +406,6 @@ describe("settings table readability contracts", () => {
       ".tc-detail-reference-side-rail h3",
       "text-transform:"
     );
-    const durationCardBlock = extractExactCssBlock(
-      styles,
-      ".tc-detail-reference-side-rail > .tc-detail-reference-duration-card"
-    );
     const railChipListBlock = extractExactCssBlock(
       styles,
       ".tc-detail-reference-side-rail .rail-section--chips .tc-detail-reference-value-list"
@@ -425,7 +426,8 @@ describe("settings table readability contracts", () => {
     );
 
     expect(metadataSource).toContain('title="Ключи теста"');
-    expect(source).toContain("<h3>Длительность</h3>");
+    expect(source).toContain("Длительность: <strong>");
+    expect(source).not.toContain("tc-detail-reference-duration-card");
     expect(source).not.toContain('title="Ожидаемая длительность"');
     expect(source).toContain("TEST_CASE_LIST_WIDTH_KEY");
     expect(source).toContain("useResizableListWidth");
@@ -480,8 +482,6 @@ describe("settings table readability contracts", () => {
     expect(railValueRowBlock).toContain("font-size: 14px");
     expect(railValueRowBlock).toContain("font-weight: 600");
     expect(railValueRowBlock).toContain("text-overflow: ellipsis");
-    expect(durationCardBlock).toContain("display: flex");
-    expect(durationCardBlock).toContain("justify-content: space-between");
     expect(railChipListBlock).toContain("display: flex");
     expect(railChipListBlock).toContain("flex-wrap: wrap");
     expect(railChipBlock).toContain("border-radius: 6px");

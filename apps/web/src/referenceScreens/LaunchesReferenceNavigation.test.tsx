@@ -95,6 +95,23 @@ describe("launch results navigation", () => {
     expect(rows[12]!.textContent).toContain("Запуск 63");
   });
 
+  it("shows the complete short launch ID in the list", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={[{ ...demoM1Workspace.launchItems[0]!, id: "L-1289" }]}
+          projectId="project-sandbox"
+          results={[]}
+        />
+      )
+    );
+    expect(container.querySelector(".launches-reference-list-id")?.textContent).toBe("ID L-1289");
+  });
+
   it("uses the server page count and requests the next launch page", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,

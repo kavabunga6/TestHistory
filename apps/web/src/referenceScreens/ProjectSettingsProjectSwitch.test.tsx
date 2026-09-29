@@ -79,6 +79,52 @@ it("hides the previous project's settings and access panel until the new project
   );
 });
 
+it("lets the user retry a failed settings load for the selected project", async () => {
+  vi.mocked(loadProjectSettingsFromApi)
+    .mockRejectedValueOnce(new Error("Connection unavailable"))
+    .mockResolvedValue(settingsFor("project-b", "Project Beta"));
+
+  await act(async () =>
+    root.render(<ProjectSettingsReferenceScreen projectId="project-b" routeTab="access" />)
+  );
+  expect(container.textContent).toContain("Настройки недоступны");
+  expect(container.textContent).not.toContain("Web Sandbox");
+
+  const retry = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((button) =>
+    button.textContent?.includes("Повторить загрузку")
+  );
+  expect(retry).toBeDefined();
+  await act(async () => retry?.click());
+
+  expect(loadProjectSettingsFromApi).toHaveBeenCalledTimes(2);
+  expect(container.textContent).toContain("Project Beta");
+  expect(container.textContent).not.toContain("Не удалось выполнить запрос");
+});
+
+it("enables saving visibility only after the user changes a policy", async () => {
+  vi.mocked(loadProjectSettingsFromApi).mockResolvedValue(settingsFor("project-b", "Project Beta"));
+  await act(async () =>
+    root.render(<ProjectSettingsReferenceScreen projectId="project-b" routeTab="visibility" />)
+  );
+
+  const save = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+    (button) => button.textContent?.trim() === "Сохранить"
+  );
+  const visibility = container.querySelector<HTMLSelectElement>(
+    ".project-settings__form-row select"
+  );
+  expect(save?.disabled).toBe(true);
+  expect(visibility).not.toBeNull();
+
+  await act(async () => {
+    if (visibility !== null) {
+      visibility.value = visibility.value === "internal" ? "private" : "internal";
+      visibility.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  expect(save?.disabled).toBe(false);
+});
+
 function settingsFor(id: string, name: string): ProjectSettings {
   return { ...demoProjectSettings, project: { ...demoProjectSettings.project, id, name } };
 }

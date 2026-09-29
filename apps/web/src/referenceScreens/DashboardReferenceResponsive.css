@@ -72,6 +72,16 @@
     padding: 12px;
   }
 
+  .dashboard-reference-table-widget:not(.is-grouped) td:nth-child(2) {
+    white-space: normal;
+  }
+
+  .dashboard-reference-result-link {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .dashboard-reference-modal-layer {
     padding: 12px;
   }

@@ -30,15 +30,13 @@ export function ProjectsReferenceScreen({
       <section className="projects-reference__workspace" aria-labelledby="projects-reference-title">
         <div className="projects-reference__content">
           <header className="projects-reference__header">
-            <div>
-              <h1 id="projects-reference-title">
-                Проекты
-                {status === "ready" ? (
-                  <span className="projects-reference__count">{projects.length}</span>
-                ) : null}
-              </h1>
-              <p>Выберите проект, чтобы открыть его запуски, тест-кейсы и аналитику.</p>
-            </div>
+            <h1 id="projects-reference-title">
+              Проекты
+              {status === "ready" ? (
+                <span className="projects-reference__count">{projects.length}</span>
+              ) : null}
+            </h1>
+            <p>Выберите проект, чтобы открыть его запуски, тест-кейсы и аналитику.</p>
             {status === "ready" && onRetry !== undefined ? (
               <button className="projects-reference__refresh" onClick={onRetry} type="button">
                 <RefreshCw aria-hidden="true" size={16} /> Обновить
@@ -75,7 +73,12 @@ export function ProjectsReferenceScreen({
                   body="Создайте проект или попросите предоставить к нему доступ."
                 />
               ) : visibleProjects.length === 0 ? (
-                <ProjectListMessage title="Проекты не найдены" body="Измените поисковый запрос." />
+                <ProjectListMessage
+                  title="Проекты не найдены"
+                  body={`По запросу «${query.trim()}» ничего не найдено.`}
+                  actionLabel="Сбросить поиск"
+                  onRetry={() => setQuery("")}
+                />
               ) : (
                 visibleProjects.map((project) => (
                   <ProjectCard
@@ -145,10 +148,12 @@ function ProjectCard({
 }
 
 function ProjectListMessage({
+  actionLabel = "Повторить",
   body,
   onRetry,
   title
 }: {
+  actionLabel?: string;
   body: string;
   onRetry?: (() => void) | undefined;
   title: string;
@@ -159,7 +164,7 @@ function ProjectListMessage({
       <span>{body}</span>
       {onRetry !== undefined ? (
         <button onClick={onRetry} type="button">
-          Повторить
+          {actionLabel}
         </button>
       ) : null}
     </div>

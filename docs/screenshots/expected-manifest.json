@@ -66,6 +66,12 @@
       "dialog": true
     },
     { "name": "settings-access", "hash": "#settings/access", "auth": true, "dialog": false },
+    {
+      "name": "settings-visibility",
+      "hash": "#settings/visibility",
+      "auth": true,
+      "dialog": false
+    },
     { "name": "settings-tokens", "hash": "#settings/tokens", "auth": true, "dialog": false },
     {
       "name": "settings-integrations",

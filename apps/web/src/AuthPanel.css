@@ -139,7 +139,8 @@
   min-width: 0;
 }
 
-.auth-only-surface .auth-login__field > span {
+.auth-only-surface .auth-panel.auth-login .auth-login__field > span,
+.auth-only-surface .auth-panel.auth-login .auth-login__field > label {
   color: #303642;
   font-size: 13px;
   font-weight: 600;
@@ -163,6 +164,41 @@
 
 .auth-only-surface .auth-login__field input:hover {
   border-color: #aebdce;
+}
+
+.auth-login__password-control {
+  position: relative;
+  min-width: 0;
+}
+
+.auth-only-surface .auth-login__password-control input {
+  padding-right: 46px;
+}
+
+.auth-login__password-toggle {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #526172;
+  cursor: pointer;
+}
+
+.auth-login__password-toggle:hover {
+  background: #eef3f8;
+  color: #174ea6;
+}
+
+.auth-login__password-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
 }
 
 .auth-login__submit {
@@ -195,7 +231,6 @@
 }
 
 .auth-login__feedback {
-  min-height: 18px;
   margin: -4px 0 0;
   color: #526172;
   font-size: 12px;

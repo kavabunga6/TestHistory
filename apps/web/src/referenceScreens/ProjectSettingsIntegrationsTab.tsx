@@ -21,6 +21,7 @@ export function IntegrationsTab({
   const [providers, setProviders] = useState(settings.integrationProviders);
   const [editingProvider, setEditingProvider] = useState<IntegrationLinkProvider | undefined>();
   const [deletingProvider, setDeletingProvider] = useState<IntegrationLinkProvider | undefined>();
+  const exampleProvider = providers.find((provider) => provider.enabled) ?? providers[0];
   useEffect(() => {
     setProviders(settings.integrationProviders);
     setEditingProvider(undefined);
@@ -77,12 +78,21 @@ export function IntegrationsTab({
           </div>
         ) : null}
       </div>
-      <div className="project-settings__integration-example">
-        <span>В Allure отчете:</span>
-        <code>label JIRA_ISSUE = ANDROID-123</code>
-        <span>В интеграции:</span>
-        <code>https://www.jira.ru/browse/{"{value}"}</code>
-      </div>
+      {exampleProvider ? (
+        <div className="project-settings__integration-example">
+          <span>В результате теста:</span>
+          <code>
+            label {exampleProvider.source.name} = {exampleProvider.previewValue}
+          </code>
+          <span>Ссылка:</span>
+          <code>
+            {getProviderLinkTemplate(exampleProvider).replace(
+              "{value}",
+              exampleProvider.previewValue
+            )}
+          </code>
+        </div>
+      ) : null}
       <div
         className={`project-settings__integrations-table ${
           canEdit ? "" : "project-settings__integrations-table--readonly"

@@ -245,9 +245,9 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  min-height: 52px;
+  min-height: 64px;
   border-bottom: 1px solid #dfe7f0;
-  padding: 0 12px 0 20px;
+  padding: 5px 12px 5px 20px;
   background: #ffffff;
 }
 
@@ -263,7 +263,7 @@
 
 .tc-detail-reference-row-main {
   width: auto;
-  min-height: 52px;
+  min-height: 54px;
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
@@ -299,22 +299,6 @@
 
 .tc-detail-reference-row:not(.selected) .tc-detail-reference-row-more {
   visibility: hidden;
-}
-
-.tc-detail-reference-quarantine-icon {
-  width: 18px;
-  height: 18px;
-  display: inline-grid;
-  place-items: center;
-  color: transparent;
-}
-
-.tc-detail-reference-quarantine-icon.active {
-  color: #b42318;
-}
-
-.tc-detail-reference-quarantine-icon svg {
-  display: block;
 }
 
 .tc-detail-reference-row.deleted {
@@ -378,6 +362,10 @@
   border-bottom: 1px solid #dfe4ee;
   padding: 16px 24px;
   background: #ffffff;
+}
+
+.tc-detail-reference-mobile-back {
+  display: none;
 }
 
 .tc-detail-reference-title-row {
@@ -876,21 +864,25 @@
 .tc-detail-reference-overview-main,
 .tc-detail-reference-side-rail,
 .tc-detail-reference-tab-panel {
-  display: grid;
   min-height: 0;
-  gap: 0;
   border-top: 0;
 }
 
 .tc-detail-reference-overview-main,
+.tc-detail-reference-side-rail {
+  display: grid;
+  gap: 0;
+}
+
+.tc-detail-reference-overview-main,
 .tc-detail-reference-tab-panel {
-  align-content: start;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 
 .tc-detail-reference-overview-main {
+  align-content: start;
   padding: 20px 8px 24px 0;
 }
 
@@ -984,27 +976,6 @@
 .tc-detail-reference-side-rail > .tc-detail-reference-rail-card.is-empty > h3 {
   margin: 0;
   color: #748094;
-}
-
-.tc-detail-reference-side-rail > .tc-detail-reference-duration-card {
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.tc-detail-reference-side-rail .tc-detail-reference-duration-card h3 {
-  min-height: 0;
-  margin: 0;
-}
-
-.tc-detail-reference-side-rail .tc-detail-reference-duration-card strong {
-  flex: 0 0 auto;
-  color: #07162d;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.2;
 }
 
 .tc-detail-reference-side-rail .tc-detail-reference-rail-card > section {
@@ -1173,6 +1144,8 @@
 }
 
 .tc-detail-reference-tab-panel {
+  display: block;
+  width: 100%;
   height: 100%;
   padding: 16px 24px 24px;
 }
@@ -2059,6 +2032,27 @@
 }
 
 @media (max-width: 860px) {
+  .tc-detail-reference-mobile-back {
+    width: fit-content;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #1d4ed8;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .tc-detail-reference-mobile-back:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+
   .tc-detail-reference-screen {
     display: block;
     height: 100%;

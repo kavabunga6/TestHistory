@@ -45,6 +45,17 @@
   flex: 0 0 auto;
 }
 
+.thql-search__mode {
+  flex: 0 0 auto;
+  border-radius: 4px;
+  padding: 3px 5px;
+  background: #eaf2ff;
+  color: #2358c8;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .thql-search__field input {
   width: 100%;
   min-width: 0;

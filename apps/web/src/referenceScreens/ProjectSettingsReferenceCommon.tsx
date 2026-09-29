@@ -26,11 +26,24 @@ export function formatSettingsDate(value: string | undefined, empty = "не ис
   }).format(date);
 }
 
-export function SettingsErrorState({ message }: { message: string }) {
+export function SettingsErrorState({
+  message,
+  onRetry
+}: {
+  message: string;
+  onRetry?: (() => void) | undefined;
+}) {
   return (
     <section className="project-settings__panel project-settings__error-state" role="alert">
-      <PanelTitle icon={<ShieldCheck size={18} />} title="API настроек недоступен" />
-      <p>{message}</p>
+      <div>
+        <strong>Не удалось выполнить запрос</strong>
+        <p>{message}</p>
+      </div>
+      {onRetry ? (
+        <button className="project-settings__button" type="button" onClick={onRetry}>
+          Повторить загрузку
+        </button>
+      ) : null}
     </section>
   );
 }

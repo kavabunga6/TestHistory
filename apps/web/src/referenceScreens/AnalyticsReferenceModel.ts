@@ -1,5 +1,6 @@
 import type { ResultStatus, TestResult } from "../m1Workspace.js";
 import type { AnalyticsResultSummary, AnalyticsResultsRead } from "./AnalyticsReferenceData.js";
+import { formatResultDuration } from "./LaunchesResultDuration.js";
 
 export type AnalyticsStatus = ResultStatus | "unknown";
 
@@ -79,12 +80,12 @@ export function buildAnalyticsModel(results: TestResult[], query: string) {
     flakyCount,
     openRisks: counts.failed + counts.broken,
     passRate,
-    prioritySignals,
-    slowSignals,
+    prioritySignals: prioritySignals.map(localizeSignalDuration),
+    slowSignals: slowSignals.map(localizeSignalDuration),
     slowCount,
     statusMetrics,
     total: results.length,
-    visibleSignals
+    visibleSignals: visibleSignals.map(localizeSignalDuration)
   };
 }
 
@@ -119,6 +120,10 @@ function mapServerSignal(summary: AnalyticsResultSummary): AnalyticsSignal {
     status: summary.muted ? "muted" : summary.status,
     duration: formatDurationMilliseconds(summary.durationMs ?? null)
   };
+}
+
+function localizeSignalDuration(result: TestResult): TestResult {
+  return { ...result, duration: formatResultDuration(result.duration) };
 }
 
 function countStatusesFromServer(statusCounters: Record<string, number>) {
@@ -229,14 +234,15 @@ function parseDurationPart(value: string | undefined): number {
 
 function formatDurationSeconds(duration: number): string {
   if (duration < 1) {
-    return `${Math.round(duration * 1000)}ms`;
+    return `${Math.round(duration * 1000)} мс`;
   }
   if (duration < 60) {
-    return `${duration.toFixed(2).replace(/\.?0+$/, "")}s`;
+    return `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(duration)} с`;
   }
-  const minutes = Math.floor(duration / 60);
-  const seconds = Math.round(duration % 60);
-  return `${minutes}m ${seconds}s`;
+  const roundedSeconds = Math.round(duration);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const seconds = roundedSeconds % 60;
+  return `${minutes} мин ${seconds} с`;
 }
 
 export function formatCount(value: number): string {

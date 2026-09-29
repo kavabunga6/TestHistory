@@ -61,7 +61,15 @@ export function DurationChartContent({
   const averageDuration =
     chart?.averageDurationMs === null || chart === undefined
       ? "нет данных"
-      : formatDurationSeconds(chart.averageDurationMs / 1_000);
+      : formatResultDuration(formatDurationSeconds(chart.averageDurationMs / 1_000));
+  const measured = chart?.measuredResults ?? 0;
+  const dominantBucket = buckets.reduce<(typeof buckets)[number] | undefined>(
+    (selected, bucket) =>
+      selected === undefined || bucket.count > selected.count ? bucket : selected,
+    undefined
+  );
+  const fasterThanSecond = buckets.slice(0, 2).reduce((sum, bucket) => sum + bucket.count, 0);
+  const slowerThanTenSeconds = buckets.slice(3).reduce((sum, bucket) => sum + bucket.count, 0);
   const scope =
     chart === undefined
       ? "Данные по всему запуску"
@@ -82,39 +90,45 @@ export function DurationChartContent({
           </span>
         </header>
         {chart !== undefined && chart.measuredResults > 0 ? (
-          <div className="launches-reference-chart-wrap">
-            <div className="launches-reference-chart-y-axis" aria-hidden="true">
-              {[...yAxisTicks].reverse().map((tick) => (
-                <span key={tick}>{tick}</span>
-              ))}
-            </div>
-            <div
-              className="launches-reference-chart"
-              aria-label="Распределение по продолжительности"
-            >
-              {buckets.map((bucket) => (
-                <div
-                  aria-label={`${bucket.label}: ${bucket.count}`}
-                  className="launches-reference-chart-column"
-                  key={bucket.label}
-                >
-                  <div className="launches-reference-chart-bar">
-                    <strong>{bucket.count}</strong>
-                    <span
-                      className={bucket.count === 0 ? "is-empty" : undefined}
-                      style={{
-                        height:
-                          bucket.count === 0
-                            ? "2px"
-                            : `${Math.max(10, Math.round((bucket.count / axisMaxCount) * 190))}px`
-                      }}
-                    />
+          <>
+            <div className="launches-reference-chart-wrap">
+              <div className="launches-reference-chart-y-axis" aria-hidden="true">
+                {[...yAxisTicks].reverse().map((tick) => (
+                  <span key={tick}>{tick}</span>
+                ))}
+              </div>
+              <div
+                className="launches-reference-chart"
+                aria-label="Распределение по продолжительности"
+              >
+                {buckets.map((bucket) => (
+                  <div
+                    aria-label={`${formatDurationBucket(bucket.label)}: ${bucket.count} из ${measured}`}
+                    className="launches-reference-chart-column"
+                    key={bucket.label}
+                    role="group"
+                  >
+                    <div className="launches-reference-chart-bar">
+                      {bucket.count > 0 ? <strong>{bucket.count}</strong> : null}
+                      <span
+                        className={bucket.count === 0 ? "is-empty" : undefined}
+                        style={{
+                          height:
+                            bucket.count === 0
+                              ? "2px"
+                              : `${Math.max(10, Math.round((bucket.count / axisMaxCount) * 190))}px`
+                        }}
+                      />
+                    </div>
+                    <em>{formatDurationBucket(bucket.label)}</em>
                   </div>
-                  <em>{bucket.label}</em>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+            <p className="launches-reference-chart-scroll-hint">
+              Прокрутите график вправо для остальных интервалов →
+            </p>
+          </>
         ) : (
           <div className="launches-reference-centered">
             {error ? (
@@ -137,8 +151,53 @@ export function DurationChartContent({
             )}
           </div>
         )}
+        {chart !== undefined && chart.measuredResults > 0 ? (
+          <div
+            className="launches-reference-chart-insights"
+            aria-label="Ключевые показатели длительности"
+          >
+            <div>
+              <small>Основной интервал</small>
+              <strong>{formatDurationBucket(dominantBucket?.label ?? "")}</strong>
+              <span>
+                {dominantBucket?.count ?? 0} из {measured} измеренных
+              </span>
+            </div>
+            <div>
+              <small>Быстрее 1 с</small>
+              <strong>{fasterThanSecond.toLocaleString("ru-RU")}</strong>
+              <span>{formatMeasuredPercent(fasterThanSecond, measured)} измеренных</span>
+            </div>
+            <div>
+              <small>От 10 с</small>
+              <strong>{slowerThanTenSeconds.toLocaleString("ru-RU")}</strong>
+              <span>{formatMeasuredPercent(slowerThanTenSeconds, measured)} измеренных</span>
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
+  );
+}
+
+function formatMeasuredPercent(count: number, total: number) {
+  return total === 0 ? "0%" : `${Math.round((count / total) * 100)}%`;
+}
+
+function formatDurationBucket(label: string) {
+  return (
+    (
+      {
+        "<100ms": "<100 мс",
+        "100ms-1s": "100 мс–1 с",
+        "1s-10s": "1–10 с",
+        "10s-1m": "10 с–1 мин",
+        "1m-5m": "1–5 мин",
+        "5m-30m": "5–30 мин",
+        "30m-1h": "30 мин–1 ч",
+        "1h+": ">1 ч"
+      } as Record<string, string>
+    )[label] ?? label
   );
 }
 
@@ -267,6 +326,9 @@ export function LaunchProgressBar({
         })}
       </div>
       <div className="launches-reference-progress-legend" aria-label="Значения цветов статусов">
+        {total === 0 ? (
+          <span className="launches-reference-progress-empty">Результатов пока нет</span>
+        ) : null}
         {visibleStatuses.map((status) => (
           <span key={status} title={`${formatStatus(status)}: ${counters[status]}`}>
             <i className={`is-${status}`} aria-hidden="true" />

@@ -128,8 +128,9 @@ export function formatDurationSeconds(duration: number): string {
     return `${duration.toFixed(2).replace(/\.?0+$/, "")}s`;
   }
 
-  const minutes = Math.floor(duration / 60);
-  const seconds = Math.round(duration % 60);
+  const roundedSeconds = Math.round(duration);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const seconds = roundedSeconds % 60;
   return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 }
 

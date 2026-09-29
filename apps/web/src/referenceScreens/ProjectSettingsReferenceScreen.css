@@ -164,16 +164,37 @@
 }
 
 .project-settings__error-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin: var(--workspace-page-gutter, 16px);
-  border-color: #f4b7b0;
-  padding: 16px;
+  border-color: #efb7b1;
+  padding: 14px 16px;
   background: #fff7f6;
+}
+
+.project-settings__error-state > div {
+  display: grid;
+  gap: 3px;
+}
+
+.project-settings__error-state strong {
+  color: #a6231b;
+  font-size: 13px;
 }
 
 .project-settings__error-state p {
   margin: 0;
-  color: #7f1d1d;
-  font-size: 14px;
+  color: #7f3a34;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.project-settings__error-state .project-settings__button {
+  flex: 0 0 auto;
+  border-color: #eab0aa;
+  color: #9d231b;
 }
 
 .project-settings__access-state {
@@ -470,6 +491,14 @@
   display: grid;
   gap: 0;
   padding: 0;
+}
+
+.project-settings__member-empty {
+  margin: 0;
+  padding: 24px 18px;
+  color: #66758a;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .project-settings__member-card {
@@ -1624,6 +1653,15 @@
 }
 
 @media (max-width: 600px) {
+  .project-settings__error-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .project-settings__error-state .project-settings__button {
+    align-self: flex-start;
+  }
+
   .project-settings__tabs {
     display: none;
   }
@@ -1681,6 +1719,16 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     padding: 12px 14px;
+  }
+
+  .project-settings__policy {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .project-settings__policy select {
+    width: min(220px, 100%);
   }
 
   .project-settings__settings-list-row > input,
@@ -1806,6 +1854,7 @@
   .project-settings__table--fields
     .project-settings__table-row
     > :last-child.project-settings__actions {
+    grid-column: 1 / -1;
     display: flex;
     align-items: end;
     justify-content: flex-end;

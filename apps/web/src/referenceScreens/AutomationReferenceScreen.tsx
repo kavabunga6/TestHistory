@@ -10,7 +10,9 @@ import {
 import {
   BellRing,
   Bug,
+  Check,
   CirclePlay,
+  Copy,
   ExternalLink,
   ListFilter,
   Pencil,
@@ -35,6 +37,24 @@ import "./AutomationReferenceScreen.css";
 
 type AutomationTab = "plans" | "jobs" | "integrations";
 const automationTabs: AutomationTab[] = ["plans", "jobs", "integrations"];
+const deliveryEventLabels: Record<string, string> = {
+  "automation-job.succeeded": "CI-задача выполнена",
+  "automation-job.failed": "CI-задача завершилась ошибкой",
+  "automation-job.canceled": "CI-задача отменена",
+  "issue.create": "Создание задачи в трекере",
+  "launch.closed": "Запуск закрыт",
+  "launch.failed": "Запуск завершился ошибкой",
+  "quality-gate.failed": "Порог качества не пройден"
+};
+function integrationAddressLabel(value: string): string {
+  try {
+    const url = new URL(value);
+    return `${url.host}${url.pathname === "/" ? "" : url.pathname}`;
+  } catch {
+    return "Адрес интеграции";
+  }
+}
+
 type PanelProps = {
   data: AutomationWorkspaceData;
   creating: boolean;
@@ -230,6 +250,16 @@ function IntegrationsPanel({
   const [form, setForm] = useState<"notification" | "issue" | undefined>();
   const [pendingIntegrationId, setPendingIntegrationId] = useState<string>();
   const [actionError, setActionError] = useState<string>();
+  const [copiedIntegrationId, setCopiedIntegrationId] = useState<string>();
+  const copyAddress = async (id: string, value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedIntegrationId(id);
+      setActionError(undefined);
+    } catch {
+      setActionError("Не удалось скопировать адрес интеграции");
+    }
+  };
   const toggle = async (kind: "notifications" | "issue-trackers", id: string, enabled: boolean) => {
     setPendingIntegrationId(id);
     setActionError(undefined);
@@ -248,8 +278,8 @@ function IntegrationsPanel({
         <div>
           <strong>Исходящие интеграции</strong>
           <span>
-            Подписанные уведомления и создание задач через серверные адаптеры. Секреты остаются в
-            окружении deployment.
+            Подписанные уведомления и создание задач через серверные адаптеры. Секреты хранятся в
+            окружении сервера.
           </span>
         </div>
         <div className="automation-toolbar-actions">
@@ -309,9 +339,22 @@ function IntegrationsPanel({
                   rel="noreferrer"
                   title={item.endpointUrl}
                 >
-                  <span>{item.endpointUrl}</span>
+                  <span>{integrationAddressLabel(item.endpointUrl)}</span>
                   <ExternalLink size={13} />
                 </a>
+                <button
+                  aria-label={
+                    copiedIntegrationId === item.id
+                      ? "Адрес скопирован"
+                      : `Копировать адрес «${item.name}»`
+                  }
+                  className="automation-integration-copy"
+                  title={copiedIntegrationId === item.id ? "Адрес скопирован" : "Копировать адрес"}
+                  type="button"
+                  onClick={() => void copyAddress(item.id, item.endpointUrl)}
+                >
+                  {copiedIntegrationId === item.id ? <Check size={14} /> : <Copy size={14} />}
+                </button>
                 <button
                   disabled={pendingIntegrationId !== undefined}
                   type="button"
@@ -350,9 +393,22 @@ function IntegrationsPanel({
               </p>
               <div className="automation-integration-actions">
                 <a href={item.baseUrl} target="_blank" rel="noreferrer" title={item.baseUrl}>
-                  <span>{item.baseUrl}</span>
+                  <span>{integrationAddressLabel(item.baseUrl)}</span>
                   <ExternalLink size={13} />
                 </a>
+                <button
+                  aria-label={
+                    copiedIntegrationId === item.id
+                      ? "Адрес скопирован"
+                      : `Копировать адрес «${item.name}»`
+                  }
+                  className="automation-integration-copy"
+                  title={copiedIntegrationId === item.id ? "Адрес скопирован" : "Копировать адрес"}
+                  type="button"
+                  onClick={() => void copyAddress(item.id, item.baseUrl)}
+                >
+                  {copiedIntegrationId === item.id ? <Check size={14} /> : <Copy size={14} />}
+                </button>
                 <button
                   disabled={pendingIntegrationId !== undefined}
                   type="button"
@@ -391,10 +447,12 @@ function IntegrationsPanel({
           {data.deliveries.slice(0, 20).map((delivery) => (
             <div className="automation-table-row" key={delivery.id}>
               <span>
-                <strong>{delivery.event}</strong>
-                <small>{new Date(delivery.updatedAt).toLocaleString("ru-RU")}</small>
+                <strong>{deliveryEventLabels[delivery.event] ?? delivery.event}</strong>
+                <small>
+                  {delivery.event} · {new Date(delivery.updatedAt).toLocaleString("ru-RU")}
+                </small>
               </span>
-              <span>{delivery.kind}</span>
+              <span>{delivery.kind === "notification" ? "Уведомление" : "Задача"}</span>
               <span>
                 {delivery.attempts}/{delivery.status === "dead" ? delivery.attempts : 5}
               </span>
@@ -484,7 +542,7 @@ function NotificationIntegrationForm({
         </select>
       </label>
       <label className="automation-form-wide">
-        HTTPS endpoint
+        Адрес HTTPS
         <input name="endpointUrl" type="url" required />
       </label>
       <label>
@@ -549,15 +607,15 @@ function IssueTrackerIntegrationForm({
           <option value="jira">Jira</option>
           <option value="youtrack">YouTrack</option>
           <option value="github">GitHub</option>
-          <option value="generic">Generic</option>
+          <option value="generic">HTTP API</option>
         </select>
       </label>
       <label>
-        HTTPS base URL
+        Базовый адрес HTTPS
         <input name="baseUrl" type="url" required />
       </label>
       <label>
-        Проект / repository
+        Ключ проекта или репозитория
         <input name="projectKey" required />
       </label>
       <label>

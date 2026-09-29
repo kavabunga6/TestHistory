@@ -579,6 +579,22 @@
   font-size: 12px;
 }
 
+.automation-integration-actions > .automation-integration-copy {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  color: #52647c;
+}
+
+.automation-integration-actions > .automation-integration-copy:hover {
+  border-color: #93b4e8;
+  color: #1456d9;
+}
+
+.automation-integration-actions > .automation-integration-copy[title="Адрес скопирован"] {
+  color: #23873a;
+}
+
 .automation-integration-actions > button:disabled,
 .automation-icon-action:disabled {
   cursor: wait;
@@ -786,7 +802,7 @@
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 420px) {
   .automation-tabs button span {
     display: none;
   }

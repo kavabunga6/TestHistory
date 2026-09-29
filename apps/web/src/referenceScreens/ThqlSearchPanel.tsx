@@ -36,7 +36,7 @@ const thqlEntitySearchLabels: Record<ThqlFilterEntity, string> = {
 };
 const searchPlaceholders: Record<ThqlFilterEntity, string> = {
   defects: "Название дефекта или THQL запрос",
-  launchResults: "Поиск по названию теста",
+  launchResults: "Название теста или THQL запрос",
   launches: "Название запуска или THQL запрос",
   testCases: "Название тест-кейса или THQL запрос"
 };
@@ -129,6 +129,11 @@ export function ThqlSearchPanel({
         <div className={`thql-search__field-wrap ${query.length > 0 ? "has-clear" : ""}`}>
           <label className="thql-search__field">
             <Search aria-hidden="true" size={16} />
+            {entity === "launchResults" && showValidation ? (
+              <span className="thql-search__mode" aria-hidden="true">
+                THQL
+              </span>
+            ) : null}
             <input
               aria-label={thqlEntitySearchLabels[entity]}
               aria-description={entity === "launchResults" ? launchResultsThqlHint : undefined}

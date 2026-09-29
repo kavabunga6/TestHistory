@@ -2,7 +2,7 @@ import type { LaunchDurationChartReadModel } from "@testhistory/contracts";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { DurationChartContent } from "./LaunchesReferenceVisualTabs.js";
+import { DurationChartContent, LaunchProgressBar } from "./LaunchesReferenceVisualTabs.js";
 
 const chart: LaunchDurationChartReadModel = {
   kind: "launch-duration-chart",
@@ -28,9 +28,26 @@ describe("launch chart data scope", () => {
     const markup = renderToStaticMarkup(<DurationChartContent chart={chart} />);
     expect(markup).toContain("Весь запуск: 100 результатов");
     expect(markup).toContain("Средняя по запуску");
-    expect(markup).toContain("1.5s");
-    expect(markup).toContain("1s-10s: 75");
+    expect(markup).toContain("1,5 с");
+    expect(markup).toContain("1–10 с: 75 из 100");
+    expect(markup).toContain("Основной интервал");
+    expect(markup).toContain("Быстрее 1 с");
+    expect(markup).toContain("От 10 с");
     expect(markup).not.toContain("Страница результатов");
+  });
+
+  it("shows average durations over a minute in Russian", () => {
+    const markup = renderToStaticMarkup(
+      <DurationChartContent chart={{ ...chart, averageDurationMs: 65_000 }} />
+    );
+    expect(markup).toContain("1 мин 05 с");
+    expect(markup).not.toContain("1m 05s");
+
+    const roundedMinute = renderToStaticMarkup(
+      <DurationChartContent chart={{ ...chart, averageDurationMs: 119_600 }} />
+    );
+    expect(roundedMinute).toContain("2 мин 00 с");
+    expect(roundedMinute).not.toContain("1 мин 60 с");
   });
 
   it("labels missing durations instead of putting them into the first bucket", () => {
@@ -43,5 +60,15 @@ describe("launch chart data scope", () => {
   it("shows loading until the server aggregate arrives", () => {
     const markup = renderToStaticMarkup(<DurationChartContent />);
     expect(markup).toContain("Загружаем данные всего запуска");
+  });
+
+  it("explains an empty launch instead of showing an unlabeled blank bar", () => {
+    const markup = renderToStaticMarkup(
+      <LaunchProgressBar
+        counters={{ broken: 0, failed: 0, muted: 0, passed: 0, skipped: 0, unknown: 0 }}
+        total={0}
+      />
+    );
+    expect(markup).toContain("Результатов пока нет");
   });
 });

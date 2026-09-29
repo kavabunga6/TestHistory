@@ -1,6 +1,5 @@
-﻿import { Database, Eye, KeyRound, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { ChevronRight, KeyRound, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight } from "lucide-react";
 
 import {
   createPersonalToken,
@@ -18,7 +17,6 @@ import {
   saveProjectArtifactSettings,
   tokenScopeLabels,
   type ApiTokenScope,
-  type CustomFieldMapping,
   type ProjectApiToken,
   type ProjectArtifactRetention,
   type ProjectSettingsAccess,
@@ -29,11 +27,12 @@ import { useModalDialog } from "../AppDialogs.js";
 import "./ProjectSettingsReferenceScreen.css";
 
 import { AccessTab } from "./ProjectSettingsAccessTab.js";
+import { FieldsTab } from "./ProjectSettingsFieldsTab.js";
 import { IntegrationsTab } from "./ProjectSettingsIntegrationsTab.js";
+import { RetentionTab } from "./ProjectSettingsRetentionTab.js";
 import { TokensTab } from "./ProjectSettingsTokensTab.js";
+import { VisibilityTab } from "./ProjectSettingsVisibilityTab.js";
 import {
-  Badge,
-  PanelTitle,
   SettingsAccessState,
   SettingsErrorState,
   SummaryMetric
@@ -42,27 +41,10 @@ import {
   defaultTokenDraft,
   parseSettingsTab,
   tabs,
-  visibilityLabels,
   type ApiStatus,
   type SettingsTab,
   type TokenDraft
 } from "./ProjectSettingsReferenceModel.js";
-
-const visibilityPolicyCopy: Record<string, { description: string; label: string }> = {
-  "redact-sensitive": {
-    description:
-      "Пароли, токены, подписанные URL, ссылки на хранилище и локальные пути скрываются.",
-    label: "Маскирование чувствительных данных"
-  },
-  "history-compare": {
-    description: "История сравнений доступна участникам проекта и сервисным токенам проекта.",
-    label: "История и сравнение результатов"
-  },
-  "raw-payloads": {
-    description: "Исходные данные скрыты в интерфейсе проекта и публичных API-ответах.",
-    label: "Изоляция исходных данных"
-  }
-};
 
 type ProjectSettingsReferenceScreenProps = {
   onOpenTab?: ((tab: string) => void) | undefined;
@@ -83,9 +65,11 @@ function ProjectSettingsProjectScreen({
 }: ProjectSettingsReferenceScreenProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>(parseSettingsTab(routeTab));
   const [effectiveSettings, setEffectiveSettings] = useState<ProjectSettings>(settings);
+  const [settingsLoaded, setSettingsLoaded] = useState(projectId === undefined);
   const [apiTokens, setApiTokens] = useState<ProjectApiToken[]>(settings.apiTokens);
   const [apiStatus, setApiStatus] = useState<ApiStatus>("loading");
   const [apiMessage, setApiMessage] = useState("Загружаем настройки доступа");
+  const [reloadKey, setReloadKey] = useState(0);
   const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
   const [tokenDraft, setTokenDraft] = useState<TokenDraft>(defaultTokenDraft);
   const [createdSecret, setCreatedSecret] = useState<string | undefined>();
@@ -108,6 +92,7 @@ function ProjectSettingsProjectScreen({
           return;
         }
         setEffectiveSettings(loadedSettings);
+        setSettingsLoaded(true);
         setApiTokens(loadedSettings.apiTokens);
         setTokenDraft((draft) => ({
           ...draft,
@@ -133,7 +118,7 @@ function ProjectSettingsProjectScreen({
     return () => {
       active = false;
     };
-  }, [projectId, settings]);
+  }, [projectId, reloadKey, settings]);
 
   useEffect(() => {
     let active = true;
@@ -184,26 +169,24 @@ function ProjectSettingsProjectScreen({
     if (!tab || !tabs) {
       return;
     }
-    const centerActiveTab = () => {
+    const revealActiveTab = () => {
       if (tabs.scrollWidth <= tabs.clientWidth) {
         return;
       }
       const tabBounds = tab.getBoundingClientRect();
       const tabsBounds = tabs.getBoundingClientRect();
-      tabs.scrollTo({
-        left:
-          tabs.scrollLeft +
-          tabBounds.left -
-          tabsBounds.left -
-          (tabs.clientWidth - tabBounds.width) / 2,
-        behavior: "auto"
-      });
+      const inset = 12;
+      if (tabBounds.left < tabsBounds.left + inset) {
+        tabs.scrollLeft += tabBounds.left - tabsBounds.left - inset;
+      } else if (tabBounds.right > tabsBounds.right - inset) {
+        tabs.scrollLeft += tabBounds.right - tabsBounds.right + inset;
+      }
     };
-    centerActiveTab();
+    revealActiveTab();
     if (typeof ResizeObserver === "undefined") {
       return;
     }
-    const observer = new ResizeObserver(centerActiveTab);
+    const observer = new ResizeObserver(revealActiveTab);
     observer.observe(tabs);
     for (const button of Array.from(tabs.querySelectorAll("button"))) {
       observer.observe(button);
@@ -332,7 +315,7 @@ function ProjectSettingsProjectScreen({
     }
   };
 
-  if (!settingsMatchProject) {
+  if (!settingsMatchProject || !settingsLoaded) {
     return (
       <main className="project-settings" aria-label="Настройки проекта">
         <section className="project-settings__workspace" aria-labelledby="project-settings-title">
@@ -343,7 +326,10 @@ function ProjectSettingsProjectScreen({
             </div>
           </header>
           {apiStatus === "error" ? (
-            <SettingsErrorState message={apiMessage} />
+            <SettingsErrorState
+              message={apiMessage}
+              onRetry={() => setReloadKey((key) => key + 1)}
+            />
           ) : (
             <p role="status">Загружаем настройки выбранного проекта…</p>
           )}
@@ -365,15 +351,17 @@ function ProjectSettingsProjectScreen({
               <strong>Настройки</strong>
             </nav>
             <h1 id="project-settings-title">Настройки проекта</h1>
-            <p>{effectiveSettings.project.name}</p>
+            <p>Доступ, интеграции и правила хранения данных</p>
           </div>
           <div className="project-settings__summary" aria-label="Сводка настроек">
-            <span
-              className={`project-settings__api-status project-settings__api-status--${apiStatus}`}
-              title={apiMessage}
-            >
-              {apiStatus === "ready" ? "API" : apiStatus === "loading" ? "..." : "Ошибка"}
-            </span>
+            {apiStatus !== "ready" ? (
+              <span
+                className={`project-settings__api-status project-settings__api-status--${apiStatus}`}
+                title={apiMessage}
+              >
+                {apiStatus === "loading" ? "..." : "Ошибка"}
+              </span>
+            ) : null}
             <SummaryMetric label="Участники" value={String(activeMembers.length)} />
             <SummaryMetric label="Токены" value={String(activeTokenCount)} />
             <SummaryMetric label="Интеграции" value={String(enabledProviderCount)} />
@@ -420,7 +408,9 @@ function ProjectSettingsProjectScreen({
           </select>
         </label>
 
-        {apiStatus === "error" ? <SettingsErrorState message={apiMessage} /> : null}
+        {apiStatus === "error" ? (
+          <SettingsErrorState message={apiMessage} onRetry={() => setReloadKey((key) => key + 1)} />
+        ) : null}
         {settingsAccess.state !== "write" ? <SettingsAccessState access={settingsAccess} /> : null}
         {visibleActiveTab === "access" ? (
           <AccessTab
@@ -515,475 +505,6 @@ function isSettingsTabVisible(tab: SettingsTab, access: ProjectSettingsAccess): 
     );
   }
   return false;
-}
-
-function VisibilityTab({
-  canEdit,
-  onSave,
-  settings
-}: {
-  canEdit: boolean;
-  settings: ProjectSettings;
-  onSave: (settings: ProjectSettings) => void;
-}) {
-  const [draft, setDraft] = useState({
-    project: settings.project,
-    visibilityPolicies: settings.visibilityPolicies
-  });
-  useEffect(() => {
-    setDraft({ project: settings.project, visibilityPolicies: settings.visibilityPolicies });
-  }, [settings.project, settings.visibilityPolicies]);
-
-  return (
-    <section className="project-settings__panel">
-      <div className="project-settings__panel-row">
-        <PanelTitle icon={<Eye size={18} />} title="Видимость данных" />
-        {canEdit ? (
-          <button
-            className="project-settings__button project-settings__button--primary"
-            type="button"
-            onClick={() =>
-              onSave({
-                ...settings,
-                project: draft.project,
-                visibilityPolicies: draft.visibilityPolicies
-              })
-            }
-          >
-            <span>Сохранить</span>
-          </button>
-        ) : null}
-      </div>
-      <div className="project-settings__form-row">
-        <label>
-          <span>Видимость проекта</span>
-          {canEdit ? (
-            <select
-              value={draft.project.visibility}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  project: {
-                    ...current.project,
-                    visibility: event.target.value as ProjectSettings["project"]["visibility"]
-                  }
-                }))
-              }
-            >
-              {Object.entries(visibilityLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <strong>{visibilityLabels[draft.project.visibility]}</strong>
-          )}
-        </label>
-      </div>
-      <div className="project-settings__policy-list">
-        {draft.visibilityPolicies.map((policy) => (
-          <article className="project-settings__policy" key={policy.id}>
-            <div>
-              <strong>{visibilityPolicyCopy[policy.id]?.label ?? policy.label}</strong>
-              <span>{visibilityPolicyCopy[policy.id]?.description ?? policy.description}</span>
-            </div>
-            {canEdit ? (
-              <select
-                value={policy.mode}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    visibilityPolicies: current.visibilityPolicies.map((item) =>
-                      item.id === policy.id
-                        ? {
-                            ...item,
-                            mode: event.target.value as typeof policy.mode
-                          }
-                        : item
-                    )
-                  }))
-                }
-              >
-                <option value="enabled">Включено</option>
-                <option value="limited">Ограничено</option>
-                <option value="blocked">Закрыто</option>
-              </select>
-            ) : (
-              <Badge
-                tone={
-                  policy.mode === "enabled" ? "green" : policy.mode === "limited" ? "amber" : "red"
-                }
-              >
-                {policy.mode === "enabled"
-                  ? "Включено"
-                  : policy.mode === "limited"
-                    ? "Ограничено"
-                    : "Закрыто"}
-              </Badge>
-            )}
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function RetentionTab({
-  canEdit,
-  onSave,
-  settings
-}: {
-  canEdit: boolean;
-  settings: ProjectSettings;
-  onSave: (retention: ProjectArtifactRetention) => void;
-}) {
-  const [retention, setRetention] = useState<ProjectArtifactRetention>({
-    ...settings.artifactRetention,
-    retentionPolicies:
-      settings.artifactRetention.retentionPolicies.length > 0
-        ? settings.artifactRetention.retentionPolicies
-        : settings.retentionPolicies
-  });
-  useEffect(() => {
-    setRetention({
-      ...settings.artifactRetention,
-      retentionPolicies:
-        settings.artifactRetention.retentionPolicies.length > 0
-          ? settings.artifactRetention.retentionPolicies
-          : settings.retentionPolicies
-    });
-  }, [settings.artifactRetention, settings.retentionPolicies]);
-
-  const updateRetentionPolicy = (
-    id: string,
-    patch: Partial<ProjectSettings["retentionPolicies"][number]>
-  ) => {
-    setRetention((current) => ({
-      ...current,
-      retentionPolicies: current.retentionPolicies.map((policy) =>
-        policy.id === id ? { ...policy, ...patch } : policy
-      )
-    }));
-  };
-
-  return (
-    <section className="project-settings__panel">
-      <div className="project-settings__panel-row">
-        <PanelTitle icon={<Database size={18} />} title="Хранение артефактов" />
-        {canEdit ? (
-          <button
-            className="project-settings__button project-settings__button--primary"
-            type="button"
-            onClick={() => onSave(retention)}
-          >
-            <span>Сохранить</span>
-          </button>
-        ) : null}
-      </div>
-      <div className="project-settings__section-title">Общие правила очистки</div>
-      <div className="project-settings__settings-list" role="list">
-        <div className="project-settings__settings-list-row" role="listitem">
-          <label htmlFor="artifact-retention-days">Хранить вложения, дней</label>
-          {canEdit ? (
-            <input
-              id="artifact-retention-days"
-              min={1}
-              max={3650}
-              type="number"
-              value={retention.attachmentRetentionDays}
-              onChange={(event) =>
-                setRetention((current) => ({
-                  ...current,
-                  attachmentRetentionDays: Number(event.target.value)
-                }))
-              }
-            />
-          ) : (
-            <strong>{retention.attachmentRetentionDays}</strong>
-          )}
-        </div>
-        <div className="project-settings__settings-list-row" role="listitem">
-          <label htmlFor="artifact-cleanup-grace-days">Отсрочка очистки, дней</label>
-          {canEdit ? (
-            <input
-              id="artifact-cleanup-grace-days"
-              min={0}
-              max={365}
-              type="number"
-              value={retention.cleanupGraceDays}
-              onChange={(event) =>
-                setRetention((current) => ({
-                  ...current,
-                  cleanupGraceDays: Number(event.target.value)
-                }))
-              }
-            />
-          ) : (
-            <strong>{retention.cleanupGraceDays}</strong>
-          )}
-        </div>
-        <div className="project-settings__settings-list-row" role="listitem">
-          <label className="project-settings__checkbox-line" htmlFor="artifact-compress-text">
-            <input
-              id="artifact-compress-text"
-              checked={retention.compressRetainedTextArtifacts}
-              disabled={!canEdit}
-              type="checkbox"
-              onChange={(event) =>
-                setRetention((current) => ({
-                  ...current,
-                  compressRetainedTextArtifacts: event.target.checked
-                }))
-              }
-            />
-            <span>Сжимать сохраненные текстовые артефакты</span>
-          </label>
-          <Badge tone={retention.compressRetainedTextArtifacts ? "green" : "gray"}>
-            {retention.compressRetainedTextArtifacts ? "Включено" : "Выключено"}
-          </Badge>
-        </div>
-        <div className="project-settings__settings-list-row" role="listitem">
-          <label className="project-settings__checkbox-line" htmlFor="artifact-delete-binary">
-            <input
-              id="artifact-delete-binary"
-              checked={retention.deleteBinaryArtifactsAfterRetention}
-              disabled={!canEdit}
-              type="checkbox"
-              onChange={(event) =>
-                setRetention((current) => ({
-                  ...current,
-                  deleteBinaryArtifactsAfterRetention: event.target.checked
-                }))
-              }
-            />
-            <span>Удалять бинарные артефакты после срока хранения</span>
-          </label>
-          <Badge tone={retention.deleteBinaryArtifactsAfterRetention ? "green" : "gray"}>
-            {retention.deleteBinaryArtifactsAfterRetention ? "Включено" : "Выключено"}
-          </Badge>
-        </div>
-      </div>
-      <div className="project-settings__section-title">Сроки по типам артефактов</div>
-      <div
-        className="project-settings__table project-settings__table--retention"
-        role="table"
-        aria-label="Сроки хранения по типам артефактов"
-      >
-        <div className="project-settings__table-head" role="row">
-          <span role="columnheader">Тип</span>
-          <span role="columnheader">Пройден, дн.</span>
-          <span role="columnheader">Провален, дн.</span>
-          <span role="columnheader">Карантин, дн.</span>
-          <span role="columnheader">Лимит, МБ</span>
-        </div>
-        {retention.retentionPolicies.map((policy) => (
-          <div className="project-settings__table-row" key={policy.id} role="row">
-            <strong role="cell">{policy.artifact}</strong>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: пройден, дней`}
-                  min={0}
-                  max={3650}
-                  type="number"
-                  value={policy.passedDays}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, { passedDays: Number(event.target.value) })
-                  }
-                />
-              ) : (
-                `${policy.passedDays} дней`
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: провален, дней`}
-                  min={0}
-                  max={3650}
-                  type="number"
-                  value={policy.failedDays}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, { failedDays: Number(event.target.value) })
-                  }
-                />
-              ) : (
-                `${policy.failedDays} дней`
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: карантин, дней`}
-                  min={0}
-                  max={3650}
-                  type="number"
-                  value={policy.quarantinedDays}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, {
-                      quarantinedDays: Number(event.target.value)
-                    })
-                  }
-                />
-              ) : (
-                `${policy.quarantinedDays} дней`
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: лимит, MB`}
-                  min={1}
-                  max={102400}
-                  type="number"
-                  value={policy.maxSizeMb}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, { maxSizeMb: Number(event.target.value) })
-                  }
-                />
-              ) : (
-                `${policy.maxSizeMb} MB`
-              )}
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function FieldsTab({
-  canEdit,
-  onSave,
-  settings
-}: {
-  canEdit: boolean;
-  settings: ProjectSettings;
-  onSave: (settings: ProjectSettings) => void;
-}) {
-  const [mappings, setMappings] = useState(settings.customFieldMappings);
-  useEffect(() => {
-    setMappings(settings.customFieldMappings);
-  }, [settings.customFieldMappings]);
-
-  const updateMapping = (id: string, patch: Partial<CustomFieldMapping>) => {
-    setMappings((items) => items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-  };
-  const addMapping = () => {
-    setMappings((items) => [
-      ...items,
-      {
-        fallback: "",
-        field: "custom_field",
-        id: `field-${Date.now()}`,
-        required: false,
-        source: "label:custom"
-      }
-    ]);
-  };
-
-  return (
-    <section className="project-settings__panel">
-      <div className="project-settings__panel-row">
-        <PanelTitle icon={<SlidersHorizontal size={18} />} title="Маппинг кастомных полей" />
-        {canEdit ? (
-          <div className="project-settings__actions">
-            <button className="project-settings__button" type="button" onClick={addMapping}>
-              <Plus aria-hidden="true" size={16} />
-              <span>Добавить</span>
-            </button>
-            <button
-              className="project-settings__button project-settings__button--primary"
-              type="button"
-              onClick={() => onSave({ ...settings, customFieldMappings: mappings })}
-            >
-              <span>Сохранить</span>
-            </button>
-          </div>
-        ) : null}
-      </div>
-      <div className="project-settings__table project-settings__table--fields" role="table">
-        <div className="project-settings__table-head" role="row">
-          <span role="columnheader">Поле</span>
-          <span role="columnheader">Источник</span>
-          <span role="columnheader">Значение по умолчанию</span>
-          <span role="columnheader">Обязательное</span>
-          {canEdit ? <span role="columnheader">Действия</span> : null}
-        </div>
-        {mappings.map((mapping) => (
-          <div className="project-settings__table-row" key={mapping.id} role="row">
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label="Название поля"
-                  value={mapping.field}
-                  onChange={(event) => updateMapping(mapping.id, { field: event.target.value })}
-                />
-              ) : (
-                <strong>{mapping.field}</strong>
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label="Источник поля"
-                  value={mapping.source}
-                  onChange={(event) => updateMapping(mapping.id, { source: event.target.value })}
-                />
-              ) : (
-                mapping.source
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label="Значение поля по умолчанию"
-                  value={mapping.fallback}
-                  onChange={(event) => updateMapping(mapping.id, { fallback: event.target.value })}
-                />
-              ) : (
-                mapping.fallback
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <label className="project-settings__checkbox-line">
-                  <input
-                    checked={mapping.required}
-                    type="checkbox"
-                    onChange={(event) =>
-                      updateMapping(mapping.id, { required: event.target.checked })
-                    }
-                  />
-                  <span>Да</span>
-                </label>
-              ) : mapping.required ? (
-                "Да"
-              ) : (
-                "Нет"
-              )}
-            </span>
-            {canEdit ? (
-              <span className="project-settings__actions" role="cell">
-                <button
-                  aria-label={`Удалить маппинг ${mapping.field}`}
-                  className="project-settings__icon-button danger"
-                  title="Удалить маппинг"
-                  type="button"
-                  onClick={() =>
-                    setMappings((items) => items.filter((item) => item.id !== mapping.id))
-                  }
-                >
-                  <Trash2 aria-hidden="true" size={15} />
-                </button>
-              </span>
-            ) : null}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 function TokenDialog({

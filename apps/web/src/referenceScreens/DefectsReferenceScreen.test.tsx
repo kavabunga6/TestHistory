@@ -130,7 +130,7 @@ describe("defect navigation", () => {
     });
     const markup = renderToStaticMarkup(<DefectsReferenceScreen results={[result]} />);
     expect(markup).toContain("Database connection timeout");
-    expect(markup).toContain("Кейсы: TC-123, TC-456 +1");
+    expect(markup).toContain("TC-123, TC-456 +1");
     expect(markup).toContain("ЗАКРЫТ");
   });
 

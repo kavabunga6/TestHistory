@@ -128,6 +128,10 @@ describe("THQL search panel filter ordering", () => {
 
     const activeChip = container.querySelector<HTMLButtonElement>(".thql-search__chip.active");
     expect(activeChip).not.toBeNull();
+    expect(container.querySelector(".thql-search__mode")?.textContent).toBe("THQL");
+    expect(container.querySelector(".thql-search__field input")?.getAttribute("placeholder")).toBe(
+      "Название теста или THQL запрос"
+    );
 
     await act(async () => {
       activeChip!.click();

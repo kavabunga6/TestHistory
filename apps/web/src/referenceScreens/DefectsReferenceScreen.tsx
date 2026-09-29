@@ -6,7 +6,17 @@ import {
   type CSSProperties,
   type ReactNode
 } from "react";
-import { Bug, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Bug,
+  CheckCircle2,
+  CircleDashed,
+  CircleHelp,
+  PauseCircle,
+  Trash2,
+  XCircle
+} from "lucide-react";
 
 import { filterRecordsByQuery } from "../analyticsQuery.js";
 import type { TestResult } from "../m1Workspace.js";
@@ -21,6 +31,7 @@ import {
 } from "./ReferenceListPagination.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 import { useResizableListWidth } from "./useResizableListWidth.js";
+import { useMobileDetailNavigation } from "./useMobileDetailNavigation.js";
 
 import "./DefectsReferenceScreen.css";
 
@@ -97,7 +108,6 @@ export function DefectsReferenceScreen({
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
   const [selectedDefectId, setSelectedDefectId] = useState<string | undefined>();
   const listRef = useRef<HTMLDivElement>(null);
-  const centeredSelectionRef = useRef<string | undefined>(undefined);
   const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
     useResizableListWidth({
       bodyClass: "defects-reference-is-resizing",
@@ -132,6 +142,7 @@ export function DefectsReferenceScreen({
   const visibleDefects = serverPage
     ? filteredDefects
     : filteredDefects.slice(page * pageSize, (page + 1) * pageSize);
+  const visibleDefectIds = visibleDefects.map((defect) => defect.id).join("|");
   const total = serverPage?.total ?? filteredDefects.length;
   const actorId =
     typeof window === "undefined"
@@ -143,28 +154,51 @@ export function DefectsReferenceScreen({
       ? buildDefectSummaries([selectedDetail])[0]
       : undefined) ??
     (routeDefectId ? undefined : visibleDefects[0]);
+  const { showDetail, showList: onBackToList } = useMobileDetailNavigation(
+    screenRef,
+    effectiveSelectedDefectId ? selectedDefect?.id : undefined,
+    980
+  );
 
   useLayoutEffect(() => {
     const list = listRef.current;
     const selectedRow = list?.querySelector<HTMLElement>('button[aria-pressed="true"]');
-    if (list === null || selectedRow === null || selectedRow === undefined) {
-      return;
-    }
-    const selectionKey = `${page}:${selectedDefect?.id ?? ""}`;
-    if (centeredSelectionRef.current === selectionKey) return;
-    const listBounds = list.getBoundingClientRect();
-    const rowBounds = selectedRow.getBoundingClientRect();
-    list.scrollTop +=
-      rowBounds.top - listBounds.top - (list.clientHeight - selectedRow.clientHeight) / 2;
-    const firstVisibleRow = Array.from(
-      list.querySelectorAll<HTMLElement>(".defects-reference-row")
-    ).find((row) => row.getBoundingClientRect().bottom > listBounds.top);
-    if (firstVisibleRow !== undefined) {
-      const firstRowTop = firstVisibleRow.getBoundingClientRect().top;
-      if (firstRowTop < listBounds.top) list.scrollTop += firstRowTop - listBounds.top;
-    }
-    centeredSelectionRef.current = selectionKey;
-  }, [page, selectedDefect?.id, visibleDefects]);
+    if (list === null || selectedRow === null || selectedRow === undefined) return;
+
+    const centerSelection = () => {
+      // Allow the final row to sit in the middle instead of pinning it against pagination.
+      list.style.paddingBottom = "0px";
+      const listBounds = list.getBoundingClientRect();
+      const rowBounds = selectedRow.getBoundingClientRect();
+      const rowTop = rowBounds.top - listBounds.top + list.scrollTop;
+      const desiredScroll = rowTop - (list.clientHeight - selectedRow.clientHeight) / 2;
+      const availableScroll = list.scrollHeight - list.clientHeight;
+      list.style.paddingBottom = `${Math.max(0, Math.ceil(desiredScroll - availableScroll + 8))}px`;
+      list.scrollTop = Math.max(0, desiredScroll);
+
+      const firstVisibleRow = Array.from(
+        list.querySelectorAll<HTMLElement>(".defects-reference-row")
+      ).find((row) => row.getBoundingClientRect().bottom > listBounds.top);
+      if (firstVisibleRow === undefined) return;
+      const adjustment = firstVisibleRow.getBoundingClientRect().top - listBounds.top;
+      if (
+        adjustment < 0 &&
+        selectedRow.getBoundingClientRect().bottom - adjustment < listBounds.bottom - 12
+      ) {
+        list.scrollTop += adjustment;
+      }
+    };
+
+    centerSelection();
+    let cancelled = false;
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) centerSelection();
+    });
+    return () => {
+      cancelled = true;
+      list.style.paddingBottom = "0px";
+    };
+  }, [page, selectedDefect?.id, visibleDefectIds]);
 
   const screenStyle = {
     "--defects-reference-list-width": `${listWidth}px`
@@ -236,30 +270,39 @@ export function DefectsReferenceScreen({
             {visibleDefects.map((defect) => (
               <button
                 aria-pressed={selectedDefect?.id === defect.id}
+                aria-label={`${defect.title}, ${formatDefectStatus(defect.status)}, ${defect.id}`}
                 className={`defects-reference-row ${selectedDefect?.id === defect.id ? "selected" : ""}`}
                 key={defect.id}
                 type="button"
                 onClick={() => {
                   setSelectedDefectId(defect.id);
                   onOpenDefect?.(defect.id);
+                  if (selectedDefect?.id === defect.id) showDetail();
                 }}
               >
-                <span className={`defects-reference-status ${defect.status}`}>
-                  {formatDefectStatus(defect.status)}
+                <span
+                  className={`defects-reference-list-status ${defect.status}`}
+                  title={formatDefectStatus(defect.status)}
+                  aria-hidden="true"
+                >
+                  {defect.status === "closed" ? (
+                    <CheckCircle2 size={17} />
+                  ) : (
+                    <AlertCircle size={17} />
+                  )}
                 </span>
                 <span className="defects-reference-row-copy">
                   <strong title={defect.title}>{defect.title}</strong>
-                  <small title={defect.id}>#{formatDefectId(defect.id)}</small>
-                  {defect.affectedTestIds.length > 0 ? (
-                    <small title={defect.affectedTestIds.join(", ")}>
-                      Кейсы: {defect.affectedTestIds.slice(0, 2).join(", ")}
-                      {defect.affectedTestIds.length > 2
-                        ? ` +${defect.affectedTestIds.length - 2}`
-                        : ""}
-                    </small>
-                  ) : (
-                    <small>Тест-кейсы: {defect.testCaseCount}</small>
-                  )}
+                  <small title={[defect.id, ...defect.affectedTestIds].join(" · ")}>
+                    #{formatDefectId(defect.id)}
+                    {defect.affectedTestIds.length > 0
+                      ? ` · ${defect.affectedTestIds.slice(0, 2).join(", ")}${
+                          defect.affectedTestIds.length > 2
+                            ? ` +${defect.affectedTestIds.length - 2}`
+                            : ""
+                        }`
+                      : ` · ${defect.testCaseCount} тест-кейсов`}
+                  </small>
                 </span>
               </button>
             ))}
@@ -305,7 +348,11 @@ export function DefectsReferenceScreen({
         {selectedDefect === undefined ? (
           <DefectEmptyState requestedId={routeDefectId} />
         ) : (
-          <DefectDetails defect={selectedDefect} onDeleteDefect={onDeleteDefect} />
+          <DefectDetails
+            defect={selectedDefect}
+            onBackToList={onBackToList}
+            onDeleteDefect={onDeleteDefect}
+          />
         )}
       </div>
     </section>
@@ -326,9 +373,11 @@ function DefectEmptyState({ requestedId }: { requestedId?: string | undefined })
 
 function DefectDetails({
   defect,
+  onBackToList,
   onDeleteDefect
 }: {
   defect: DefectSummary;
+  onBackToList: () => void;
   onDeleteDefect?: ((id: string) => void) | undefined;
 }) {
   const description = defect.results.find((result) => result.id === defect.id)?.description?.trim();
@@ -340,7 +389,14 @@ function DefectDetails({
     ?.trace?.message.trim();
 
   return (
-    <section className="defects-reference-detail-panel" aria-label="Информация о выбранном дефекте">
+    <section
+      className="defects-reference-detail-panel"
+      aria-label="Информация о выбранном дефекте"
+      data-mobile-selected-detail
+    >
+      <button className="defects-reference-mobile-back" type="button" onClick={onBackToList}>
+        <ArrowLeft aria-hidden="true" size={16} />К списку дефектов
+      </button>
       <header className="defects-reference-detail-header">
         <div className="defects-reference-detail-title">
           <span className={`defects-reference-status ${defect.status}`}>
@@ -376,8 +432,8 @@ function DefectDetails({
           <dd>{formatCount(collectLaunchLinks(defect).length)}</dd>
         </div>
         <div>
-          <dt>ID дефекта</dt>
-          <dd>{defect.id}</dd>
+          <dt>Результатов</dt>
+          <dd>{formatCount(collectResultLinks(defect).length)}</dd>
         </div>
       </dl>
 
@@ -495,8 +551,13 @@ function DefectResultList({ defect }: { defect: DefectSummary }) {
       </div>
       {linkedResults.map((result) => (
         <a className="defects-reference-result-row" href={result.href} key={result.id}>
-          <span className={`defects-reference-result-status ${result.status}`}>
-            {formatResultStatus(result.status)}
+          <span
+            className={`defects-reference-result-status ${result.status}`}
+            aria-label={formatResultStatus(result.status)}
+            role="img"
+            title={formatResultStatus(result.status)}
+          >
+            <DefectResultStatusIcon status={result.status} />
           </span>
           <span>
             <strong>{result.name}</strong>
@@ -690,7 +751,7 @@ function collectResultLinks(defect: DefectSummary): DefectResultLink[] {
         id,
         launchName: point.launchName,
         name: result.name,
-        owner: result.owner || "Не назначен",
+        owner: !result.owner || result.owner === "Unassigned" ? "Не назначен" : result.owner,
         status: point.status,
         tags: uniqueValues(result.tags)
       });
@@ -728,6 +789,15 @@ function formatResultStatus(status: TestResult["status"]): string {
   };
 
   return labels[status];
+}
+
+function DefectResultStatusIcon({ status }: { status: TestResult["status"] }) {
+  if (status === "passed") return <CheckCircle2 aria-hidden="true" size={17} />;
+  if (status === "failed") return <XCircle aria-hidden="true" size={17} />;
+  if (status === "broken") return <AlertCircle aria-hidden="true" size={17} />;
+  if (status === "unknown") return <CircleHelp aria-hidden="true" size={17} />;
+  if (status === "muted") return <PauseCircle aria-hidden="true" size={17} />;
+  return <CircleDashed aria-hidden="true" size={17} />;
 }
 
 function formatCount(count: number): string {

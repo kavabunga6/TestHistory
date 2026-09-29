@@ -77,6 +77,7 @@ The capture script also records deeper route and dialog states for design review
 - `final/defects.png` from `#defects/PAY-337`
 - `final/dialog-dashboard-widget-delete.png`
 - `final/settings-access.png`
+- `final/settings-visibility.png`
 - `final/settings-tokens.png`
 - `final/settings-integrations.png`
 - `final/settings-retention.png`

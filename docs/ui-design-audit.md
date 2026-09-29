@@ -6,7 +6,7 @@ screens, clear list/detail hierarchy, restrained cards, and readable tables.
 
 ## Review Update · 2026-09-29
 
-The current pass builds on earlier ordinary-user and UI/UX reviews, uses 35 synthetic 1440×1000
+The current pass builds on earlier ordinary-user and UI/UX reviews, uses 36 synthetic 1440×1000
 screenshots for visual checks, and was checked against the official [TestOps 26.3 release notes](https://docs.qameta.io/reference/release-notes/),
 [launches](https://docs.qameta.io/use-testops/test-plans-and-launches/launches-overview/),
 [test results](https://docs.qameta.io/use-testops/results-and-analytics/test-results/), and
@@ -41,6 +41,15 @@ The screenshot fixture contains one actual project launch, so the trend's multi-
 covered by component tests rather than the static dashboard screenshot. For very large projects,
 the trend query should eventually use a dedicated aggregate instead of materializing all
 results through the general analytics query.
+
+The follow-up pass tightened the remaining screens at desktop and 390px widths. Test cases and
+defects now keep selected detail reachable on mobile; the selected defect stays fully visible in
+its list. Launches and charts use denser rows and Russian duration labels. Projects and settings
+have clearer empty and error states, and settings save actions become available only after an
+edit. Automation integrations show readable event names and copyable endpoint URLs. Analytics
+uses the same localized durations as result details. Authentication fields now start empty,
+support password visibility, and respect native form validation. The screenshot set includes a
+visibility-settings state, and the button overflow check covers 390px as well as desktop widths.
 
 ## Target UI Contract
 

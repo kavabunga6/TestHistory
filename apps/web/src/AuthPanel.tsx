@@ -1,4 +1,4 @@
-﻿import { KeyRound, LogIn, LogOut, UserPlus } from "lucide-react";
+﻿import { Eye, EyeOff, KeyRound, LogIn, LogOut, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   clearSessionToken,
@@ -26,10 +26,11 @@ export function AuthPanel({
   const [user, setUser] = useState<CurrentUser | undefined>();
   const [message, setMessage] = useState<AuthMessage | undefined>();
   const [submitting, setSubmitting] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [form, setForm] = useState({
-    email: "admin",
-    name: "Admin",
-    password: "admin"
+    email: "",
+    name: "",
+    password: ""
   });
 
   useEffect(() => {
@@ -68,6 +69,8 @@ export function AuthPanel({
           ? await registerUser(form)
           : await loginUser({ email: form.email, password: form.password });
       storeSessionToken(response.session.token);
+      setForm((current) => ({ ...current, password: "" }));
+      setPasswordVisible(false);
       globalThis.localStorage?.setItem("testhistory.actorId", response.user.email);
       globalThis.localStorage?.setItem("testhistory.userRole", response.user.role);
       setUser(response.user);
@@ -91,6 +94,8 @@ export function AuthPanel({
     globalThis.localStorage?.removeItem("testhistory.actorId");
     globalThis.localStorage?.removeItem("testhistory.userRole");
     setUser(undefined);
+    setForm({ email: "", name: "", password: "" });
+    setPasswordVisible(false);
     setMessage({ kind: "success", text: "Вы вышли" });
     dispatchAuthStateChanged();
   };
@@ -153,6 +158,7 @@ export function AuthPanel({
           onClick={() => {
             setMode("login");
             setMessage(undefined);
+            setPasswordVisible(false);
           }}
         >
           <LogIn size={16} aria-hidden="true" />
@@ -166,6 +172,7 @@ export function AuthPanel({
           onClick={() => {
             setMode("register");
             setMessage(undefined);
+            setPasswordVisible(false);
           }}
         >
           <UserPlus size={16} aria-hidden="true" />
@@ -175,12 +182,6 @@ export function AuthPanel({
       <form
         className="auth-login__form"
         aria-busy={submitting}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-            event.preventDefault();
-            void submit();
-          }
-        }}
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
@@ -210,32 +211,45 @@ export function AuthPanel({
             onChange={(event) => setForm({ ...form, email: event.target.value })}
           />
         </label>
-        <label className="auth-login__field" htmlFor="auth-password">
-          <span>Пароль</span>
-          <input
-            id="auth-password"
-            name="password"
-            type="password"
-            autoComplete={mode === "register" ? "new-password" : "current-password"}
-            required
-            value={form.password}
-            onChange={(event) => setForm({ ...form, password: event.target.value })}
-          />
-        </label>
+        <div className="auth-login__field">
+          <label htmlFor="auth-password">Пароль</label>
+          <div className="auth-login__password-control">
+            <input
+              id="auth-password"
+              name="password"
+              type={passwordVisible ? "text" : "password"}
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              required
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+            />
+            <button
+              aria-label={passwordVisible ? "Скрыть пароль" : "Показать пароль"}
+              aria-pressed={passwordVisible}
+              className="auth-login__password-toggle"
+              type="button"
+              onClick={() => setPasswordVisible((visible) => !visible)}
+            >
+              {passwordVisible ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+        </div>
         <button className="auth-login__submit" type="submit" disabled={submitting}>
           <KeyRound size={16} aria-hidden="true" />
           <span>
             {submitting ? "Подождите…" : mode === "register" ? "Создать пользователя" : "Войти"}
           </span>
         </button>
-        <p
-          className={`auth-login__feedback${message !== undefined ? ` auth-login__feedback--${message.kind}` : ""}`}
-          role={message?.kind === "error" ? "alert" : "status"}
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {message?.text ?? ""}
-        </p>
+        {message !== undefined ? (
+          <p
+            className={`auth-login__feedback auth-login__feedback--${message.kind}`}
+            role={message.kind === "error" ? "alert" : "status"}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {message.text}
+          </p>
+        ) : null}
       </form>
     </section>
   );

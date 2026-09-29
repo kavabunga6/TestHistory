@@ -10,7 +10,7 @@ import type {
 } from "../m1Workspace.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
 import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
-import { formatHistoryDate, formatLaunchId } from "./LaunchesReferenceFormatters.js";
+import { formatHistoryDate } from "./LaunchesReferenceFormatters.js";
 import {
   filterLaunchItems,
   filterResults,
@@ -861,8 +861,7 @@ function LaunchListView({
                 : metadata.tags.filter(
                     (value) => value.toLocaleLowerCase() !== metadata.branch.toLocaleLowerCase()
                   );
-            const compactId =
-              launch.id.length > 12 ? `${launch.id.slice(0, 8)}…` : formatLaunchId(launch.id);
+            const compactId = launch.id.length > 12 ? `${launch.id.slice(0, 8)}…` : launch.id;
             const total = getLaunchTotal(launch);
 
             return (

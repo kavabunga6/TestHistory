@@ -60,6 +60,7 @@ const allScreens = [
   },
   { name: "analytics", hash: "#analytics" },
   { name: "settings-access", hash: "#settings/access" },
+  { name: "settings-visibility", hash: "#settings/visibility" },
   { name: "settings-tokens", hash: "#settings/tokens" },
   { name: "settings-integrations", hash: "#settings/integrations" },
   { name: "settings-retention", hash: "#settings/retention" },
@@ -137,11 +138,19 @@ let browser;
 try {
   await waitForEndpoint(baseUrl);
   browser = await launchBrowserForGuard();
-  const viewports = [
+  const allViewports = [
     { height: 1000, name: "desktop", width: 1440 },
     { height: 900, name: "narrow-desktop", width: 1120 },
-    { height: 900, name: "tablet", width: 820 }
+    { height: 900, name: "tablet", width: 820 },
+    { height: 844, name: "mobile", width: 390 }
   ];
+  const viewportFilter = process.env.WEB_BUTTON_OVERFLOW_VIEWPORT;
+  const viewports = viewportFilter
+    ? allViewports.filter((viewport) => viewport.name === viewportFilter)
+    : allViewports;
+  if (viewports.length === 0) {
+    throw new Error(`Unknown button overflow viewport: ${viewportFilter}`);
+  }
   const failures = [];
 
   for (const viewport of viewports) {

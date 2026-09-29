@@ -163,6 +163,13 @@ const screens = [
     }
   },
   { name: "settings-access", hash: "#settings/access" },
+  {
+    name: "settings-visibility",
+    hash: "#settings/visibility",
+    verify: async (page) => {
+      await page.locator(".project-settings__policy-list").waitFor();
+    }
+  },
   { name: "settings-tokens", hash: "#settings/tokens" },
   { name: "settings-integrations", hash: "#settings/integrations" },
   { name: "settings-retention", hash: "#settings/retention" },

@@ -68,7 +68,9 @@ export function AnalyticsReferenceContent({
           note={
             serverReady && projectResults.read?.metrics.flakyDataComplete === false
               ? "Часть истории недоступна"
-              : "История меняла статус"
+              : model.flakyCount > 0
+                ? "История меняла статус"
+                : "Смены статуса не обнаружены"
           }
           tone="broken"
         />

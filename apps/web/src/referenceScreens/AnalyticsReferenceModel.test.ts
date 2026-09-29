@@ -1,7 +1,11 @@
 import type { AnalyticsResultListReadModel } from "@testhistory/contracts";
 import { describe, expect, it } from "vitest";
 
-import { buildServerAnalyticsModel, excludePrioritySignals } from "./AnalyticsReferenceModel.js";
+import {
+  buildServerAnalyticsModel,
+  excludePrioritySignals,
+  formatDurationMilliseconds
+} from "./AnalyticsReferenceModel.js";
 
 describe("project analytics display model", () => {
   it("uses complete filtered totals while keeping the signal list paginated", () => {
@@ -51,10 +55,16 @@ describe("project analytics display model", () => {
     expect(model.visibleSignals[1]?.status).toBe("muted");
     expect(model.slowCount).toBe(2);
     expect(model.flakyCount).toBe(1);
-    expect(model.averageDuration).toBe("1.5s");
+    expect(model.averageDuration).toBe("1,5 с");
+    expect(model.visibleSignals.map((signal) => signal.duration)).toEqual(["1,2 с", "800 мс"]);
     expect(
       excludePrioritySignals(model.prioritySignals, model.slowSignals).map((signal) => signal.id)
     ).toEqual(["launch-1:slow-result"]);
+  });
+
+  it("uses Russian duration units and carries rounded seconds into minutes", () => {
+    expect(formatDurationMilliseconds(61_250)).toBe("1 мин 1 с");
+    expect(formatDurationMilliseconds(59_900)).toBe("59,9 с");
   });
 });
 

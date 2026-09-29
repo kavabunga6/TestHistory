@@ -121,6 +121,13 @@ export function AccessTab({
         </div>
 
         <div className="project-settings__member-list" role="list">
+          {draftMembers.length === 0 ? (
+            <p className="project-settings__member-empty" role="listitem">
+              {canEdit
+                ? "Участников пока нет. Добавьте человека, чтобы предоставить ему доступ к проекту."
+                : "Участников проекта пока нет."}
+            </p>
+          ) : null}
           {draftMembers.map((member) => (
             <article className="project-settings__member-card" key={member.id} role="listitem">
               <div className="project-settings__member-avatar" aria-hidden="true">

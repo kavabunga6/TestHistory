@@ -1,5 +1,6 @@
 ﻿import {
   AlertCircle,
+  ArrowLeft,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -57,6 +58,7 @@ import {
 } from "./ReferenceListPagination.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 import { useResizableListWidth } from "./useResizableListWidth.js";
+import { useMobileDetailNavigation } from "./useMobileDetailNavigation.js";
 
 import "./TestCaseDetailReferenceScreen.css";
 
@@ -183,6 +185,11 @@ export function TestCaseDetailReferenceScreen({
     (hasRequestedResult
       ? undefined
       : (findMostInformativeResult(filteredResults) ?? findMostInformativeResult(results)));
+  const { showDetail, showList: onBackToList } = useMobileDetailNavigation(
+    screenRef,
+    hasRequestedResult ? selectedResult?.id : undefined,
+    860
+  );
 
   useEffect(() => {
     if (!hasRequestedResult && selectedResult !== undefined) {
@@ -268,27 +275,25 @@ export function TestCaseDetailReferenceScreen({
                 className="tc-detail-reference-row-main"
                 type="button"
                 aria-pressed={selectedResult?.id === result.id}
-                onClick={() => onSelect?.(result.id)}
+                aria-label={`${result.name}, последний результат: ${formatStatus(result.status)}, владелец: ${result.owner || "не назначен"}`}
+                onClick={() => {
+                  onSelect?.(result.id);
+                  if (selectedResult?.id === result.id) showDetail();
+                }}
               >
                 <span
-                  className={`tc-detail-reference-quarantine-icon ${
-                    result.muted || result.defectMute !== undefined ? "active" : ""
-                  }`}
-                  title={
-                    result.muted || result.defectMute !== undefined
-                      ? "Результат в карантине"
-                      : undefined
-                  }
-                  aria-hidden={result.muted || result.defectMute !== undefined ? undefined : true}
+                  className={`tc-detail-reference-status-mark ${result.status}`}
+                  title={`Последний результат: ${formatStatus(result.status)}`}
+                  aria-hidden="true"
                 >
-                  {result.muted || result.defectMute !== undefined ? (
-                    <PauseCircle aria-hidden="true" size={15} />
-                  ) : null}
+                  <StatusIcon status={result.status} />
                 </span>
                 <span className="tc-detail-reference-row-copy">
                   <strong>{result.name}</strong>
                   <small>
                     {result.owner || "Владелец не назначен"}
+                    {result.allureId ? ` · #${result.allureId}` : ""}
+                    {result.muted || result.defectMute !== undefined ? " · Карантин" : ""}
                     {result.deletedAt !== undefined ? " · удалён" : ""}
                   </small>
                 </span>
@@ -344,6 +349,7 @@ export function TestCaseDetailReferenceScreen({
           integrationProviders={integrationProviders}
           result={selectedResult}
           routeTab={routeTab}
+          onBackToList={onBackToList}
           onDeleteTestCase={onDeleteTestCase}
           onOpenResult={onOpenResult}
           onOpenTab={onOpenTab}
@@ -361,6 +367,7 @@ export function TestCaseDetailReferenceScreen({
 
 function TestCaseDetails({
   integrationProviders,
+  onBackToList,
   onDeleteTestCase,
   onFilterByTag,
   onOpenResult,
@@ -370,6 +377,7 @@ function TestCaseDetails({
   result
 }: {
   integrationProviders: IntegrationLinkProvider[];
+  onBackToList: () => void;
   onDeleteTestCase?: ((id: string) => void) | undefined;
   onFilterByTag: (tag: string) => void;
   onOpenResult: OpenTestResult | undefined;
@@ -396,8 +404,15 @@ function TestCaseDetails({
   }, [activeTab, isQuarantined, onOpenTab]);
 
   return (
-    <section className="tc-detail-reference-details" aria-label="Детали выбранного тест-кейса">
+    <section
+      className="tc-detail-reference-details"
+      aria-label="Детали выбранного тест-кейса"
+      data-mobile-selected-detail
+    >
       <header className="tc-detail-reference-detail-header">
+        <button className="tc-detail-reference-mobile-back" type="button" onClick={onBackToList}>
+          <ArrowLeft aria-hidden="true" size={16} />К списку тест-кейсов
+        </button>
         <div className="tc-detail-reference-title-row">
           <div className="tc-detail-reference-identifiers">
             {result.allureId && result.allureId !== result.id ? (
@@ -596,11 +611,6 @@ function OverviewTab({
         >
           <h3>История результатов</h3>
           <HistoryRail result={result} onOpenResult={onOpenResult} />
-        </section>
-
-        <section className="tc-detail-reference-rail-card tc-detail-reference-duration-card">
-          <h3>Длительность</h3>
-          <strong>{formatResultDuration(result.duration)}</strong>
         </section>
 
         <TestCaseMetadataSections
