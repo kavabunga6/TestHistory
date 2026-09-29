@@ -156,6 +156,13 @@ export function DefectsReferenceScreen({
     const rowBounds = selectedRow.getBoundingClientRect();
     list.scrollTop +=
       rowBounds.top - listBounds.top - (list.clientHeight - selectedRow.clientHeight) / 2;
+    const firstVisibleRow = Array.from(
+      list.querySelectorAll<HTMLElement>(".defects-reference-row")
+    ).find((row) => row.getBoundingClientRect().bottom > listBounds.top);
+    if (firstVisibleRow !== undefined) {
+      const firstRowTop = firstVisibleRow.getBoundingClientRect().top;
+      if (firstRowTop < listBounds.top) list.scrollTop += firstRowTop - listBounds.top;
+    }
     centeredSelectionRef.current = selectionKey;
   }, [page, selectedDefect?.id, visibleDefects]);
 

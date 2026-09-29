@@ -24,6 +24,38 @@ function createAnalyticsItem(item) {
   };
 }
 
+function createProjectLaunchTrend() {
+  const durations = results.map((item) => item.durationMs).sort((left, right) => left - right);
+  const statusCounters = Object.fromEntries(
+    statusOrder.map((status) => [status, results.filter((item) => item.status === status).length])
+  );
+  const metrics = {
+    count: results.length,
+    statusCounters,
+    passRate: statusCounters.passed / results.length,
+    averageDurationMs: Math.round(
+      durations.reduce((sum, duration) => sum + duration, 0) / durations.length
+    ),
+    p50DurationMs: durations[Math.ceil(durations.length * 0.5) - 1],
+    p95DurationMs: durations[Math.ceil(durations.length * 0.95) - 1]
+  };
+  return {
+    kind: "analytics-run",
+    valid: true,
+    result: {
+      metrics,
+      series: [
+        {
+          id: launch.id,
+          name: launch.name,
+          createdAt: launch.createdAt,
+          metrics
+        }
+      ]
+    }
+  };
+}
+
 function createDashboardWidget(widget) {
   if (
     widget.kind === "line" ||
@@ -166,4 +198,4 @@ function formatDurationSeconds(seconds) {
   return `${Math.round(seconds / 60)}m`;
 }
 
-export { createAnalyticsItem, createDashboardWidget };
+export { createAnalyticsItem, createDashboardWidget, createProjectLaunchTrend };

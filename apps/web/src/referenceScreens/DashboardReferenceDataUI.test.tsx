@@ -20,6 +20,7 @@ describe("dashboard aggregate states", () => {
     }
     container?.remove();
     window.localStorage.clear();
+    window.sessionStorage.clear();
     vi.restoreAllMocks();
   });
 
@@ -108,6 +109,48 @@ describe("dashboard aggregate states", () => {
     );
   });
 
+  it("restores the selected launch after leaving and returning to the dashboard", async () => {
+    window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const path = String(url);
+      if (path.includes("/analytics/run")) {
+        return jsonResponse({ result: { metrics: {}, series: [] } });
+      }
+      if (path.includes("/projects/project-1/launches?")) {
+        return jsonResponse({
+          items: [apiLaunch("launch-1", "First"), apiLaunch("launch-2", "Second")],
+          page: { nextCursor: null, hasMore: false, total: 2 }
+        });
+      }
+      const launchId = path.includes("launch-2") ? "launch-2" : "launch-1";
+      return jsonResponse({ ...aggregate(launchId === "launch-2" ? 2 : 1), launchId });
+    });
+    mount();
+    const dashboard = () => (
+      <DashboardReferenceScreen
+        launchItems={[launch("launch-1", "First"), launch("launch-2", "Second")]}
+        projectId="project-1"
+        storageScope="admin:project-1"
+      />
+    );
+    await act(async () => root.render(dashboard()));
+    const select = container.querySelector<HTMLSelectElement>(
+      ".dashboard-reference-launch-picker select"
+    )!;
+    await act(async () => {
+      select.value = "launch-2";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expectDashboardSummary("Second", "2");
+
+    await act(async () => root.render(<div>Аналитика проекта</div>));
+    await act(async () => root.render(dashboard()));
+    expectDashboardSummary("Second", "2");
+    expect(
+      container.querySelector<HTMLSelectElement>(".dashboard-reference-launch-picker select")?.value
+    ).toBe("launch-2");
+  });
+
   it("loads another catalog page and opens a launch beyond the initial 25", async () => {
     window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
     const firstPage = Array.from({ length: 100 }, (_, index) =>
@@ -162,11 +205,12 @@ describe("dashboard aggregate states", () => {
   it("does not claim there are no launches while the catalog is loading or failed", async () => {
     window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
     let rejectList: ((reason: Error) => void) | undefined;
-    vi.spyOn(globalThis, "fetch").mockImplementation(
-      () =>
-        new Promise<Response>((_resolve, reject) => {
-          rejectList = reject;
-        })
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) =>
+      String(url).includes("/projects/project-1/launches?")
+        ? new Promise<Response>((_resolve, reject) => {
+            rejectList = reject;
+          })
+        : Promise.resolve(jsonResponse({ result: { metrics: {}, series: [] } }))
     );
     mount();
     await act(async () => root.render(<DashboardReferenceScreen projectId="project-1" />));
@@ -216,6 +260,65 @@ describe("dashboard aggregate states", () => {
     expect(container.querySelectorAll(".dashboard-launch-summary__distribution span")).toHaveLength(
       4
     );
+  });
+
+  it("shows project launch trends separately and links each point to its launch", async () => {
+    window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const path = String(url);
+      if (path.includes("/analytics/run")) {
+        return jsonResponse({
+          result: {
+            metrics: { count: 3, p50DurationMs: 200, p95DurationMs: 400 },
+            series: [
+              {
+                id: "launch-1",
+                name: "First",
+                createdAt: "2026-09-01T00:00:00Z",
+                metrics: { count: 1, passRate: 0.5 }
+              },
+              {
+                id: "launch-2",
+                name: "Second",
+                createdAt: "2026-09-02T00:00:00Z",
+                metrics: { count: 2, passRate: 0.75 }
+              }
+            ]
+          }
+        });
+      }
+      if (path.includes("/projects/project-1/launches?")) {
+        return jsonResponse({
+          items: [apiLaunch("launch-2", "Second")],
+          page: { nextCursor: null, hasMore: false, total: 1 }
+        });
+      }
+      return jsonResponse({ ...aggregate(2), launchId: "launch-2" });
+    });
+    mount();
+    await act(async () =>
+      root.render(
+        <DashboardReferenceScreen
+          launchItems={[launch("launch-2", "Second")]}
+          projectId="project-1"
+        />
+      )
+    );
+
+    const trend = container.querySelector(".project-launch-trend");
+    expect(trend?.textContent).toContain("Динамика проекта");
+    expect(trend?.textContent).toContain("+25 п.п. к предыдущему");
+    expect(trend?.querySelectorAll(".project-launch-trend__point")).toHaveLength(2);
+    expect(
+      trend?.querySelector<HTMLAnchorElement>(
+        '.project-launch-trend__point[href="#launch/launch-1"]'
+      )
+    ).not.toBeNull();
+    expect(
+      trend?.querySelector<HTMLAnchorElement>(
+        '.project-launch-trend__analytics-link[href="#analytics"]'
+      )
+    ).not.toBeNull();
   });
 
   it("renders an explicitly grouped table as groups rather than individual results", async () => {

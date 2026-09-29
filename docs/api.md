@@ -379,6 +379,22 @@ launch, independently of result-list pagination. The response contains eight fix
 toward `totalResults` but are excluded from the histogram and average. The endpoint requires
 `launches:read` access to the project.
 
+`GET /api/v1/launches/{launchId}/errors/summary` groups failed and broken results from the
+complete launch, independently of result-list pagination. The response includes `totalResults`,
+`failedResults`, `brokenResults`, and `totalGroups`. It returns up to 50 groups and 10 example
+results per group; `groupsTruncated` and each group's `resultsTruncated` show when presentation
+limits omit groups or examples. Example `resultUuid` values can be used with the result-detail
+endpoint. This read also requires `launches:read` access to the project.
+
+`GET /api/v1/projects/{projectId}/launches/compare/matrix` compares the final result for each
+stable test identity across two to five launches. Pass distinct launch IDs in `launchIds`, in
+baseline-to-current order, separated by commas. The last ID is the current launch. `focus` can be
+`all`, `problems` (failed or broken in the current launch), or `changed` (status changed or absent
+in at least one launch). `limit` and `offset` page the focused rows; `summary` always covers the
+complete matrix. This read requires `launches:read` access to the project.
+In its summary, `new` means absent from every earlier selected launch but present in the current
+one; `removed` means seen in any earlier selected launch and absent from the current one.
+
 Always prefer generated Swagger for exact request and response schemas; these examples show the
 auth/scoping headers expected by protected endpoints.
 
@@ -622,11 +638,13 @@ Regenerate it with `npm run api:docs:catalog` after changing paths, tags, or ope
 - `POST /api/v1/launches/{launchId}/archive` - `archiveLaunch`
 - `GET /api/v1/launches/{launchId}/charts/duration` - `getLaunchDurationChart`
 - `POST /api/v1/launches/{launchId}/close` - `closeLaunch`
+- `GET /api/v1/launches/{launchId}/errors/summary` - `getLaunchErrorSummary`
 - `GET /api/v1/launches/{launchId}/results` - `listLaunchResults`
 - `GET /api/v1/launches/{launchId}/results/{resultUuid}` - `getLaunchResultDetails`
 - `GET /api/v1/projects/{projectId}/launches` - `listProjectLaunches`
 - `POST /api/v1/projects/{projectId}/launches` - `createLaunch`
 - `GET /api/v1/projects/{projectId}/launches/compare` - `compareProjectLaunches`
+- `GET /api/v1/projects/{projectId}/launches/compare/matrix` - `compareProjectLaunchMatrix`
 
 ### mcp
 

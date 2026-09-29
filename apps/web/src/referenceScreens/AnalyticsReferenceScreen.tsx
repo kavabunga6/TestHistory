@@ -1,8 +1,8 @@
-import { AlertTriangle, BarChart3, Clock3, RefreshCw, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ArrowUpRight, BarChart3, Clock3, RefreshCw, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import type { TestResult } from "../m1Workspace.js";
-import { getJson } from "../apiHttp.js";
+import { getHashFromRoute } from "../workspaceRouting.js";
 
 import "./AnalyticsReferenceScreen.css";
 import {
@@ -11,10 +11,8 @@ import {
   formatCount
 } from "./AnalyticsReferenceModel.js";
 import { useProjectAnalyticsResults } from "./AnalyticsReferenceData.js";
-import {
-  AnalyticsReferenceContent,
-  type AnalyticsRunReadModel
-} from "./AnalyticsReferenceContent.js";
+import { AnalyticsReferenceContent } from "./AnalyticsReferenceContent.js";
+import { useProjectLaunchTrend } from "./useProjectLaunchTrend.js";
 
 type AnalyticsReferenceScreenProps = {
   projectId?: string | undefined;
@@ -28,14 +26,10 @@ export function AnalyticsReferenceScreen({
   onOpenResult
 }: AnalyticsReferenceScreenProps) {
   const [query, setQuery] = useState("");
-  const [analyticsRead, setAnalyticsRead] = useState<{
-    projectId: string;
-    result: AnalyticsRunReadModel["result"];
-  }>();
   const localModel = useMemo(() => buildAnalyticsModel(results, query), [query, results]);
   const projectResults = useProjectAnalyticsResults(projectId, query);
+  const launchTrend = useProjectLaunchTrend(projectId);
   const serverReady = projectResults.status === "ready" && projectResults.read !== undefined;
-  const trendRead = analyticsRead?.projectId === projectId ? analyticsRead?.result : undefined;
   const model = useMemo(
     () =>
       serverReady && projectResults.read !== undefined
@@ -73,23 +67,6 @@ export function AnalyticsReferenceScreen({
                 }
       : undefined;
 
-  useEffect(() => {
-    if (projectId === undefined) return;
-    const controller = new AbortController();
-    getJson<AnalyticsRunReadModel>("/api/v1/analytics/run", {
-      method: "POST",
-      signal: controller.signal,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ query: { entity: "results", projectId, groupBy: ["status"] } })
-    })
-      .then((read) => setAnalyticsRead({ projectId, result: read.result }))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setAnalyticsRead(undefined);
-      });
-    return () => controller.abort();
-  }, [projectId]);
-
   return (
     <section
       className="analytics-reference-screen product-view analytics-view"
@@ -107,19 +84,25 @@ export function AnalyticsReferenceScreen({
           <span>
             {serverReady ? (
               <>
-                {hasQuery ? "Найдено" : "Показано"} {formatCount(model.filteredTotal)} из{" "}
-                {formatCount(model.total)} результатов проекта
+                {hasQuery ? "Найдено" : "В анализе"} {formatCount(model.filteredTotal)}
+                {hasQuery ? ` из ${formatCount(model.total)}` : ""} результатов проекта
               </>
             ) : projectResults.status === "loading" ? (
               "Загружаем результаты всего проекта"
             ) : (
               <>
-                {projectResults.status === "error" ? "Аналитика проекта недоступна · " : null}
-                Показано {formatCount(model.filteredTotal)} из {formatCount(model.total)}{" "}
-                загруженных результатов
+                {projectResults.status === "error" ? "Аналитика проекта недоступна · " : null}В
+                анализе {formatCount(model.filteredTotal)} из {formatCount(model.total)} загруженных
+                результатов
               </>
             )}
           </span>
+          <a
+            className="analytics-reference-dashboard-link"
+            href={getHashFromRoute({ mode: "dashboard" })}
+          >
+            К дашборду запуска <ArrowUpRight aria-hidden="true" size={14} />
+          </a>
         </div>
         <label className="analytics-reference-search">
           <Search size={16} />
@@ -184,7 +167,7 @@ export function AnalyticsReferenceScreen({
           onOpenResult={onOpenResult}
           projectResults={projectResults}
           serverReady={serverReady}
-          trendRead={trendRead}
+          launchTrend={launchTrend}
         />
       )}
     </section>

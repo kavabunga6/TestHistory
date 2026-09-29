@@ -11,6 +11,7 @@ export * from "./archive-diagnostics.js";
 export * from "./project.js";
 export * from "./launchAnalytics.js";
 export * from "./launch-comparison.js";
+export * from "./launch-comparison-matrix.js";
 export * from "./qualityGate.js";
 export * from "./automation.js";
 export * from "./integrations.js";

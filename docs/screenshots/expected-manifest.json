@@ -30,6 +30,12 @@
       "dialog": false
     },
     {
+      "name": "launch-comparison-matrix",
+      "hash": "#launch/L-1289/comparison",
+      "auth": true,
+      "dialog": false
+    },
+    {
       "name": "selected-test-case",
       "hash": "#case/PAY-1042/overview",
       "auth": true,

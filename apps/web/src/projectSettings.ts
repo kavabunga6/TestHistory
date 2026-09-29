@@ -487,7 +487,7 @@ function mapApiProjectSettings(
     members: payload.memberships.map((member) => ({
       email: member.email ?? member.subject,
       id: member.id,
-      lastActive: member.lastActiveAt ?? "нет данных",
+      lastActive: formatMemberActivity(member.lastActiveAt),
       name: member.displayName,
       role: member.role,
       source: member.source,
@@ -504,6 +504,21 @@ function mapApiProjectSettings(
         : demoProjectSettings.retentionPolicies,
     visibilityPolicies: payload.visibilityPolicies
   };
+}
+
+export function formatMemberActivity(value: string | undefined): string {
+  if (!value) {
+    return "нет данных";
+  }
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    return value;
+  }
+  const timestamp = new Date(value);
+  return Number.isNaN(timestamp.getTime())
+    ? value
+    : new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short" }).format(
+        timestamp
+      );
 }
 
 function mapApiToken(

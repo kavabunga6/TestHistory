@@ -3978,10 +3978,87 @@ body.launches-reference-is-resizing * {
 }
 
 .launches-reference-errors-list h2 {
-  margin: 0 0 20px;
+  margin: 0;
   color: #172033;
   font-size: 20px;
   font-weight: 700;
+}
+
+.launches-reference-errors-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -24px -24px 0;
+  border-bottom: 1px solid #e1e7ee;
+  padding: 24px 24px 25px;
+  background: #ffffff;
+}
+
+.launches-reference-errors-heading::before {
+  position: absolute;
+  top: -24px;
+  right: 0;
+  left: 0;
+  height: 24px;
+  background: #ffffff;
+  content: "";
+  pointer-events: none;
+}
+
+.launches-reference-errors-heading > div {
+  min-width: 0;
+}
+
+.launches-reference-errors-heading p {
+  margin: 4px 0 0;
+  color: #687485;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.launches-reference-errors-heading button,
+.launches-reference-errors-notice button {
+  flex: 0 0 auto;
+  border: 1px solid #cfd9e7;
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: #ffffff;
+  color: #2454aa;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.launches-reference-errors-heading button:hover,
+.launches-reference-errors-notice button:hover {
+  background: #f0f5fc;
+}
+
+.launches-reference-errors-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  border: 1px solid #e7d9bd;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #fffaf1;
+  color: #69583c;
+  font-size: 12px;
+}
+
+.launches-reference-errors-more {
+  display: block;
+  margin: 7px 0 9px;
+  color: #687485;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .launches-reference-error-header,

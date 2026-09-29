@@ -1337,6 +1337,64 @@ paths:
                 $ref: "#/components/schemas/PermissionDeniedError"
         "404":
           description: Project or compared launch not found.
+  /api/v1/projects/{projectId}/launches/compare/matrix:
+    get:
+      tags: [launches]
+      operationId: compareProjectLaunchMatrix
+      description: Compares final results by stable test identity across two to five ordered launches in one project. The final launch is treated as current. Summary counts cover all identities; rows are filtered and paginated.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: launchIds
+          in: query
+          required: true
+          description: Comma-separated IDs of two to five distinct launches, ordered from baseline to current.
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 1004
+        - name: focus
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, problems, changed]
+            default: all
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Complete matrix summary with a filtered page of test identities.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaunchComparisonMatrixReadModel"
+        "400":
+          description: Invalid, duplicate, or cross-project launch IDs.
+        "403":
+          description: Missing launch read scope or project visibility membership.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermissionDeniedError"
+        "404":
+          description: Project or compared launch not found.
   /api/v1/launches/{launchId}:
     get:
       tags: [launches]
@@ -1457,6 +1515,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LaunchDurationChartReadModel"
+        "403":
+          description: Missing launch read scope or project visibility membership.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermissionDeniedError"
+        "404":
+          description: Launch or project not found.
+  /api/v1/launches/{launchId}/errors/summary:
+    get:
+      tags: [launches]
+      operationId: getLaunchErrorSummary
+      description: Groups failed and broken results across the complete launch, independently of result-list pagination. Returns at most 50 groups and 10 example results per group; totalGroups, groupsTruncated, and resultsTruncated disclose presentation limits.
+      parameters:
+        - name: launchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Complete launch failure counts with bounded error groups and examples.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaunchErrorSummaryReadModel"
         "403":
           description: Missing launch read scope or project visibility membership.
           content:
@@ -4862,6 +4946,133 @@ components:
             properties:
               label: { type: string }
               count: { type: integer, minimum: 0 }
+    LaunchComparisonMatrixReadModel:
+      type: object
+      additionalProperties: false
+      required: [kind, projectId, launches, summary, rows, page]
+      properties:
+        kind: { type: string, const: launch-comparison-matrix }
+        projectId: { type: string }
+        launches:
+          type: array
+          minItems: 2
+          maxItems: 5
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, name, createdAt, metrics]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              branch: { type: string }
+              createdAt: { type: string, format: date-time }
+              metrics:
+                type: object
+                additionalProperties: false
+                required: [total, statusCounters, passRate, totalDurationMs, averageDurationMs]
+                properties:
+                  total: { type: integer, minimum: 0 }
+                  statusCounters:
+                    type: object
+                    additionalProperties: { type: integer, minimum: 0 }
+                  passRate: { anyOf: [{ type: number }, { type: "null" }] }
+                  totalDurationMs: { type: number, minimum: 0 }
+                  averageDurationMs: { anyOf: [{ type: number, minimum: 0 }, { type: "null" }] }
+        summary:
+          type: object
+          additionalProperties: false
+          required: [testCases, currentProblems, changed, new, removed]
+          properties:
+            testCases: { type: integer, minimum: 0 }
+            currentProblems: { type: integer, minimum: 0 }
+            changed: { type: integer, minimum: 0 }
+            new: { type: integer, minimum: 0 }
+            removed: { type: integer, minimum: 0 }
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [testCaseId, name, points, changed, currentProblem]
+            properties:
+              testCaseId: { type: string }
+              name: { type: string }
+              points:
+                type: array
+                minItems: 2
+                maxItems: 5
+                items:
+                  anyOf:
+                    - type: "null"
+                    - type: object
+                      additionalProperties: false
+                      required: [resultUuid, status]
+                      properties:
+                        resultUuid: { type: string }
+                        status:
+                          type: string
+                          enum: [passed, failed, broken, skipped, unknown]
+                        durationMs: { type: number, minimum: 0 }
+              changed: { type: boolean }
+              currentProblem: { type: boolean }
+        page:
+          type: object
+          additionalProperties: false
+          required: [limit, offset, returned, total, hasMore]
+          properties:
+            limit: { type: integer, minimum: 1, maximum: 500 }
+            offset: { type: integer, minimum: 0 }
+            returned: { type: integer, minimum: 0 }
+            total: { type: integer, minimum: 0 }
+            hasMore: { type: boolean }
+    LaunchErrorSummaryReadModel:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          kind,
+          launchId,
+          projectId,
+          totalResults,
+          failedResults,
+          brokenResults,
+          totalGroups,
+          groupsTruncated,
+          groups
+        ]
+      properties:
+        kind: { type: string, const: launch-error-summary }
+        launchId: { type: string }
+        projectId: { type: string }
+        totalResults: { type: integer, minimum: 0 }
+        failedResults: { type: integer, minimum: 0 }
+        brokenResults: { type: integer, minimum: 0 }
+        totalGroups: { type: integer, minimum: 0 }
+        groupsTruncated: { type: boolean }
+        groups:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, failed, broken, resultsTruncated, examples]
+            properties:
+              name: { type: string }
+              failed: { type: integer, minimum: 0 }
+              broken: { type: integer, minimum: 0 }
+              resultsTruncated: { type: boolean }
+              examples:
+                type: array
+                maxItems: 10
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [resultUuid, name, status]
+                  properties:
+                    resultUuid: { type: string }
+                    name: { type: string }
+                    status: { type: string, enum: [failed, broken] }
+                    durationMs: { type: number, minimum: 0 }
     DashboardAggregateReadyWidget:
       type: object
       additionalProperties: false

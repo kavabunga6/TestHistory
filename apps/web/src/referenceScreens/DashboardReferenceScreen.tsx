@@ -1,7 +1,8 @@
-import { BarChart3, Plus, Trash2, X } from "lucide-react";
+import { ArrowUpRight, BarChart3, Plus, Trash2, X } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import type { LaunchListItem, TestResult } from "../m1Workspace.js";
+import { getHashFromRoute } from "../workspaceRouting.js";
 
 import "./DashboardReferenceScreen.css";
 import "./DashboardReferenceWidgets.css";
@@ -10,6 +11,7 @@ import "./DashboardReferenceResponsive.css";
 
 import { metricLabel } from "./DashboardReferenceVisuals.js";
 import { DashboardLaunchSummary } from "./DashboardLaunchSummary.js";
+import { ProjectLaunchTrend } from "./ProjectLaunchTrend.js";
 import type {
   SavedDashboardWidget,
   WidgetDraft,
@@ -18,10 +20,16 @@ import type {
 } from "./DashboardReferenceModel.js";
 import { emptyDraft, widgetTypes } from "./DashboardReferenceModel.js";
 import { widgetUnavailableReason } from "./DashboardReferenceQuery.js";
-import { loadSavedDashboardWidgets, saveDashboardWidgets } from "./DashboardReferenceStorage.js";
+import {
+  loadSavedDashboardWidgets,
+  loadSelectedDashboardLaunch,
+  saveDashboardWidgets,
+  saveSelectedDashboardLaunch
+} from "./DashboardReferenceStorage.js";
 import { DashboardWidgetGrid } from "./DashboardReferenceWidgets.js";
 import { useDashboardAggregate } from "./useDashboardAggregate.js";
 import { useDashboardLaunchCatalog } from "./useDashboardLaunchCatalog.js";
+import { useProjectLaunchTrend } from "./useProjectLaunchTrend.js";
 
 export function DashboardReferenceScreen({
   launchItems = [],
@@ -44,7 +52,11 @@ export function DashboardReferenceScreen({
     loadSavedDashboardWidgets(storageScope)
   );
   const launchCatalog = useDashboardLaunchCatalog(projectId, launchItems);
-  const [selectedLaunchId, setSelectedLaunchId] = useState<string | undefined>();
+  const launchTrend = useProjectLaunchTrend(projectId);
+  const selectionScope = storageScope ?? projectId;
+  const [selectedLaunchId, setSelectedLaunchId] = useState<string | undefined>(() =>
+    loadSelectedDashboardLaunch(selectionScope)
+  );
   const selectedLaunch =
     launchCatalog.items.find((launch) => launch.id === selectedLaunchId) ?? launchCatalog.items[0];
   const { state: dataState, retry: retryDataLoad } = useDashboardAggregate(
@@ -60,6 +72,15 @@ export function DashboardReferenceScreen({
   useEffect(() => {
     saveDashboardWidgets(savedWidgets, storageScope);
   }, [savedWidgets, storageScope]);
+
+  useEffect(() => {
+    setSelectedLaunchId(loadSelectedDashboardLaunch(selectionScope));
+  }, [selectionScope]);
+
+  const selectLaunch = (launchId: string) => {
+    setSelectedLaunchId(launchId);
+    saveSelectedDashboardLaunch(launchId, selectionScope);
+  };
 
   const openComposer = () => {
     setDraft(emptyDraft);
@@ -159,6 +180,14 @@ export function DashboardReferenceScreen({
               <span className="dashboard-reference-scope">Один запуск</span>
             </div>
             <p>Сводка и настраиваемые показатели выбранного запуска.</p>
+            {projectId ? (
+              <a
+                className="dashboard-reference-project-link"
+                href={getHashFromRoute({ mode: "analytics" })}
+              >
+                Аналитика всего проекта <ArrowUpRight aria-hidden="true" size={14} />
+              </a>
+            ) : null}
           </div>
           <div className="dashboard-reference-head-actions">
             <div className="dashboard-reference-launch-control">
@@ -166,7 +195,7 @@ export function DashboardReferenceScreen({
                 <span>Выбранный запуск</span>
                 <select
                   disabled={launchCatalog.items.length === 0}
-                  onChange={(event) => setSelectedLaunchId(event.target.value)}
+                  onChange={(event) => selectLaunch(event.target.value)}
                   title={selectedLaunch?.name}
                   value={selectedLaunch?.id ?? ""}
                 >
@@ -229,6 +258,7 @@ export function DashboardReferenceScreen({
           </div>
         </header>
 
+        {projectId ? <ProjectLaunchTrend compact trend={launchTrend} /> : null}
         {savedWidgets.length > 0 ? (
           <DashboardDataContent
             catalogStatus={launchCatalog.status}

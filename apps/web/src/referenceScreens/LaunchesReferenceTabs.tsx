@@ -1,6 +1,8 @@
 import { CheckCircle2, ChevronRight, MousePointer2, PauseCircle } from "lucide-react";
+import type { LaunchErrorSummaryReadModel } from "@testhistory/contracts";
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -18,6 +20,7 @@ import {
   matchesStatusFilter
 } from "./LaunchesReferenceModel.js";
 import { ResultReport } from "./LaunchesResultReport.js";
+import { loadLaunchErrorSummary } from "./LaunchErrorSummaryData.js";
 import { LaunchesResultsPagination } from "./LaunchesResultsPagination.js";
 import { ReferenceRouteState } from "./LaunchesReferenceRouteState.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
@@ -471,10 +474,12 @@ export function ResultsTab({
 
 export function ErrorsTab({
   integrationProviders = [],
+  launchId,
   loading,
   onFilterByTag,
   onOpenResultTab,
   onSelectResult,
+  onShowProblemResults,
   onToggleMuteResult,
   onUnlinkResultDefect,
   results,
@@ -482,10 +487,12 @@ export function ErrorsTab({
   selectedResult
 }: {
   integrationProviders?: IntegrationLinkProvider[] | undefined;
+  launchId: string;
   loading: boolean;
   onFilterByTag?: ((tag: string) => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
   onSelectResult: (id: string) => void;
+  onShowProblemResults?: (() => void) | undefined;
   onToggleMuteResult?: ((id: string) => void) | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
   results: TestResult[];
@@ -493,13 +500,111 @@ export function ErrorsTab({
   selectedResult: TestResult | undefined;
 }) {
   const splitResize = useLaunchSplitResize();
-  const errorGroups = collectErrorGroups(results);
+  const [summaryState, setSummaryState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; summary: LaunchErrorSummaryReadModel }
+    | { status: "error" }
+  >({ status: "loading" });
+  const [summaryRetry, setSummaryRetry] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    setSummaryState({ status: "loading" });
+    void loadLaunchErrorSummary(launchId, controller.signal)
+      .then((summary) => {
+        if (!controller.signal.aborted) setSummaryState({ status: "ready", summary });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setSummaryState({ status: "error" });
+      });
+    return () => controller.abort();
+  }, [launchId, summaryRetry]);
+
+  const localErrorGroups = collectErrorGroups(results);
+  const summary = summaryState.status === "ready" ? summaryState.summary : undefined;
+  const errorGroups = summary
+    ? summary.groups.map((group) => ({
+        ...group,
+        examples: group.examples.map((example) => ({
+          id: example.resultUuid,
+          name: example.name,
+          status: example.status,
+          duration: formatResultDuration(
+            example.durationMs === undefined
+              ? "n/a"
+              : example.durationMs < 1_000
+                ? `${Math.round(example.durationMs)}ms`
+                : `${(example.durationMs / 1_000).toFixed(2)}s`
+          )
+        }))
+      }))
+    : localErrorGroups.map((group) => ({
+        name: group.name,
+        failed: group.failed,
+        broken: group.broken,
+        resultsTruncated: false,
+        examples: group.results.map((result) => ({
+          id: result.id,
+          name: result.name,
+          status: result.status,
+          duration: formatResultDuration(result.duration)
+        }))
+      }));
+  const firstErrorId = errorGroups[0]?.examples[0]?.id;
   const selectedErrorResult =
     selectedResult?.status === "failed" || selectedResult?.status === "broken"
       ? selectedResult
-      : errorGroups[0]?.results[0];
+      : results.find((result) => result.id === firstErrorId);
+  const selectedErrorGroupIndex = errorGroups.findIndex((group) =>
+    group.examples.some((example) => example.id === selectedErrorResult?.id)
+  );
+  const expandedErrorGroupIndex = selectedErrorGroupIndex < 0 ? 0 : selectedErrorGroupIndex;
+  const initialSelectionResolved = useRef(false);
+  const errorListRef = useRef<HTMLDivElement | null>(null);
 
-  if (!loading && errorGroups.length === 0) {
+  useLayoutEffect(() => {
+    if (summaryState.status !== "ready") return;
+    const list = errorListRef.current;
+    const row = list?.querySelector<HTMLButtonElement>(
+      ".launches-reference-error-results button.selected"
+    );
+    if (list === null || list === undefined || row === null || row === undefined) return;
+    const listRect = list.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    if (rowRect.top < listRect.top + 48 || rowRect.bottom > listRect.bottom - 16) {
+      list.scrollTop += rowRect.top - listRect.top - Math.min(110, list.clientHeight / 3);
+    }
+    const headingBottom = list
+      .querySelector(".launches-reference-errors-heading")
+      ?.getBoundingClientRect().bottom;
+    if (headingBottom !== undefined) {
+      const firstVisibleGroup = Array.from(
+        list.querySelectorAll<HTMLDetailsElement>(".launches-reference-error-group")
+      ).find((group) => group.getBoundingClientRect().bottom > headingBottom);
+      if (firstVisibleGroup !== undefined && !firstVisibleGroup.contains(row)) {
+        const groupTop = firstVisibleGroup.getBoundingClientRect().top;
+        if (groupTop < headingBottom) {
+          list.scrollTop += firstVisibleGroup.getBoundingClientRect().bottom - headingBottom;
+        }
+      }
+    }
+  }, [selectedErrorResult?.id, selectedErrorGroupIndex, summaryState.status]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      summaryState.status === "loading" ||
+      initialSelectionResolved.current ||
+      firstErrorId === undefined
+    ) {
+      return;
+    }
+    initialSelectionResolved.current = true;
+    if (selectedErrorResult?.trace === undefined) {
+      onSelectResult(firstErrorId);
+    }
+  }, [firstErrorId, loading, onSelectResult, selectedErrorResult, summaryState.status]);
+
+  if (!loading && summary?.failedResults === 0 && summary.brokenResults === 0) {
     return (
       <section className="launches-reference-errors-empty" aria-live="polite">
         <div>
@@ -522,11 +627,43 @@ export function ErrorsTab({
       style={splitResize.splitStyle}
     >
       <aside className="launches-reference-errors-list">
-        <div className="launches-reference-errors-content">
-          <h2>Ошибки</h2>
+        <div className="launches-reference-errors-content" ref={errorListRef}>
+          <div className="launches-reference-errors-heading">
+            <div>
+              <h2>Ошибки</h2>
+              <p>
+                {summary === undefined
+                  ? summaryState.status === "error"
+                    ? "Сводка всего запуска недоступна; показаны загруженные результаты"
+                    : "Загружаем сводку всего запуска…"
+                  : `Весь запуск · ${summary.failedResults + summary.brokenResults} результатов с ошибкой`}
+              </p>
+            </div>
+            {onShowProblemResults !== undefined ? (
+              <button onClick={onShowProblemResults} type="button">
+                Все проблемные
+              </button>
+            ) : null}
+          </div>
+          {summaryState.status === "error" ? (
+            <div className="launches-reference-errors-notice" role="alert">
+              Не удалось получить все группы ошибок.
+              <button onClick={() => setSummaryRetry((value) => value + 1)} type="button">
+                Повторить
+              </button>
+            </div>
+          ) : null}
+          {summary !== undefined &&
+          selectedErrorResult !== undefined &&
+          selectedErrorGroupIndex < 0 ? (
+            <p className="launches-reference-errors-notice" role="status">
+              Открытый результат не входит в краткий список примеров. Остальные результаты доступны
+              во вкладке «Результаты тестов».
+            </p>
+          ) : null}
           <div className="launches-reference-error-header">
-            <span>Название</span>
-            <span>Статус</span>
+            <span>Причина</span>
+            <span>Результатов</span>
           </div>
           {loading ? (
             <ReferenceRouteState
@@ -537,13 +674,17 @@ export function ErrorsTab({
             />
           ) : null}
           {errorGroups.length === 0 && !loading ? (
-            <div className="launches-reference-centered">Ошибок в запуске нет</div>
+            <div className="launches-reference-centered">
+              {summaryState.status === "error"
+                ? "Загруженные результаты не содержат ошибок"
+                : "Ожидаем сводку ошибок…"}
+            </div>
           ) : (
             errorGroups.map((group, index) => (
               <details
                 className="launches-reference-error-group"
                 key={group.name}
-                open={index === 0}
+                open={index === expandedErrorGroupIndex}
               >
                 <summary>
                   <ChevronRight size={18} />
@@ -552,35 +693,50 @@ export function ErrorsTab({
                   {group.broken > 0 ? <em className="broken">{group.broken}</em> : null}
                 </summary>
                 <div className="launches-reference-error-results">
-                  {group.results.map((result) => (
+                  {group.examples.map((result) => (
                     <button
-                      className={selectedErrorResult?.id === result.id ? "selected" : ""}
+                      className={
+                        (selectedErrorResult?.id ?? firstErrorId) === result.id ? "selected" : ""
+                      }
                       key={result.id}
                       type="button"
                       onClick={() => onSelectResult(result.id)}
                     >
                       <StatusIcon status={result.status} />
                       <span>{result.name}</span>
-                      <small>{formatResultDuration(result.duration)}</small>
+                      <small>{result.duration}</small>
                     </button>
                   ))}
+                  {group.resultsTruncated ? (
+                    <span className="launches-reference-errors-more">
+                      Показаны {group.examples.length} из {group.failed + group.broken}. Все
+                      результаты доступны во вкладке «Результаты тестов».
+                    </span>
+                  ) : null}
                 </div>
               </details>
             ))
           )}
+          {summary?.groupsTruncated ? (
+            <p className="launches-reference-errors-more">
+              Показаны первые {summary.groups.length} из {summary.totalGroups} групп. Полный список
+              результатов доступен во вкладке «Результаты тестов».
+            </p>
+          ) : null}
         </div>
       </aside>
 
       <LaunchSplitResizer label="Изменить ширину списка ошибок" resize={splitResize} />
 
       <section className="launches-reference-detail-pane">
-        {loading && selectedErrorResult === undefined ? (
+        {(loading || summaryState.status === "loading") &&
+        selectedErrorResult?.trace === undefined ? (
           <ReferenceRouteState
             kind="loading"
             title="Загружаем отчет ошибки"
             text="Правая панель откроется, когда появится результат с ошибкой."
           />
-        ) : selectedErrorResult?.trace === undefined ? (
+        ) : selectedErrorResult === undefined ? (
           <div className="launches-reference-top-message">Выберите ошибочный результат слева</div>
         ) : (
           <ResultReport

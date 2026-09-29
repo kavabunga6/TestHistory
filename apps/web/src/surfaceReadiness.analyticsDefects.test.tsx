@@ -744,7 +744,7 @@ describe("analytics and defects surface readiness", () => {
 
     expect(markup).toContain("analytics-reference-screen");
     expect(text).toContain("Аналитика");
-    expect(text).toContain("Показано 10 000 из 10 000 загруженных результатов");
+    expect(text).toContain("В анализе 10 000 из 10 000 загруженных результатов");
     expect(text).toContain("Успешность 25%");
     expect(text).toContain("Неуспешные результаты 5 000");
     expect(text).toContain("Показано 50 из 10 000");

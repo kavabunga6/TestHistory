@@ -5,6 +5,8 @@ import { launchChromiumWithFallback } from "./playwright-browser.mjs";
 import { startPreviewServer, stopPreviewServer } from "./preview-server.mjs";
 import { createEmptyUiApiResponse, createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
 import { seedDashboardOwnerWidgets, seedDashboardWidget } from "./ui-dashboard-screen-state.mjs";
+import { showComparisonMatrix, verifyComparisonMatrix } from "./ui-comparison-screen-state.mjs";
+import { verifyLaunchErrorsScreen } from "./ui-launch-error-screen-state.mjs";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = path.join(workspace, "docs/screenshots/final");
@@ -79,9 +81,7 @@ const screens = [
   {
     name: "launch-errors",
     hash: "#launch/L-1289/errors",
-    verify: async (page) => {
-      await page.locator(".launches-reference-error-group").first().waitFor();
-    }
+    verify: verifyLaunchErrorsScreen
   },
   {
     name: "launch-charts",
@@ -102,6 +102,12 @@ const screens = [
       await page.getByText("Оплата картой после повторной авторизации").waitFor();
     }
   },
+  {
+    name: "launch-comparison-matrix",
+    hash: "#launch/L-1289/comparison",
+    interact: showComparisonMatrix,
+    verify: verifyComparisonMatrix
+  },
   { name: "selected-test-case", hash: "#case/PAY-1042/overview" },
   { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
   { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
@@ -121,7 +127,7 @@ const screens = [
     name: "automation-jobs",
     hash: "#automation",
     interact: async (page) => {
-      await page.getByRole("button", { name: /CI-задачи/ }).click();
+      await page.getByRole("tab", { name: /CI-задачи/ }).click();
     },
     verify: async (page) => {
       await page.getByText("Checkout regression #7842").waitFor();
@@ -134,7 +140,7 @@ const screens = [
     name: "automation-integrations",
     hash: "#automation",
     interact: async (page) => {
-      await page.getByRole("button", { name: /Интеграции/ }).click();
+      await page.getByRole("tab", { name: /Интеграции/ }).click();
     },
     verify: async (page) => {
       await page.getByText("QA: результаты прогонов").waitFor();

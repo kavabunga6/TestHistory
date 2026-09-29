@@ -176,6 +176,104 @@ it("opens the baseline result for a test removed from the current launch", async
   expect(onSelectResult).toHaveBeenCalledWith("base-result", launches[1]!.id);
 });
 
+it("builds a multi-launch matrix and opens the result from its own launch", async () => {
+  const launches = demoM1Workspace.launchItems.slice(0, 2).map((item) => ({
+    ...item,
+    projectId: "project-1"
+  }));
+  const older = { ...launches[1]!, id: "older-matrix", name: "Старый запуск" };
+  const onSelectResult = vi.fn();
+  vi.mocked(getJson).mockImplementation(async (url) => {
+    if (String(url).includes("/compare/matrix?")) {
+      const params = new URL(String(url), "http://localhost").searchParams;
+      const focus = params.get("focus");
+      const rows = [
+        {
+          testCaseId: "login",
+          name: "Вход пользователя",
+          changed: true,
+          currentProblem: true,
+          points: [
+            { resultUuid: "older-result", status: "passed", durationMs: 100 },
+            { resultUuid: "base-result", status: "failed", durationMs: 120 },
+            { resultUuid: "target-result", status: "broken", durationMs: 130 }
+          ]
+        }
+      ];
+      return {
+        kind: "launch-comparison-matrix",
+        launches: [older, launches[1]!, launches[0]!].map((launch) => ({
+          id: launch.id,
+          name: launch.name,
+          createdAt: launch.createdAt,
+          metrics: { total: 1, passRate: 0 }
+        })),
+        summary: { testCases: 1, currentProblems: 1, changed: 1, new: 0, removed: 0 },
+        page: {
+          limit: Number(params.get("limit")),
+          offset: 0,
+          returned: rows.length,
+          total: rows.length,
+          hasMore: false
+        },
+        rows: focus === "problems" ? rows : rows
+      } as never;
+    }
+    return { items: [], page: { hasMore: false, nextCursor: null } } as never;
+  });
+
+  await act(async () =>
+    root.render(
+      <LaunchComparisonScreen
+        initialSession={{ baselineId: launches[1]!.id }}
+        launch={launches[0]!}
+        launchItems={[...launches, older]}
+        onSelectResult={onSelectResult}
+      />
+    )
+  );
+  await act(async () =>
+    Array.from(container.querySelectorAll<HTMLButtonElement>("[aria-pressed]"))
+      .find((tab) => tab.textContent === "Матрица запусков")
+      ?.click()
+  );
+  const additional = Array.from(
+    container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+  ).find((checkbox) => !checkbox.checked);
+  await act(async () => additional?.click());
+  await act(async () =>
+    Array.from(container.querySelectorAll<HTMLButtonElement>("button"))
+      .find((button) => button.textContent === "Построить матрицу")
+      ?.click()
+  );
+
+  expect(String(vi.mocked(getJson).mock.lastCall?.[0])).toContain("/compare/matrix?");
+  expect(String(vi.mocked(getJson).mock.lastCall?.[0])).toContain("launchIds=");
+  expect(container.textContent).toContain("Вход пользователя");
+  expect(container.querySelectorAll(".launches-reference-matrix-table tr")).toHaveLength(2);
+  await act(async () =>
+    container
+      .querySelector<HTMLButtonElement>('[aria-label*="Вход пользователя"][aria-label*="Сломан"]')
+      ?.click()
+  );
+  expect(onSelectResult).toHaveBeenCalledWith("target-result", launches[0]!.id);
+  await act(async () =>
+    container
+      .querySelector<HTMLButtonElement>('[aria-label*="Старый запуск"][aria-label*="Успешный"]')
+      ?.click()
+  );
+  expect(onSelectResult).toHaveBeenCalledWith("older-result", older.id);
+
+  const filter = container.querySelector<HTMLSelectElement>(
+    '[aria-label="Фильтр тестов в матрице"]'
+  )!;
+  await act(async () => {
+    filter.value = "problems";
+    filter.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(String(vi.mocked(getJson).mock.lastCall?.[0])).toContain("focus=problems");
+});
+
 function comparisonFor(url: string): LaunchComparisonReadModel {
   const params = new URL(url, "http://localhost").searchParams;
   const limit = Number(params.get("limit"));

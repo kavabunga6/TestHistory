@@ -163,6 +163,29 @@
   line-height: 1.45;
 }
 
+.dashboard-reference-project-link {
+  width: fit-content;
+  min-height: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-reference-project-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-reference-project-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 .dashboard-reference-primary-button,
 .dashboard-reference-secondary-button,
 .dashboard-reference-modal-head button {

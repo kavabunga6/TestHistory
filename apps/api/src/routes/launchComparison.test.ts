@@ -70,6 +70,76 @@ describe("launch comparison route", () => {
       ).statusCode
     ).toBe(400);
   });
+
+  it("returns a paged matrix including tests seen only in intermediate launches", async () => {
+    const store = createAppStore();
+    const projectId = "project-matrix";
+    store.projects.set(projectId, {
+      id: projectId,
+      key: "matrix",
+      name: "Matrix",
+      createdAt: "2026-08-01T00:00:00.000Z"
+    });
+    store.launches.set("first", launch(projectId, "first", [result("login", "passed", 100)]));
+    store.launches.set(
+      "middle",
+      launch(projectId, "middle", [result("middle-only", "failed", 100)])
+    );
+    store.launches.set("current", launch(projectId, "current", [result("login", "broken", 200)]));
+    const app = await createApiApp(store);
+    apps.push(app);
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${projectId}/launches/compare/matrix?launchIds=first,middle,current&focus=changed&limit=1`
+    });
+    expect(response.statusCode, response.body).toBe(200);
+    expect(response.json()).toMatchObject({
+      kind: "launch-comparison-matrix",
+      summary: { testCases: 2, currentProblems: 1, changed: 2 },
+      page: { limit: 1, returned: 1, total: 2, hasMore: true },
+      rows: [{ testCaseId: "login", points: [{ status: "passed" }, null, { status: "broken" }] }]
+    });
+    const next = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${projectId}/launches/compare/matrix?launchIds=first,middle,current&focus=changed&limit=1&offset=1`
+    });
+    expect(next.json().rows).toMatchObject([
+      { testCaseId: "middle-only", points: [null, { status: "failed" }, null] }
+    ]);
+  });
+
+  it("rejects duplicate and cross-project matrix launches", async () => {
+    const store = createAppStore();
+    for (const projectId of ["project-a", "project-b"]) {
+      store.projects.set(projectId, {
+        id: projectId,
+        key: projectId,
+        name: projectId,
+        createdAt: "2026-08-01T00:00:00.000Z"
+      });
+    }
+    store.launches.set("a", launch("project-a", "a", []));
+    store.launches.set("b", launch("project-b", "b", []));
+    const app = await createApiApp(store);
+    apps.push(app);
+    expect(
+      (
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/projects/project-a/launches/compare/matrix?launchIds=a,a"
+        })
+      ).statusCode
+    ).toBe(400);
+    expect(
+      (
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/projects/project-a/launches/compare/matrix?launchIds=a,b"
+        })
+      ).statusCode
+    ).toBe(400);
+  });
 });
 
 function launch(projectId: string, id: string, results: NormalizedTestResult[]): Launch {

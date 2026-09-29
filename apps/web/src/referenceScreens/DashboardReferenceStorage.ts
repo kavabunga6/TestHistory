@@ -11,6 +11,29 @@ function widgetStorageKey(scope?: string): string {
     : `${dashboardWidgetStorageKey}:${encodeURIComponent(scope)}`;
 }
 
+const selectedLaunchKey = "testhistory.dashboard.selectedLaunch";
+
+export function loadSelectedDashboardLaunch(scope?: string): string | undefined {
+  if (scope === undefined || typeof window === "undefined") return undefined;
+  try {
+    return (
+      window.sessionStorage.getItem(`${selectedLaunchKey}:${encodeURIComponent(scope)}`) ??
+      undefined
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+export function saveSelectedDashboardLaunch(launchId: string, scope?: string) {
+  if (scope === undefined || typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(`${selectedLaunchKey}:${encodeURIComponent(scope)}`, launchId);
+  } catch {
+    // Selection still works in the current view when storage is disabled.
+  }
+}
+
 export function loadSavedDashboardWidgets(scope?: string): SavedDashboardWidget[] {
   if (typeof window === "undefined") {
     return defaultDashboardWidgets;

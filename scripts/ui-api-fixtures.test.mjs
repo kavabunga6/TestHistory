@@ -97,6 +97,18 @@ test("UI fixture pagination, analytics and dashboard agree on 100 results", () =
     `?limit=25&q=${encodeURIComponent('status in ["failed", "broken"]')}`
   );
   assert.equal(problematic.page.total, 26);
+  const errorSummary = read(`/api/v1/launches/${launchId}/errors/summary`);
+  assert.equal(errorSummary.totalResults, 100);
+  assert.equal(errorSummary.failedResults + errorSummary.brokenResults, 26);
+  assert.equal(
+    errorSummary.groups.reduce((total, group) => total + group.failed + group.broken, 0),
+    26
+  );
+  assert.ok(
+    errorSummary.groups.some((group) =>
+      group.examples.some((example) => example.resultUuid === "PAY-1042")
+    )
+  );
   const quarantined = read(resultsPath, "?limit=25&q=muted%20%3D%20true");
   assert.equal(quarantined.page.total, 0);
 
@@ -107,6 +119,11 @@ test("UI fixture pagination, analytics and dashboard agree on 100 results", () =
   assert.equal(analytics.items.length, 50);
   assert.equal(analytics.metrics.openRisks, 26);
   assert.equal(analytics.metrics.statusCounters.passed, 62);
+
+  const projectTrend = createUiFixtureApiResponse("/api/v1/analytics/run", "POST", "{}");
+  assert.equal(projectTrend.result.metrics.count, analytics.metrics.total);
+  assert.equal(projectTrend.result.series[0].id, launchId);
+  assert.equal(projectTrend.result.series[0].metrics.passRate, 0.62);
 
   const aggregate = createUiFixtureApiResponse(
     `/api/v1/launches/${launchId}/dashboard/aggregate`,
@@ -227,4 +244,33 @@ test("comparison screenshot fixture adds a baseline only to its own launch list"
   assert.equal(response.summary.regressed, 2);
   assert.ok(response.rows.some((row) => row.change === "fixed"));
   assert.ok(response.rows.some((row) => row.change === "regressed"));
+});
+
+test("matrix screenshot fixture shows an intermediate-only test across three launches", () => {
+  const launchList = createUiFixtureApiResponse(
+    `/api/v1/projects/project-1/launches`,
+    "GET",
+    null,
+    "?limit=100",
+    "launch-comparison-matrix"
+  );
+  assert.deepEqual(
+    launchList.items.map((item) => item.id),
+    ["L-1289", "L-1288", "L-1287"]
+  );
+  const response = createUiFixtureApiResponse(
+    `/api/v1/projects/project-1/launches/compare/matrix`,
+    "GET",
+    null,
+    "?launchIds=L-1287%2CL-1288%2CL-1289&focus=all&limit=25&offset=0",
+    "launch-comparison-matrix"
+  );
+  assert.equal(response.kind, "launch-comparison-matrix");
+  assert.equal(response.summary.testCases, 6);
+  assert.deepEqual(
+    response.rows
+      .find((row) => row.testCaseId === "PAY-1047")
+      ?.points.map((point) => point?.status ?? null),
+    [null, "failed", null]
+  );
 });

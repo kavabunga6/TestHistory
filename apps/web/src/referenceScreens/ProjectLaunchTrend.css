@@ -1,0 +1,329 @@
+.project-launch-trend {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.project-launch-trend.is-single-note {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #526172;
+  font-size: 12px;
+}
+
+.project-launch-trend.is-single-note > svg {
+  flex: 0 0 auto;
+  color: #718198;
+}
+
+.project-launch-trend.is-single-note > span {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.project-launch-trend.is-single-note > a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.project-launch-trend.is-single-note > a:hover {
+  text-decoration: underline;
+}
+
+.project-launch-trend__heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e8edf3;
+  padding: 12px 16px;
+}
+
+.project-launch-trend__title {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.project-launch-trend__title > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #718198;
+}
+
+.project-launch-trend__title h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.project-launch-trend__title span {
+  display: block;
+  margin-top: 2px;
+  color: #66758a;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.project-launch-trend__analytics-link {
+  min-height: 30px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.project-launch-trend__analytics-link:hover,
+.project-launch-trend__point:hover .project-launch-trend__name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.project-launch-trend a:focus-visible,
+.project-launch-trend button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.project-launch-trend__state {
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  color: #66758a;
+  font-size: 12px;
+  text-align: center;
+}
+
+.project-launch-trend__state.is-error {
+  color: #a82d27;
+}
+
+.project-launch-trend__state button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.project-launch-trend__single {
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+}
+
+.project-launch-trend__single > strong {
+  min-width: 64px;
+  color: #23804b;
+  font-size: 27px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.project-launch-trend__single > strong.is-low {
+  color: #c43e3b;
+}
+
+.project-launch-trend__single > strong.is-mid {
+  color: #a96312;
+}
+
+.project-launch-trend__single > strong.is-unknown {
+  color: #64748b;
+}
+
+.project-launch-trend__single > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.project-launch-trend__single a {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.project-launch-trend__single a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.project-launch-trend__single span {
+  color: #66758a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.project-launch-trend__chart {
+  min-width: 0;
+  display: grid;
+  grid-auto-columns: minmax(95px, 1fr);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 16px 18px 12px;
+}
+
+.project-launch-trend__point {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  grid-template-rows: auto 104px auto auto;
+  gap: 4px;
+  color: #172033;
+  text-decoration: none;
+}
+
+.project-launch-trend__rate {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-launch-trend__track {
+  width: min(42px, 55%);
+  height: 104px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 4px 4px 2px 2px;
+  background: #edf2f7;
+}
+
+.project-launch-trend__track > span {
+  width: 100%;
+  display: block;
+  border-radius: 3px 3px 0 0;
+  background: #43a047;
+}
+
+.project-launch-trend__track > .is-mid {
+  background: #dd9739;
+}
+
+.project-launch-trend__track > .is-low {
+  background: #d9534f;
+}
+
+.project-launch-trend__name,
+.project-launch-trend__date {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: #526172;
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-launch-trend__name {
+  font-weight: 600;
+}
+
+.project-launch-trend__date {
+  color: #748094;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-launch-trend__footer {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  border-top: 1px solid #e8edf3;
+  padding: 8px 16px;
+  color: #526172;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-launch-trend__footer strong {
+  color: #172033;
+}
+
+.project-launch-trend__footer .is-better {
+  color: #23804b;
+}
+
+.project-launch-trend__footer .is-worse {
+  color: #c43e3b;
+}
+
+.project-launch-trend__durations {
+  margin-left: auto;
+}
+
+.project-launch-trend.is-compact .project-launch-trend__chart {
+  gap: 10px;
+  padding: 11px 18px 9px;
+}
+
+.project-launch-trend.is-compact .project-launch-trend__point {
+  grid-template-rows: auto 54px auto;
+}
+
+.project-launch-trend.is-compact .project-launch-trend__track {
+  height: 54px;
+}
+
+.project-launch-trend.is-compact .project-launch-trend__date {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .project-launch-trend.is-single-note {
+    flex-wrap: wrap;
+  }
+
+  .project-launch-trend.is-single-note > a {
+    margin-left: 27px;
+  }
+  .project-launch-trend__heading {
+    align-items: flex-start;
+  }
+
+  .project-launch-trend__analytics-link {
+    white-space: nowrap;
+  }
+
+  .project-launch-trend__durations {
+    margin-left: 0;
+  }
+}

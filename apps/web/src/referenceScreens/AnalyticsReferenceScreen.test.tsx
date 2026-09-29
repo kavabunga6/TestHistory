@@ -51,8 +51,11 @@ describe("project analytics screen", () => {
     });
     await act(async () => vi.runAllTimersAsync());
 
-    expect(container.textContent).toContain("Показано 120 из 120 результатов проекта");
+    expect(container.textContent).toContain("В анализе 120 результатов проекта");
     expect(container.textContent).toContain("Весь проект · за всё время");
+    expect(
+      container.querySelector('.analytics-reference-dashboard-link[href="#dashboard"]')
+    ).not.toBeNull();
     expect(container.querySelectorAll(".analytics-reference-signal-row")).toHaveLength(1);
     const loadMore = Array.from(container.querySelectorAll("button")).find((button) =>
       button.textContent?.includes("Показать ещё")
@@ -127,6 +130,52 @@ describe("project analytics screen", () => {
     expect(requestCount).toBe(2);
     expect(container?.textContent).toContain("Весь проект · за всё время");
     expect(container?.querySelector(".analytics-reference-availability")).toBeNull();
+  });
+
+  it("links the project trend to launches and distinguishes missing pass rates", async () => {
+    vi.useFakeTimers();
+    getJsonMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.startsWith("/api/v1/analytics/results?")
+          ? read([summary("first", "launch-a")], null)
+          : {
+              result: {
+                metrics: { count: 2, p50DurationMs: 200, p95DurationMs: 400 },
+                series: [
+                  {
+                    id: "launch-a",
+                    name: "Nightly A",
+                    createdAt: "2026-09-01T00:00:00Z",
+                    metrics: { count: 1, passRate: null }
+                  },
+                  {
+                    id: "launch-b",
+                    name: "Nightly B",
+                    createdAt: "2026-09-02T00:00:00Z",
+                    metrics: { count: 1, passRate: 0.8 }
+                  }
+                ]
+              }
+            }
+      )
+    );
+    mount(<AnalyticsReferenceScreen projectId="project-one" results={[]} />);
+    await act(async () => vi.runAllTimersAsync());
+
+    const trend = container?.querySelector(".project-launch-trend");
+    expect(trend?.textContent).toContain("Динамика запусков");
+    expect(trend?.querySelectorAll(".project-launch-trend__point")).toHaveLength(2);
+    expect(
+      trend?.querySelector<HTMLAnchorElement>(
+        '.project-launch-trend__point[href="#launch/launch-b"]'
+      )
+    ).not.toBeNull();
+    expect(
+      trend?.querySelector<HTMLAnchorElement>(
+        '.project-launch-trend__point[href="#launch/launch-a"]'
+      )?.textContent
+    ).toContain("—");
+    expect(trend?.textContent).not.toContain("+80 п.п.");
   });
 });
 

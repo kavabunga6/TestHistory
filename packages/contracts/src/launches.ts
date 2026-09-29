@@ -147,6 +147,29 @@ export type LaunchDurationChartReadModel = {
   buckets: Array<{ label: string; count: number }>;
 };
 
+export type LaunchErrorSummaryReadModel = {
+  kind: "launch-error-summary";
+  launchId: string;
+  projectId: string;
+  totalResults: number;
+  failedResults: number;
+  brokenResults: number;
+  totalGroups: number;
+  groupsTruncated: boolean;
+  groups: Array<{
+    name: string;
+    failed: number;
+    broken: number;
+    resultsTruncated: boolean;
+    examples: Array<{
+      resultUuid: string;
+      name: string;
+      status: "failed" | "broken";
+      durationMs?: number;
+    }>;
+  }>;
+};
+
 export type LaunchCreateRequest = {
   name: string;
   branch?: string;

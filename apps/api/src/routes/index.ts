@@ -8,6 +8,7 @@ import { registerDashboardAggregateRoutes } from "./dashboardAggregate.js";
 import { registerDefectRoutes } from "./defects.js";
 import { registerLaunchRoutes } from "./launches.js";
 import { registerLaunchDurationChartRoutes } from "./launchDurationChart.js";
+import { registerLaunchErrorSummaryRoutes } from "./launchErrorSummary.js";
 import { registerLaunchComparisonRoutes } from "./launchComparison.js";
 import { registerMcpRoutes } from "./mcp.js";
 import { registerMutationAuthGuard } from "./mutation-auth-guard.js";
@@ -33,6 +34,7 @@ export async function registerApiRoutes(app: FastifyInstance, store: AppStore) {
   await registerProjectRoutes(app, store);
   await registerLaunchRoutes(app, store);
   registerLaunchDurationChartRoutes(app, store);
+  registerLaunchErrorSummaryRoutes(app, store);
   await registerLaunchComparisonRoutes(app, store);
   await registerUploadRoutes(app, store);
   await registerArtifactRoutes(app, store);

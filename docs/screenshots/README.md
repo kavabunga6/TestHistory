@@ -71,6 +71,7 @@ The capture script also records deeper route and dialog states for design review
 - `final/launch-errors.png` shows grouped failures and their selected result.
 - `final/launch-charts.png` shows duration distribution for the loaded page of the 100-result launch.
 - `final/launch-comparison.png` shows a populated comparison against a second synthetic launch.
+- `final/launch-comparison-matrix.png` shows test status history across three launches, including a test present only in the intermediate run.
 - `final/selected-test-case-history.png`
 - `final/selected-test-case-defects.png`
 - `final/defects.png` from `#defects/PAY-337`

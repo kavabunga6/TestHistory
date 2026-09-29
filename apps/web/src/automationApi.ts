@@ -12,6 +12,14 @@ export type TestPlanReadModel = {
   updatedAt: string;
 };
 
+export type TestPlanInput = {
+  name: string;
+  description?: string;
+  selector: TestPlanReadModel["selector"];
+  launchNameTemplate?: string;
+  status?: TestPlanReadModel["status"];
+};
+
 export type AutomationJobReadModel = {
   id: string;
   projectId: string;
@@ -153,17 +161,28 @@ export async function setOutboundIntegrationEnabled(
 
 export async function createTestPlan(
   projectId: string,
-  input: { name: string; thql: string; description?: string }
+  input: TestPlanInput
 ): Promise<TestPlanReadModel> {
   return requestJson(`/api/v1/projects/${encodeURIComponent(projectId)}/test-plans`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      name: input.name,
-      selector: { thql: input.thql },
-      ...(input.description?.trim() ? { description: input.description } : {})
-    })
+    body: JSON.stringify(input)
   });
+}
+
+export async function updateTestPlan(
+  projectId: string,
+  planId: string,
+  input: TestPlanInput
+): Promise<TestPlanReadModel> {
+  return requestJson(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/test-plans/${encodeURIComponent(planId)}`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    }
+  );
 }
 
 export async function createAutomationJob(

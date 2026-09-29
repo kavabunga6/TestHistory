@@ -11,10 +11,16 @@ import {
   defects
 } from "./ui-api-fixture-data.mjs";
 import { createResultDetails } from "./ui-api-fixture-evidence.mjs";
-import { createAnalyticsItem, createDashboardWidget } from "./ui-api-fixture-analytics.mjs";
+import { createLaunchErrorSummaryFixture } from "./ui-api-fixture-errors.mjs";
+import {
+  createAnalyticsItem,
+  createDashboardWidget,
+  createProjectLaunchTrend
+} from "./ui-api-fixture-analytics.mjs";
 import { createAutomationFixtureResponse } from "./ui-api-fixture-automation.mjs";
 import {
   baselineLaunch,
+  earlierLaunch,
   createLaunchComparisonFixtureResponse
 } from "./ui-api-fixtures-comparison.mjs";
 
@@ -34,6 +40,9 @@ export function createUiFixtureApiResponse(
       totalResults: results.length,
       widgets: widgets.map(createDashboardWidget)
     };
+  }
+  if (method === "POST" && pathname === "/api/v1/analytics/run") {
+    return createProjectLaunchTrend();
   }
   if (method !== "GET") {
     return undefined;
@@ -96,6 +105,14 @@ export function createUiFixtureApiResponse(
       ]
     };
   }
+  if (pathname === `/api/v1/projects/${project.id}/enterprise-access`) {
+    return {
+      kind: "enterprise-access",
+      projectId: project.id,
+      oidcProviders: [],
+      scimUsers: 0
+    };
+  }
   if (pathname === `/api/v1/projects/${project.id}/settings/artifacts`) {
     return {
       kind: "project-artifact-settings",
@@ -120,11 +137,19 @@ export function createUiFixtureApiResponse(
     };
   }
   if (pathname === `/api/v1/projects/${project.id}/launches`) {
-    const launchItems = screenName === "launch-comparison" ? [launch, baselineLaunch] : [launch];
+    const launchItems =
+      screenName === "launch-comparison-matrix"
+        ? [launch, baselineLaunch, earlierLaunch]
+        : screenName === "launch-comparison"
+          ? [launch, baselineLaunch]
+          : [launch];
     return paged("launch-list", launchItems, { projectId: project.id }, search);
   }
   if (pathname === `/api/v1/launches/${launch.id}/results/${result.uuid}`) {
     return resultDetails;
+  }
+  if (pathname === `/api/v1/launches/${launch.id}/errors/summary`) {
+    return createLaunchErrorSummaryFixture(launch, project, results);
   }
   if (pathname === `/api/v1/launches/${launch.id}/charts/duration`) {
     const boundariesMs = [100, 1_000, 10_000, 60_000, 300_000, 1_800_000, 3_600_000];

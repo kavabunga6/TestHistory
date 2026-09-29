@@ -1,10 +1,19 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode
+} from "react";
 import {
   BellRing,
   Bug,
   CirclePlay,
   ExternalLink,
   ListFilter,
+  Pencil,
   Plus,
   RefreshCw,
   Workflow
@@ -13,17 +22,19 @@ import {
   createAutomationJob,
   createIssueTrackerIntegration,
   createNotificationIntegration,
-  createTestPlan,
   loadAutomationWorkspace,
   setOutboundIntegrationEnabled,
   updateAutomationJobStatus,
   type AutomationJobReadModel,
   type AutomationWorkspaceData
 } from "../automationApi.js";
+import { AutomationPlanForm } from "./AutomationPlanForm.js";
+import { useAutomationFormSubmit } from "./useAutomationFormSubmit.js";
 
 import "./AutomationReferenceScreen.css";
 
 type AutomationTab = "plans" | "jobs" | "integrations";
+const automationTabs: AutomationTab[] = ["plans", "jobs", "integrations"];
 type PanelProps = {
   data: AutomationWorkspaceData;
   creating: boolean;
@@ -73,6 +84,30 @@ export function AutomationReferenceScreen({ projectId }: { projectId?: string | 
     };
   }, [refresh]);
 
+  const selectTab = (nextTab: AutomationTab) => {
+    setCreating(false);
+    setTab(nextTab);
+  };
+  const onTabsKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const currentIndex = automationTabs.indexOf(tab);
+    const nextTab =
+      event.key === "ArrowRight"
+        ? automationTabs[(currentIndex + 1) % automationTabs.length]
+        : event.key === "ArrowLeft"
+          ? automationTabs[(currentIndex - 1 + automationTabs.length) % automationTabs.length]
+          : event.key === "Home"
+            ? automationTabs[0]
+            : event.key === "End"
+              ? automationTabs[automationTabs.length - 1]
+              : undefined;
+    if (nextTab === undefined) {
+      return;
+    }
+    event.preventDefault();
+    selectTab(nextTab);
+    event.currentTarget.querySelector<HTMLButtonElement>(`[data-tab="${nextTab}"]`)?.focus();
+  };
+
   return (
     <section className="automation-screen" aria-busy={loading}>
       <header className="automation-header">
@@ -91,38 +126,52 @@ export function AutomationReferenceScreen({ projectId }: { projectId?: string | 
         </button>
       </header>
 
-      <nav className="automation-tabs" aria-label="Разделы автоматизации">
+      <nav
+        className="automation-tabs"
+        aria-label="Разделы автоматизации"
+        role="tablist"
+        onKeyDown={onTabsKeyDown}
+      >
         <button
+          aria-controls="automation-panel-plans"
+          aria-selected={tab === "plans"}
           className={tab === "plans" ? "active" : ""}
+          data-tab="plans"
+          id="automation-tab-plans"
+          role="tab"
+          tabIndex={tab === "plans" ? 0 : -1}
           type="button"
-          onClick={() => {
-            setCreating(false);
-            setTab("plans");
-          }}
+          onClick={() => selectTab("plans")}
         >
-          <ListFilter size={16} /> Тест-планы{" "}
+          <ListFilter aria-hidden="true" size={16} /> Тест-планы{" "}
           <span className="typography-role-meta">{data?.plans.length ?? 0}</span>
         </button>
         <button
+          aria-controls="automation-panel-jobs"
+          aria-selected={tab === "jobs"}
           className={tab === "jobs" ? "active" : ""}
+          data-tab="jobs"
+          id="automation-tab-jobs"
+          role="tab"
+          tabIndex={tab === "jobs" ? 0 : -1}
           type="button"
-          onClick={() => {
-            setCreating(false);
-            setTab("jobs");
-          }}
+          onClick={() => selectTab("jobs")}
         >
-          <Workflow size={16} /> CI-задачи{" "}
+          <Workflow aria-hidden="true" size={16} /> CI-задачи{" "}
           <span className="typography-role-meta">{data?.jobs.length ?? 0}</span>
         </button>
         <button
+          aria-controls="automation-panel-integrations"
+          aria-selected={tab === "integrations"}
           className={tab === "integrations" ? "active" : ""}
+          data-tab="integrations"
+          id="automation-tab-integrations"
+          role="tab"
+          tabIndex={tab === "integrations" ? 0 : -1}
           type="button"
-          onClick={() => {
-            setCreating(false);
-            setTab("integrations");
-          }}
+          onClick={() => selectTab("integrations")}
         >
-          <BellRing size={16} /> Интеграции{" "}
+          <BellRing aria-hidden="true" size={16} /> Интеграции{" "}
           <span className="typography-role-meta">
             {(data?.notifications.length ?? 0) + (data?.issueTrackers.length ?? 0)}
           </span>
@@ -139,13 +188,33 @@ export function AutomationReferenceScreen({ projectId }: { projectId?: string | 
       ) : null}
 
       {data !== undefined && tab === "plans" ? (
-        <PlansPanel data={data} creating={creating} setCreating={setCreating} onChanged={refresh} />
+        <div aria-labelledby="automation-tab-plans" id="automation-panel-plans" role="tabpanel">
+          <PlansPanel
+            data={data}
+            creating={creating}
+            setCreating={setCreating}
+            onChanged={refresh}
+          />
+        </div>
       ) : null}
       {data !== undefined && tab === "jobs" ? (
-        <JobsPanel data={data} creating={creating} setCreating={setCreating} onChanged={refresh} />
+        <div aria-labelledby="automation-tab-jobs" id="automation-panel-jobs" role="tabpanel">
+          <JobsPanel
+            data={data}
+            creating={creating}
+            setCreating={setCreating}
+            onChanged={refresh}
+          />
+        </div>
       ) : null}
       {data !== undefined && tab === "integrations" ? (
-        <IntegrationsPanel data={data} onChanged={refresh} />
+        <div
+          aria-labelledby="automation-tab-integrations"
+          id="automation-panel-integrations"
+          role="tabpanel"
+        >
+          <IntegrationsPanel data={data} onChanged={refresh} />
+        </div>
       ) : null}
     </section>
   );
@@ -159,9 +228,19 @@ function IntegrationsPanel({
   onChanged: () => Promise<void>;
 }) {
   const [form, setForm] = useState<"notification" | "issue" | undefined>();
+  const [pendingIntegrationId, setPendingIntegrationId] = useState<string>();
+  const [actionError, setActionError] = useState<string>();
   const toggle = async (kind: "notifications" | "issue-trackers", id: string, enabled: boolean) => {
-    await setOutboundIntegrationEnabled(data.projectId, kind, id, enabled);
-    await onChanged();
+    setPendingIntegrationId(id);
+    setActionError(undefined);
+    try {
+      await setOutboundIntegrationEnabled(data.projectId, kind, id, enabled);
+      await onChanged();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Не удалось изменить интеграцию");
+    } finally {
+      setPendingIntegrationId(undefined);
+    }
   };
   return (
     <div className="automation-content automation-integrations">
@@ -189,6 +268,11 @@ function IntegrationsPanel({
           </button>
         </div>
       </div>
+      {actionError ? (
+        <div className="automation-notice automation-notice--error" role="alert">
+          {actionError}
+        </div>
+      ) : null}
       {form === "notification" ? (
         <NotificationIntegrationForm
           projectId={data.projectId}
@@ -229,10 +313,15 @@ function IntegrationsPanel({
                   <ExternalLink size={13} />
                 </a>
                 <button
+                  disabled={pendingIntegrationId !== undefined}
                   type="button"
                   onClick={() => void toggle("notifications", item.id, !item.enabled)}
                 >
-                  {item.enabled ? "Отключить" : "Включить"}
+                  {pendingIntegrationId === item.id
+                    ? "Сохраняем…"
+                    : item.enabled
+                      ? "Отключить"
+                      : "Включить"}
                 </button>
               </div>
             </article>
@@ -265,10 +354,15 @@ function IntegrationsPanel({
                   <ExternalLink size={13} />
                 </a>
                 <button
+                  disabled={pendingIntegrationId !== undefined}
                   type="button"
                   onClick={() => void toggle("issue-trackers", item.id, !item.enabled)}
                 >
-                  {item.enabled ? "Отключить" : "Включить"}
+                  {pendingIntegrationId === item.id
+                    ? "Сохраняем…"
+                    : item.enabled
+                      ? "Отключить"
+                      : "Включить"}
                 </button>
               </div>
             </article>
@@ -309,13 +403,25 @@ function IntegrationsPanel({
               </span>
               <span>
                 {delivery.externalReference ? (
-                  <a href={delivery.externalReference} target="_blank" rel="noreferrer">
+                  <a
+                    aria-label={`Открыть внешнюю ссылку доставки «${delivery.event}»`}
+                    href={delivery.externalReference}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <ExternalLink size={14} />
                   </a>
                 ) : null}
               </span>
             </div>
           ))}
+          {data.deliveries.length === 0 ? (
+            <EmptyAutomation
+              icon={<BellRing />}
+              title="Доставок пока нет"
+              copy="События появятся после срабатывания исходящих интеграций."
+            />
+          ) : null}
         </div>
       </section>
     </div>
@@ -341,22 +447,29 @@ function NotificationIntegrationForm({
   onCancel: () => void;
   onCreated: () => Promise<void>;
 }) {
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const { busy, error, submit } = useAutomationFormSubmit();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const secretEnvVar = String(form.get("secretEnvVar") ?? "").trim();
-    await createNotificationIntegration(projectId, {
-      name: String(form.get("name")),
-      provider: String(form.get("provider")),
-      endpointUrl: String(form.get("endpointUrl")),
-      events: ["automation-job.failed", "automation-job.succeeded"],
-      ...(secretEnvVar ? { secretEnvVar } : {})
+    await submit(async () => {
+      await createNotificationIntegration(projectId, {
+        name: String(form.get("name")),
+        provider: String(form.get("provider")),
+        endpointUrl: String(form.get("endpointUrl")),
+        events: ["automation-job.failed", "automation-job.succeeded"],
+        ...(secretEnvVar ? { secretEnvVar } : {})
+      });
+      await onCreated();
+      onCancel();
     });
-    onCancel();
-    await onCreated();
   };
   return (
-    <form className="automation-form" onSubmit={(event) => void submit(event)}>
+    <form
+      aria-busy={busy}
+      className="automation-form"
+      onSubmit={(event) => void handleSubmit(event)}
+    >
       <label>
         Название
         <input name="name" required />
@@ -382,11 +495,14 @@ function NotificationIntegrationForm({
           placeholder="TESTHISTORY_WEBHOOK_SECRET"
         />
       </label>
+      <AutomationFormError error={error} />
       <div className="automation-form-actions">
-        <button type="button" onClick={onCancel}>
+        <button disabled={busy} type="button" onClick={onCancel}>
           Отмена
         </button>
-        <button className="reference-primary-action">Сохранить</button>
+        <button className="reference-primary-action" disabled={busy} type="submit">
+          {busy ? "Сохраняем…" : "Сохранить"}
+        </button>
       </div>
     </form>
   );
@@ -401,21 +517,28 @@ function IssueTrackerIntegrationForm({
   onCancel: () => void;
   onCreated: () => Promise<void>;
 }) {
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const { busy, error, submit } = useAutomationFormSubmit();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await createIssueTrackerIntegration(projectId, {
-      name: String(form.get("name")),
-      provider: String(form.get("provider")),
-      baseUrl: String(form.get("baseUrl")),
-      projectKey: String(form.get("projectKey")),
-      credentialEnvVar: String(form.get("credentialEnvVar"))
+    await submit(async () => {
+      await createIssueTrackerIntegration(projectId, {
+        name: String(form.get("name")),
+        provider: String(form.get("provider")),
+        baseUrl: String(form.get("baseUrl")),
+        projectKey: String(form.get("projectKey")),
+        credentialEnvVar: String(form.get("credentialEnvVar"))
+      });
+      await onCreated();
+      onCancel();
     });
-    onCancel();
-    await onCreated();
   };
   return (
-    <form className="automation-form" onSubmit={(event) => void submit(event)}>
+    <form
+      aria-busy={busy}
+      className="automation-form"
+      onSubmit={(event) => void handleSubmit(event)}
+    >
       <label>
         Название
         <input name="name" required />
@@ -446,17 +569,22 @@ function IssueTrackerIntegrationForm({
           placeholder="TESTHISTORY_JIRA_TOKEN"
         />
       </label>
+      <AutomationFormError error={error} />
       <div className="automation-form-actions">
-        <button type="button" onClick={onCancel}>
+        <button disabled={busy} type="button" onClick={onCancel}>
           Отмена
         </button>
-        <button className="reference-primary-action">Сохранить</button>
+        <button className="reference-primary-action" disabled={busy} type="submit">
+          {busy ? "Сохраняем…" : "Сохранить"}
+        </button>
       </div>
     </form>
   );
 }
 
 function PlansPanel({ data, creating, setCreating, onChanged }: PanelProps) {
+  const [editingPlanId, setEditingPlanId] = useState<string>();
+  const editingPlan = data.plans.find((plan) => plan.id === editingPlanId);
   return (
     <div className="automation-content">
       <div className="automation-toolbar">
@@ -468,25 +596,49 @@ function PlansPanel({ data, creating, setCreating, onChanged }: PanelProps) {
           <button
             className="reference-primary-action"
             type="button"
-            onClick={() => setCreating(!creating)}
+            onClick={() => {
+              setEditingPlanId(undefined);
+              setCreating(!creating);
+            }}
           >
             <Plus size={16} /> Создать план
           </button>
         ) : null}
       </div>
-      {creating ? (
-        <PlanForm
+      {creating || editingPlan !== undefined ? (
+        <AutomationPlanForm
+          key={editingPlan?.id ?? "new"}
           projectId={data.projectId}
-          onCancel={() => setCreating(false)}
-          onCreated={onChanged}
+          plan={editingPlan}
+          onCancel={() => {
+            setCreating(false);
+            setEditingPlanId(undefined);
+          }}
+          onSaved={onChanged}
         />
       ) : null}
       <div className="automation-grid">
         {data.plans.map((plan) => (
-          <article className="automation-card" key={plan.id}>
+          <article
+            className={`automation-card automation-plan-card${editingPlanId === plan.id ? " is-editing" : ""}`}
+            key={plan.id}
+          >
             <div className="automation-card-heading">
               <strong>{plan.name}</strong>
-              <StatusChip status={plan.status} />
+              <div className="automation-plan-card-actions">
+                <StatusChip status={plan.status} />
+                <button
+                  aria-label={`Редактировать план «${plan.name}»`}
+                  className="automation-plan-edit"
+                  onClick={() => {
+                    setCreating(false);
+                    setEditingPlanId(plan.id);
+                  }}
+                  type="button"
+                >
+                  <Pencil aria-hidden="true" size={14} /> Изменить
+                </button>
+              </div>
             </div>
             {plan.description ? <p>{plan.description}</p> : null}
             <dl>
@@ -510,6 +662,12 @@ function PlansPanel({ data, creating, setCreating, onChanged }: PanelProps) {
                   <dd>{plan.selector.testCaseIds.length}</dd>
                 </>
               ) : null}
+              {plan.launchNameTemplate ? (
+                <>
+                  <dt>Запуск</dt>
+                  <dd>{plan.launchNameTemplate}</dd>
+                </>
+              ) : null}
             </dl>
           </article>
         ))}
@@ -528,12 +686,22 @@ function PlansPanel({ data, creating, setCreating, onChanged }: PanelProps) {
 }
 
 function JobsPanel({ data, creating, setCreating, onChanged }: PanelProps) {
+  const [pendingJobId, setPendingJobId] = useState<string>();
+  const [actionError, setActionError] = useState<string>();
   const advance = async (job: AutomationJobReadModel) => {
     const next =
       job.status === "queued" ? "running" : job.status === "running" ? "succeeded" : undefined;
     if (next) {
-      await updateAutomationJobStatus(data.projectId, job.id, next);
-      await onChanged();
+      setPendingJobId(job.id);
+      setActionError(undefined);
+      try {
+        await updateAutomationJobStatus(data.projectId, job.id, next);
+        await onChanged();
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : "Не удалось обновить CI-задачу");
+      } finally {
+        setPendingJobId(undefined);
+      }
     }
   };
 
@@ -552,6 +720,11 @@ function JobsPanel({ data, creating, setCreating, onChanged }: PanelProps) {
           <Plus size={16} /> Зарегистрировать
         </button>
       </div>
+      {actionError ? (
+        <div className="automation-notice automation-notice--error" role="alert">
+          {actionError}
+        </div>
+      ) : null}
       {creating ? (
         <JobForm data={data} onCancel={() => setCreating(false)} onCreated={onChanged} />
       ) : null}
@@ -588,9 +761,11 @@ function JobsPanel({ data, creating, setCreating, onChanged }: PanelProps) {
             <span>
               {job.status === "queued" || job.status === "running" ? (
                 <button
+                  aria-label={`Перевести задачу «${job.name}» в состояние «${job.status === "queued" ? "Выполняется" : "Успешно"}»`}
                   className="automation-icon-action"
+                  disabled={pendingJobId !== undefined}
                   type="button"
-                  title="Перевести в следующее состояние"
+                  title={job.status === "queued" ? "Начать выполнение" : "Завершить успешно"}
                   onClick={() => void advance(job)}
                 >
                   <CirclePlay size={17} />
@@ -611,54 +786,6 @@ function JobsPanel({ data, creating, setCreating, onChanged }: PanelProps) {
   );
 }
 
-function PlanForm({
-  projectId,
-  onCancel,
-  onCreated
-}: {
-  projectId: string;
-  onCancel: () => void;
-  onCreated: () => Promise<void>;
-}) {
-  const [busy, setBusy] = useState(false);
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setBusy(true);
-    const form = new FormData(event.currentTarget);
-    await createTestPlan(projectId, {
-      name: String(form.get("name")),
-      thql: String(form.get("thql")),
-      description: String(form.get("description") ?? "")
-    });
-    onCancel();
-    await onCreated();
-  };
-  return (
-    <form className="automation-form" onSubmit={(event) => void submit(event)}>
-      <label>
-        Название
-        <input name="name" required maxLength={200} />
-      </label>
-      <label>
-        THQL
-        <input name="thql" required maxLength={4000} placeholder={'tag = "smoke"'} />
-      </label>
-      <label className="automation-form-wide">
-        Описание
-        <input name="description" maxLength={4000} />
-      </label>
-      <div className="automation-form-actions">
-        <button type="button" onClick={onCancel}>
-          Отмена
-        </button>
-        <button className="reference-primary-action" disabled={busy} type="submit">
-          Сохранить
-        </button>
-      </div>
-    </form>
-  );
-}
-
 function JobForm({
   data,
   onCancel,
@@ -668,23 +795,28 @@ function JobForm({
   onCancel: () => void;
   onCreated: () => Promise<void>;
 }) {
-  const [busy, setBusy] = useState(false);
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const { busy, error, submit } = useAutomationFormSubmit();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setBusy(true);
     const form = new FormData(event.currentTarget);
     const testPlanId = String(form.get("testPlanId") ?? "");
-    await createAutomationJob(data.projectId, {
-      name: String(form.get("name")),
-      provider: String(form.get("provider")),
-      pipelineUrl: String(form.get("pipelineUrl") ?? ""),
-      ...(testPlanId ? { testPlanId } : {})
+    await submit(async () => {
+      await createAutomationJob(data.projectId, {
+        name: String(form.get("name")),
+        provider: String(form.get("provider")),
+        pipelineUrl: String(form.get("pipelineUrl") ?? ""),
+        ...(testPlanId ? { testPlanId } : {})
+      });
+      await onCreated();
+      onCancel();
     });
-    onCancel();
-    await onCreated();
   };
   return (
-    <form className="automation-form" onSubmit={(event) => void submit(event)}>
+    <form
+      aria-busy={busy}
+      className="automation-form"
+      onSubmit={(event) => void handleSubmit(event)}
+    >
       <label>
         Название
         <input name="name" required maxLength={200} />
@@ -710,16 +842,25 @@ function JobForm({
         Ссылка на pipeline
         <input name="pipelineUrl" type="url" maxLength={2000} />
       </label>
+      <AutomationFormError error={error} />
       <div className="automation-form-actions">
-        <button type="button" onClick={onCancel}>
+        <button disabled={busy} type="button" onClick={onCancel}>
           Отмена
         </button>
         <button className="reference-primary-action" disabled={busy} type="submit">
-          Зарегистрировать
+          {busy ? "Регистрируем…" : "Зарегистрировать"}
         </button>
       </div>
     </form>
   );
+}
+
+function AutomationFormError({ error }: { error: string | undefined }) {
+  return error ? (
+    <div className="automation-form-error" role="alert">
+      {error}
+    </div>
+  ) : null;
 }
 
 function StatusChip({ status }: { status: string }) {

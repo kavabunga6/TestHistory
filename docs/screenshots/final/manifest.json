@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-29T09:33:22.739Z",
+  "generatedAt": "2026-09-29T10:36:55.642Z",
   "viewport": {
     "width": 1440,
     "height": 1000
   },
-  "count": 34,
+  "count": 35,
   "files": [
     {
       "file": "auth-login.png",
@@ -23,21 +23,21 @@
     {
       "file": "dashboard.png",
       "hash": "#dashboard",
-      "bytes": 157951,
+      "bytes": 165958,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dashboard-owner-groups.png",
       "hash": "#dashboard",
-      "bytes": 117080,
+      "bytes": 127849,
       "auth": true,
       "dialog": false
     },
     {
       "file": "test-cases.png",
       "hash": "#case?list=1",
-      "bytes": 228494,
+      "bytes": 228134,
       "auth": true,
       "dialog": false
     },
@@ -79,7 +79,7 @@
     {
       "file": "launch-errors.png",
       "hash": "#launch/L-1289/errors",
-      "bytes": 203858,
+      "bytes": 250208,
       "auth": true,
       "dialog": false
     },
@@ -93,84 +93,91 @@
     {
       "file": "launch-comparison.png",
       "hash": "#launch/L-1289/comparison",
-      "bytes": 172314,
+      "bytes": 170154,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "launch-comparison-matrix.png",
+      "hash": "#launch/L-1289/comparison",
+      "bytes": 176384,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case.png",
       "hash": "#case/PAY-1042/overview",
-      "bytes": 228326,
+      "bytes": 228425,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-history.png",
       "hash": "#case/PAY-1042/history",
-      "bytes": 184475,
+      "bytes": 184582,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-defects.png",
       "hash": "#case/PAY-1042/defects",
-      "bytes": 177048,
+      "bytes": 177145,
       "auth": true,
       "dialog": false
     },
     {
       "file": "defects.png",
       "hash": "#defects/PAY-337",
-      "bytes": 185808,
+      "bytes": 187453,
       "auth": true,
       "dialog": false
     },
     {
       "file": "automation.png",
       "hash": "#automation",
-      "bytes": 73837,
+      "bytes": 73553,
       "auth": true,
       "dialog": false
     },
     {
       "file": "automation-plans.png",
       "hash": "#automation",
-      "bytes": 102543,
+      "bytes": 109072,
       "auth": true,
       "dialog": false
     },
     {
       "file": "automation-jobs.png",
       "hash": "#automation",
-      "bytes": 106708,
+      "bytes": 106746,
       "auth": true,
       "dialog": false
     },
     {
       "file": "automation-integrations.png",
       "hash": "#automation",
-      "bytes": 152049,
+      "bytes": 152090,
       "auth": true,
       "dialog": false
     },
     {
       "file": "analytics.png",
       "hash": "#analytics",
-      "bytes": 200796,
+      "bytes": 173538,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dialog-dashboard-widget-delete.png",
       "hash": "#dashboard",
-      "bytes": 123107,
+      "bytes": 132906,
       "auth": true,
       "dialog": true
     },
     {
       "file": "settings-access.png",
       "hash": "#settings/access",
-      "bytes": 113483,
+      "bytes": 113080,
       "auth": true,
       "dialog": false
     },
@@ -191,7 +198,7 @@
     {
       "file": "settings-retention.png",
       "hash": "#settings/retention",
-      "bytes": 104295,
+      "bytes": 104874,
       "auth": true,
       "dialog": false
     },
@@ -205,14 +212,14 @@
     {
       "file": "dialog-role-matrix.png",
       "hash": "#settings/access",
-      "bytes": 115894,
+      "bytes": 112806,
       "auth": true,
       "dialog": true
     },
     {
       "file": "dialog-member-edit.png",
       "hash": "#settings/access",
-      "bytes": 117255,
+      "bytes": 115173,
       "auth": true,
       "dialog": true
     },

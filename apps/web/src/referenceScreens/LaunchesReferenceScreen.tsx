@@ -347,6 +347,14 @@ export function LaunchesReferenceScreen({
     }
   };
 
+  const openAllProblemResults = () => {
+    setQuery('status in ["failed", "broken"]');
+    setStatusFilter(undefined);
+    setActiveResultFilterId(undefined);
+    setActiveTab("results");
+    onOpenTab?.("results");
+  };
+
   const openResultsByTag = (tag: string) => {
     const tagQuery = `tag = ${JSON.stringify(tag)}`;
     const firstMatchingResult = launchResults.find((result) => result.tags.includes(tag));
@@ -682,7 +690,9 @@ export function LaunchesReferenceScreen({
           ) : null}
           {activeTab === "errors" ? (
             <ErrorsTab
+              key={selectedLaunch.id}
               integrationProviders={integrationProviders}
+              launchId={selectedLaunch.id}
               loading={isResultLoading || isLaunchDetailLoading}
               results={launchResults}
               routeResultTab={routeResultTab}
@@ -690,6 +700,7 @@ export function LaunchesReferenceScreen({
               onOpenResultTab={onOpenResultTab}
               onFilterByTag={openResultsByTag}
               onSelectResult={(id) => openResultReport(id, "errors")}
+              onShowProblemResults={openAllProblemResults}
               onToggleMuteResult={onToggleMuteResult}
               onUnlinkResultDefect={onUnlinkResultDefect}
             />

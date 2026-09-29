@@ -122,7 +122,9 @@ export function compareLaunchResults(
   };
 }
 
-function indexFinalResults(results: NormalizedTestResult[]): Map<string, NormalizedTestResult> {
+export function indexFinalResults(
+  results: NormalizedTestResult[]
+): Map<string, NormalizedTestResult> {
   const indexed = new Map<string, NormalizedTestResult>();
   for (const result of results) indexed.set(getTestCaseIdentity(result), result);
   return indexed;
@@ -173,7 +175,7 @@ function compareDuration(base: number | undefined, target: number | undefined) {
   return { trend: "unchanged" as const, deltaMs, ratio: roundedRatio };
 }
 
-function launchMetrics(results: NormalizedTestResult[]): LaunchComparisonMetrics {
+export function launchMetrics(results: NormalizedTestResult[]): LaunchComparisonMetrics {
   const statusCounters = createEmptyCounters();
   let totalDurationMs = 0;
   let durationCount = 0;
@@ -193,7 +195,7 @@ function launchMetrics(results: NormalizedTestResult[]): LaunchComparisonMetrics
   };
 }
 
-function launchPoint(
+export function launchPoint(
   launch: ComparableLaunch,
   metrics: LaunchComparisonMetrics
 ): LaunchComparisonLaunch {
@@ -206,7 +208,7 @@ function launchPoint(
   };
 }
 
-function toPoint(result: NormalizedTestResult): LaunchComparisonPoint {
+export function toPoint(result: NormalizedTestResult): LaunchComparisonPoint {
   return {
     resultUuid: result.uuid,
     status: result.status,

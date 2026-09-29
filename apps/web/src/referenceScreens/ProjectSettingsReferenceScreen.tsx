@@ -64,17 +64,23 @@ const visibilityPolicyCopy: Record<string, { description: string; label: string 
   }
 };
 
-export function ProjectSettingsReferenceScreen({
-  onOpenTab,
-  projectId,
-  routeTab,
-  settings = demoProjectSettings
-}: {
+type ProjectSettingsReferenceScreenProps = {
   onOpenTab?: ((tab: string) => void) | undefined;
   projectId?: string | undefined;
   routeTab?: string | undefined;
   settings?: ProjectSettings;
-}) {
+};
+
+export function ProjectSettingsReferenceScreen(props: ProjectSettingsReferenceScreenProps) {
+  return <ProjectSettingsProjectScreen key={props.projectId ?? "default"} {...props} />;
+}
+
+function ProjectSettingsProjectScreen({
+  onOpenTab,
+  projectId,
+  routeTab,
+  settings = demoProjectSettings
+}: ProjectSettingsReferenceScreenProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>(parseSettingsTab(routeTab));
   const [effectiveSettings, setEffectiveSettings] = useState<ProjectSettings>(settings);
   const [apiTokens, setApiTokens] = useState<ProjectApiToken[]>(settings.apiTokens);
@@ -94,6 +100,11 @@ export function ProjectSettingsReferenceScreen({
     void loadProjectSettingsFromApi(projectId)
       .then((loadedSettings) => {
         if (!active) {
+          return;
+        }
+        if (projectId !== undefined && loadedSettings.project.id !== projectId) {
+          setApiStatus("error");
+          setApiMessage("Сервер вернул настройки другого проекта. Обновите страницу.");
           return;
         }
         setEffectiveSettings(loadedSettings);
@@ -155,9 +166,14 @@ export function ProjectSettingsReferenceScreen({
     () => getProjectSettingsAccess(effectiveSettings),
     [effectiveSettings]
   );
+  const settingsMatchProject =
+    projectId === undefined || effectiveSettings.project.id === projectId;
   const visibleTabs = useMemo(
-    () => tabs.filter((tab) => isSettingsTabVisible(tab.id, settingsAccess)),
-    [settingsAccess]
+    () =>
+      settingsMatchProject
+        ? tabs.filter((tab) => isSettingsTabVisible(tab.id, settingsAccess))
+        : [],
+    [settingsAccess, settingsMatchProject]
   );
   const visibleActiveTab = visibleTabs.some((tab) => tab.id === activeTab)
     ? activeTab
@@ -202,12 +218,13 @@ export function ProjectSettingsReferenceScreen({
     setTokenDialogOpen(false);
   }, [activeTab]);
   useEffect(() => {
+    if (!settingsMatchProject) return;
     if (!visibleTabs.some((tab) => tab.id === activeTab)) {
       const fallback = visibleTabs[0]?.id ?? "tokens";
       setActiveTab(fallback);
       onOpenTab?.(fallback);
     }
-  }, [activeTab, onOpenTab, visibleTabs]);
+  }, [activeTab, onOpenTab, settingsMatchProject, visibleTabs]);
 
   const createOwnToken = async () => {
     try {
@@ -315,6 +332,26 @@ export function ProjectSettingsReferenceScreen({
     }
   };
 
+  if (!settingsMatchProject) {
+    return (
+      <main className="project-settings" aria-label="Настройки проекта">
+        <section className="project-settings__workspace" aria-labelledby="project-settings-title">
+          <header className="project-settings__header">
+            <div>
+              <h1 id="project-settings-title">Настройки проекта</h1>
+              <p>{apiStatus === "error" ? "Настройки недоступны" : "Загружаем проект…"}</p>
+            </div>
+          </header>
+          {apiStatus === "error" ? (
+            <SettingsErrorState message={apiMessage} />
+          ) : (
+            <p role="status">Загружаем настройки выбранного проекта…</p>
+          )}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="project-settings" aria-label="Настройки проекта">
       <section className="project-settings__workspace" aria-labelledby="project-settings-title">
@@ -365,6 +402,23 @@ export function ProjectSettingsReferenceScreen({
             );
           })}
         </nav>
+        <label className="project-settings__mobile-tab-picker">
+          <span>Раздел настроек</span>
+          <select
+            value={visibleActiveTab}
+            onChange={(event) => {
+              const nextTab = event.target.value as SettingsTab;
+              setActiveTab(nextTab);
+              onOpenTab?.(nextTab);
+            }}
+          >
+            {visibleTabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         {apiStatus === "error" ? <SettingsErrorState message={apiMessage} /> : null}
         {settingsAccess.state !== "write" ? <SettingsAccessState access={settingsAccess} /> : null}
@@ -718,10 +772,10 @@ function RetentionTab({
       >
         <div className="project-settings__table-head" role="row">
           <span role="columnheader">Тип</span>
-          <span role="columnheader">Пройден</span>
-          <span role="columnheader">Провален</span>
-          <span role="columnheader">Карантин</span>
-          <span role="columnheader">Лимит</span>
+          <span role="columnheader">Пройден, дн.</span>
+          <span role="columnheader">Провален, дн.</span>
+          <span role="columnheader">Карантин, дн.</span>
+          <span role="columnheader">Лимит, МБ</span>
         </div>
         {retention.retentionPolicies.map((policy) => (
           <div className="project-settings__table-row" key={policy.id} role="row">

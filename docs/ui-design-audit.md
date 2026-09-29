@@ -6,7 +6,7 @@ screens, clear list/detail hierarchy, restrained cards, and readable tables.
 
 ## Review Update · 2026-09-29
 
-The current pass builds on earlier ordinary-user and UI/UX reviews, uses 34 synthetic 1440×1000
+The current pass builds on earlier ordinary-user and UI/UX reviews, uses 35 synthetic 1440×1000
 screenshots for visual checks, and was checked against the official [TestOps 26.3 release notes](https://docs.qameta.io/reference/release-notes/),
 [launches](https://docs.qameta.io/use-testops/test-plans-and-launches/launches-overview/),
 [test results](https://docs.qameta.io/use-testops/results-and-analytics/test-results/), and
@@ -27,9 +27,20 @@ Result durations use the same Russian units across detail surfaces. The screensh
 includes populated automation, launch errors, charts, comparison, result and test-case tabs,
 settings, and dialogs.
 
-Product gaps visible in the comparison: dashboard widgets currently aggregate one selected
-launch, while project-wide analysis lives on a separate Analytics screen; the comparison view
-does not yet provide a TestOps-style multi-launch matrix.
+The subsequent review added a project trend above the selected-launch widgets, with an explicit
+one-launch state and a direct link to project analytics. Comparison now supports a 2–5 launch
+matrix with shared test rows, status history, filters, pagination, and links to source results.
+The errors view reads a bounded summary across the entire launch, opens a report immediately,
+and keeps the selected error visible in the list. Automation and settings gained compact empty
+states, mobile section navigation, visible action errors, and safer project switching. The
+test-plan cards now open an edit form. The search field now has one clear action, and retention
+columns show their units. When a project has only one launch, the dashboard shows a compact
+explanation instead of repeating the same success rate above its widgets.
+
+The screenshot fixture contains one actual project launch, so the trend's multi-launch shape is
+covered by component tests rather than the static dashboard screenshot. For very large projects,
+the trend query should eventually use a dedicated aggregate instead of materializing all
+results through the general analytics query.
 
 ## Target UI Contract
 
@@ -61,9 +72,8 @@ does not yet provide a TestOps-style multi-launch matrix.
 
 ## Next Priorities
 
-- Add a multi-launch comparison matrix if cross-launch trend analysis is a product requirement.
-- Decide whether project trends belong on the dashboard or remain in Analytics; the scope labels
-  should stay explicit either way.
+- Keep the dashboard and Analytics scope labels explicit as more project-wide charts are added.
+- Exercise the multi-launch trend and matrix with larger, varied project histories.
 - Add visual fixtures for longer URLs, token names, scopes, and custom field mappings.
 - Continue making empty, loading, denied, error, and partial states consistent across less-used
   dialogs and project workflows.
@@ -85,6 +95,7 @@ Run `npm run screenshots:capture` locally when Playwright Chromium is available,
 - `launch-errors`
 - `launch-charts`
 - `launch-comparison`
+- `launch-comparison-matrix`
 - `selected-test-case`
 - `selected-test-case-history`
 - `selected-test-case-defects`

@@ -5,6 +5,7 @@ import { launchChromiumWithFallback } from "./playwright-browser.mjs";
 import { startPreviewServer, stopPreviewServer } from "./preview-server.mjs";
 import { createEmptyUiApiResponse, createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
 import { seedDashboardOwnerWidgets } from "./ui-dashboard-screen-state.mjs";
+import { showComparisonMatrix } from "./ui-comparison-screen-state.mjs";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const expectedManifest = JSON.parse(
@@ -36,6 +37,11 @@ const allScreens = [
       await page.getByRole("button", { name: "Сравнить", exact: true }).click();
     }
   },
+  {
+    name: "launch-comparison-matrix",
+    hash: "#launch/L-1289/comparison",
+    interact: showComparisonMatrix
+  },
   { name: "selected-test-case", hash: "#case/PAY-1042/overview" },
   { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
   { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
@@ -45,12 +51,12 @@ const allScreens = [
   {
     name: "automation-jobs",
     hash: "#automation",
-    interact: async (page) => page.getByRole("button", { name: /CI-задачи/ }).click()
+    interact: async (page) => page.getByRole("tab", { name: /CI-задачи/ }).click()
   },
   {
     name: "automation-integrations",
     hash: "#automation",
-    interact: async (page) => page.getByRole("button", { name: /Интеграции/ }).click()
+    interact: async (page) => page.getByRole("tab", { name: /Интеграции/ }).click()
   },
   { name: "analytics", hash: "#analytics" },
   { name: "settings-access", hash: "#settings/access" },

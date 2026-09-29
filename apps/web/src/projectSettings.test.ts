@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createProjectSettingsApiToken,
+  formatMemberActivity,
   getProjectSettingsAccess,
   loadProjectSettingsFromApi,
   revokeProjectSettingsApiToken,
@@ -9,6 +10,12 @@ import {
 } from "./projectSettings.js";
 
 const project = { id: "project-1", key: "PRJ", name: "Project" };
+
+it("formats API membership timestamps without changing human activity labels", () => {
+  expect(formatMemberActivity("2026-06-03T09:41:00.000Z")).toMatch(/^\d{2}\.\d{2}\.2026,/);
+  expect(formatMemberActivity("сегодня, 12:10")).toBe("сегодня, 12:10");
+  expect(formatMemberActivity(undefined)).toBe("нет данных");
+});
 const artifactSettings = {
   kind: "project-artifact-settings",
   projectId: "project-1",

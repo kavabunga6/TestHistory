@@ -13,48 +13,27 @@ import {
   buildServerAnalyticsModel,
   excludePrioritySignals,
   formatCount,
-  formatDurationMilliseconds,
-  formatLaunchSeriesCount,
   formatStatus,
-  formatTrendDate,
   type AnalyticsSignal
 } from "./AnalyticsReferenceModel.js";
 import { useProjectAnalyticsResults } from "./AnalyticsReferenceData.js";
-
-export type AnalyticsRunReadModel = {
-  result: {
-    metrics: {
-      count: number;
-      statusCounters: Record<string, number>;
-      passRate: number | null;
-      failureRate: number | null;
-      averageDurationMs: number | null;
-      p50DurationMs: number | null;
-      p95DurationMs: number | null;
-    };
-    series: Array<{
-      id: string;
-      name: string;
-      createdAt: string;
-      metrics: { count: number; passRate: number | null; averageDurationMs: number | null };
-    }>;
-  };
-};
+import { ProjectLaunchTrend } from "./ProjectLaunchTrend.js";
+import { useProjectLaunchTrend } from "./useProjectLaunchTrend.js";
 
 export function AnalyticsReferenceContent({
   hasQuery,
+  launchTrend,
   model,
   onOpenResult,
   projectResults,
-  serverReady,
-  trendRead
+  serverReady
 }: {
   hasQuery: boolean;
+  launchTrend: ReturnType<typeof useProjectLaunchTrend>;
   model: ReturnType<typeof buildAnalyticsModel> | ReturnType<typeof buildServerAnalyticsModel>;
   onOpenResult?: ((id: string, launchId?: string) => void) | undefined;
   projectResults: ReturnType<typeof useProjectAnalyticsResults>;
   serverReady: boolean;
-  trendRead?: AnalyticsRunReadModel["result"] | undefined;
 }) {
   const distinctSlowSignals = excludePrioritySignals(model.prioritySignals, model.slowSignals);
 
@@ -95,49 +74,7 @@ export function AnalyticsReferenceContent({
         />
       </div>
 
-      {serverReady && !hasQuery && trendRead !== undefined && trendRead.series.length > 0 ? (
-        <section className="analytics-reference-trend" aria-label="Динамика запусков">
-          <div className="analytics-reference-panel-title">
-            <BarChart3 size={18} />
-            <h3>Динамика запусков</h3>
-            <span>{formatLaunchSeriesCount(Math.min(12, trendRead.series.length))}</span>
-          </div>
-          <div
-            className="analytics-reference-trend-bars"
-            style={{
-              gridTemplateColumns: `repeat(${Math.min(12, trendRead.series.length)}, minmax(0, 1fr))`
-            }}
-          >
-            {trendRead.series.slice(-12).map((point) => {
-              const percent = Math.round((point.metrics.passRate ?? 0) * 100);
-              return (
-                <article key={point.id} title={`${point.name}: ${percent}%`}>
-                  <div>
-                    <i style={{ height: `${Math.max(3, percent)}%` }} />
-                  </div>
-                  <strong>{percent}%</strong>
-                  <small className="analytics-reference-trend-name">{point.name}</small>
-                  <span>{formatTrendDate(point.createdAt)}</span>
-                </article>
-              );
-            })}
-          </div>
-          <div className="analytics-reference-percentiles">
-            <span>
-              <small>Медиана</small>
-              <strong>{formatDurationMilliseconds(trendRead.metrics.p50DurationMs)}</strong>
-            </span>
-            <span>
-              <small>95-й перцентиль</small>
-              <strong>{formatDurationMilliseconds(trendRead.metrics.p95DurationMs)}</strong>
-            </span>
-            <span>
-              <small>Результатов</small>
-              <strong>{formatCount(trendRead.metrics.count)}</strong>
-            </span>
-          </div>
-        </section>
-      ) : null}
+      {serverReady && !hasQuery ? <ProjectLaunchTrend trend={launchTrend} /> : null}
 
       <div className="analytics-reference-grid">
         <section

@@ -1,5 +1,5 @@
 import { KeyRound, Plus, RefreshCw, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createOidcProvider,
   discoverOidcProvider,
@@ -35,49 +35,105 @@ export function EnterpriseAccessPanel({
   canEdit: boolean;
   projectId: string;
 }) {
+  return <EnterpriseAccessProjectPanel canEdit={canEdit} key={projectId} projectId={projectId} />;
+}
+
+function EnterpriseAccessProjectPanel({
+  canEdit,
+  projectId
+}: {
+  canEdit: boolean;
+  projectId: string;
+}) {
   const [read, setRead] = useState<EnterpriseAccessRead>();
   const [draft, setDraft] = useState<OidcProviderInput>(emptyProvider);
   const [formOpen, setFormOpen] = useState(false);
-  const [message, setMessage] = useState("Загружаем enterprise-доступ…");
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
   const [scimRole, setScimRole] = useState<EnterpriseRole>("viewer");
   const [scimSecret, setScimSecret] = useState<string>();
+  const [rotating, setRotating] = useState(false);
+  const active = useRef(false);
+  const requestSequence = useRef(0);
+  const rotationPending = useRef(false);
 
   const reload = async () => {
+    const sequence = ++requestSequence.current;
+    setLoading(true);
+    setMessage("");
     try {
       const value = await loadEnterpriseAccess(projectId);
+      if (!active.current || sequence !== requestSequence.current) return false;
       setRead(value);
       setScimRole(value.scimProvisioning?.defaultRole ?? "viewer");
-      setMessage("Enterprise-доступ загружен");
+      return true;
     } catch (error) {
+      if (!active.current || sequence !== requestSequence.current) return false;
       setMessage(error instanceof Error ? error.message : "Enterprise API недоступен");
+      return false;
+    } finally {
+      if (active.current && sequence === requestSequence.current) setLoading(false);
     }
   };
 
   useEffect(() => {
+    active.current = true;
     void reload();
+    return () => {
+      active.current = false;
+      requestSequence.current += 1;
+    };
   }, [projectId]);
 
   const addProvider = async () => {
     try {
       await createOidcProvider(projectId, draft);
+      if (!active.current) return;
       setDraft(emptyProvider);
       setFormOpen(false);
-      setMessage("OIDC-провайдер добавлен");
-      await reload();
+      if (await reload()) {
+        setMessage("OIDC-провайдер добавлен");
+      }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не удалось добавить OIDC-провайдер");
+      if (active.current) {
+        setMessage(error instanceof Error ? error.message : "Не удалось добавить OIDC-провайдер");
+      }
     }
   };
 
   const rotateToken = async () => {
+    if (rotationPending.current) return;
+    rotationPending.current = true;
+    setRotating(true);
     try {
       const receipt = await rotateScimToken(projectId, scimRole);
+      if (!active.current) return;
       setScimSecret(receipt.secret);
-      setMessage("SCIM-токен создан и показан один раз");
-      await reload();
+      if (await reload()) {
+        setMessage("SCIM-токен создан и показан один раз");
+      }
     } catch (error) {
-      setScimSecret(undefined);
-      setMessage(error instanceof Error ? error.message : "Не удалось создать SCIM-токен");
+      if (active.current) {
+        setScimSecret(undefined);
+        setMessage(error instanceof Error ? error.message : "Не удалось создать SCIM-токен");
+      }
+    } finally {
+      rotationPending.current = false;
+      if (active.current) setRotating(false);
+    }
+  };
+
+  const toggleProvider = async (providerId: string, enabled: boolean) => {
+    try {
+      await toggleOidcProvider(projectId, providerId, enabled);
+      if (!active.current) return;
+      if (await reload()) {
+        setMessage(enabled ? "OIDC-провайдер включён" : "OIDC-провайдер выключен");
+      }
+    } catch (error) {
+      if (active.current) {
+        setMessage(error instanceof Error ? error.message : "Не удалось изменить провайдер");
+      }
     }
   };
 
@@ -165,15 +221,20 @@ export function EnterpriseAccessPanel({
                 {provider.enabled ? "активен" : "выключен"}
               </Badge>
               <button
+                aria-label={`Проверить OIDC discovery для ${provider.name}`}
                 className="project-settings__icon-button"
                 title="Проверить OIDC discovery"
                 type="button"
                 onClick={() =>
                   void discoverOidcProvider(projectId, provider.id)
-                    .then(() => setMessage("OIDC discovery подтверждён"))
-                    .catch((error: unknown) =>
-                      setMessage(error instanceof Error ? error.message : "Discovery недоступен")
-                    )
+                    .then(() => {
+                      if (active.current) setMessage("OIDC discovery подтверждён");
+                    })
+                    .catch((error: unknown) => {
+                      if (active.current) {
+                        setMessage(error instanceof Error ? error.message : "Discovery недоступен");
+                      }
+                    })
                 }
               >
                 <RefreshCw aria-hidden="true" size={15} />
@@ -182,53 +243,74 @@ export function EnterpriseAccessPanel({
                 <button
                   className="project-settings__button"
                   type="button"
-                  onClick={() =>
-                    void toggleOidcProvider(projectId, provider.id, !provider.enabled).then(reload)
-                  }
+                  onClick={() => void toggleProvider(provider.id, !provider.enabled)}
                 >
                   {provider.enabled ? "Выключить" : "Включить"}
                 </button>
               ) : null}
             </article>
           ))}
-          {(read?.oidcProviders?.length ?? 0) === 0 ? (
+          {read !== undefined && (read.oidcProviders?.length ?? 0) === 0 ? (
             <p className="project-settings__enterprise-empty">OIDC-провайдеры не настроены.</p>
+          ) : null}
+          {read === undefined ? (
+            <p className="project-settings__enterprise-empty">
+              {loading ? "Загружаем провайдеров…" : "Провайдеры недоступны."}
+            </p>
           ) : null}
         </div>
 
         <div className="project-settings__enterprise-column">
           <h3>SCIM 2.0</h3>
-          <article className="project-settings__enterprise-card project-settings__enterprise-card--scim">
-            <KeyRound aria-hidden="true" size={20} />
-            <div>
-              <strong>
-                {read?.scimProvisioning?.enabled ? "Провижининг включён" : "Токен не создан"}
-              </strong>
-              <span>
-                {read?.scimProvisioning?.tokenPrefix ??
-                  "SCIM endpoint появится после создания токена"}
-              </span>
-              <small>Пользователей из SCIM: {read?.scimUsers ?? 0}</small>
-            </div>
-            <div className="project-settings__enterprise-actions">
-              <RoleSelect disabled={!canEdit} value={scimRole} onChange={setScimRole} />
-              {canEdit ? (
-                <button
-                  className="project-settings__button"
-                  type="button"
-                  onClick={() => void rotateToken()}
-                >
-                  {read?.scimProvisioning ? "Ротировать" : "Создать токен"}
-                </button>
-              ) : null}
-            </div>
-          </article>
+          {read === undefined ? (
+            <p className="project-settings__enterprise-empty">
+              {loading ? "Загружаем настройки SCIM…" : "Настройки SCIM недоступны."}
+            </p>
+          ) : (
+            <article className="project-settings__enterprise-card project-settings__enterprise-card--scim">
+              <KeyRound aria-hidden="true" size={20} />
+              <div>
+                <strong>
+                  {read?.scimProvisioning?.enabled ? "Провижининг включён" : "Токен не создан"}
+                </strong>
+                <span>
+                  {read?.scimProvisioning?.tokenPrefix ??
+                    "SCIM endpoint появится после создания токена"}
+                </span>
+                <small>Пользователей из SCIM: {read?.scimUsers ?? 0}</small>
+              </div>
+              <div className="project-settings__enterprise-actions">
+                <label className="project-settings__enterprise-role">
+                  <span>Роль новых пользователей</span>
+                  <RoleSelect disabled={!canEdit} value={scimRole} onChange={setScimRole} />
+                </label>
+                {canEdit ? (
+                  <button
+                    className="project-settings__button"
+                    disabled={rotating}
+                    type="button"
+                    onClick={() => void rotateToken()}
+                  >
+                    {rotating
+                      ? "Создаём токен…"
+                      : read?.scimProvisioning
+                        ? "Ротировать"
+                        : "Создать токен"}
+                  </button>
+                ) : null}
+              </div>
+            </article>
+          )}
           {scimSecret !== undefined ? (
             <code className="project-settings__enterprise-secret">{scimSecret}</code>
           ) : null}
         </div>
       </div>
-      <p className="project-settings__enterprise-message">{message}</p>
+      {message ? (
+        <p className="project-settings__enterprise-message" role="status">
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }

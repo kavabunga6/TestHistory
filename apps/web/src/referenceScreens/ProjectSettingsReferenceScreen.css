@@ -268,6 +268,10 @@
   content: "";
 }
 
+.project-settings__mobile-tab-picker {
+  display: none;
+}
+
 .project-settings__grid {
   display: grid;
   gap: 16px;
@@ -555,6 +559,7 @@
 .project-settings__enterprise-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 12px;
   padding: 16px;
   background: #f8fafc;
@@ -615,7 +620,19 @@
 }
 
 .project-settings__enterprise-actions select {
-  width: min(190px, 100%);
+  width: 100%;
+}
+
+.project-settings__enterprise-role {
+  display: grid;
+  min-width: 160px;
+  max-width: 220px;
+  gap: 5px;
+}
+
+.project-settings__enterprise-role > span {
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .project-settings__enterprise-card strong,
@@ -643,7 +660,8 @@
   margin: 0;
   padding: 16px;
   color: #66758a;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .project-settings__enterprise-message {
@@ -1554,6 +1572,7 @@
   .project-settings__header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 12px;
     padding: 16px var(--workspace-page-gutter, 12px);
   }
 
@@ -1605,35 +1624,57 @@
 }
 
 @media (max-width: 600px) {
+  .project-settings__tabs {
+    display: none;
+  }
+
+  .project-settings__mobile-tab-picker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #dfe5ee;
+    padding: 8px var(--workspace-page-gutter, 12px);
+    background: #ffffff;
+    color: #526172;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .project-settings__mobile-tab-picker select {
+    min-width: 0;
+    min-height: 38px;
+    flex: 1 1 auto;
+    font-size: 14px;
+  }
+
   .project-settings__summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0;
-    overflow: visible;
+    flex-wrap: nowrap;
+    overflow: hidden;
   }
 
   .project-settings__api-status {
-    justify-self: start;
+    min-width: 42px;
+    min-height: 34px;
+    padding: 0 7px;
+    font-size: 11px;
   }
 
   .project-settings__summary-item {
     min-width: 0;
+    min-height: 40px;
+    flex: 1 1 0;
     border-left: 1px solid #dfe5ee;
-    padding: 6px 10px;
+    padding: 3px 6px;
   }
 
-  .project-settings__summary-item:nth-child(3) {
-    border-top: 1px solid #dfe5ee;
-    border-left: 0;
-  }
-
-  .project-settings__summary-item:nth-child(4) {
-    border-top: 1px solid #dfe5ee;
+  .project-settings__summary-item strong {
+    font-size: 14px;
   }
 
   .project-settings__summary-item span {
     overflow-wrap: anywhere;
-    line-height: 1.25;
+    font-size: 10px;
+    line-height: 1.2;
   }
 
   .project-settings__settings-list-row {

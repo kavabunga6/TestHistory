@@ -56,6 +56,11 @@
   font: inherit;
 }
 
+.thql-search__field input::-webkit-search-cancel-button,
+.thql-search__field input::-webkit-search-decoration {
+  display: none;
+}
+
 .thql-search__field input::placeholder {
   color: #748094;
   opacity: 1;

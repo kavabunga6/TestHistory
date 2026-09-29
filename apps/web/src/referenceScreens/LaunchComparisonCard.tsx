@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { getJson } from "../apiHttp.js";
 import type { LaunchListItem } from "../m1Workspace.js";
+import {
+  LaunchComparisonMatrix,
+  type LaunchComparisonMatrixSession
+} from "./LaunchComparisonMatrix.js";
 import { getLaunchTotal } from "./LaunchesReferenceModel.js";
 import { ReferenceListPagination, type ReferenceListPageSize } from "./ReferenceListPagination.js";
 import { useLaunchComparisonCandidates } from "./useLaunchComparisonCandidates.js";
@@ -58,6 +62,8 @@ export type LaunchComparisonSession = {
   filter?: ComparisonFilter;
   page?: number;
   pageSize?: ReferenceListPageSize;
+  mode?: "pair" | "matrix";
+  matrixSession?: LaunchComparisonMatrixSession;
 };
 
 export function LaunchComparisonScreen({
@@ -85,7 +91,23 @@ export function LaunchComparisonScreen({
   const [filter, setFilter] = useState<ComparisonFilter>(initialSession?.filter ?? "all");
   const [page, setPage] = useState(initialSession?.page ?? 0);
   const [pageSize, setPageSize] = useState<ReferenceListPageSize>(initialSession?.pageSize ?? 25);
+  const [mode, setMode] = useState<"pair" | "matrix">(initialSession?.mode ?? "pair");
+  const [matrixSession, setMatrixSession] = useState<LaunchComparisonMatrixSession>(
+    initialSession?.matrixSession ?? {
+      selectedIds: initialSession?.baselineId ? [initialSession.baselineId] : [],
+      focus: "all",
+      page: 0,
+      pageSize: 25
+    }
+  );
   const requestController = useRef<AbortController | undefined>(undefined);
+  const sessionRef = useRef<LaunchComparisonSession>(initialSession ?? { baselineId: "" });
+
+  const persistSession = (update: Partial<LaunchComparisonSession>) => {
+    const next = { ...sessionRef.current, ...update };
+    sessionRef.current = next;
+    onSessionChange?.(next);
+  };
 
   useEffect(() => {
     requestController.current?.abort();
@@ -95,6 +117,16 @@ export function LaunchComparisonScreen({
     setFilter(initialSession?.filter ?? "all");
     setPage(initialSession?.page ?? 0);
     setPageSize(initialSession?.pageSize ?? 25);
+    setMode(initialSession?.mode ?? "pair");
+    setMatrixSession(
+      initialSession?.matrixSession ?? {
+        selectedIds: initialSession?.baselineId ? [initialSession.baselineId] : [],
+        focus: "all",
+        page: 0,
+        pageSize: 25
+      }
+    );
+    sessionRef.current = initialSession ?? { baselineId: "" };
   }, [launch.id]);
 
   useEffect(() => () => requestController.current?.abort(), []);
@@ -114,7 +146,13 @@ export function LaunchComparisonScreen({
     setFilter(nextFilter);
     setComparison(undefined);
     setComparisonState("loading");
-    onSessionChange?.({ baselineId, filter: nextFilter, page: nextPage, pageSize: nextPageSize });
+    persistSession({
+      baselineId,
+      comparison: undefined,
+      filter: nextFilter,
+      page: nextPage,
+      pageSize: nextPageSize
+    });
 
     try {
       const params = new URLSearchParams({
@@ -131,7 +169,7 @@ export function LaunchComparisonScreen({
       if (controller.signal.aborted) return;
       setComparison(value);
       setComparisonState("ready");
-      onSessionChange?.({
+      persistSession({
         baselineId,
         comparison: value,
         filter: nextFilter,
@@ -152,7 +190,13 @@ export function LaunchComparisonScreen({
     setComparisonState("idle");
     setPage(0);
     setFilter("all");
-    onSessionChange?.({ baselineId: nextBaselineId, filter: "all", page: 0, pageSize });
+    persistSession({
+      baselineId: nextBaselineId,
+      comparison: undefined,
+      filter: "all",
+      page: 0,
+      pageSize
+    });
   };
 
   return (
@@ -164,232 +208,294 @@ export function LaunchComparisonScreen({
           </span>
           <span>
             <h1>Сравнение запусков</h1>
-            <p>Выберите базовый прогон. Данные сравнения загрузятся только после подтверждения.</p>
+            <p>
+              {mode === "pair"
+                ? "Найдите изменения между двумя запусками."
+                : "Проследите статус каждого теста в нескольких запусках."}
+            </p>
           </span>
         </header>
 
-        <div className="launches-reference-comparison-request">
-          <label className="launches-reference-comparison-picker">
-            <span>Сравнить текущий запуск с</span>
-            <select
-              value={baselineId}
-              disabled={candidates.length === 0 || comparisonState === "loading"}
-              onChange={(event) => resetSelection(event.target.value)}
-            >
-              <option value="">
-                {candidates.length === 0 && candidateStatus === "loading"
-                  ? "Загружаем запуски…"
-                  : candidates.length === 0
-                    ? hasMoreCandidates
-                      ? "Загрузите более ранние запуски"
-                      : "Нет доступных запусков"
-                    : "Выберите запуск"}
-              </option>
-              {candidates.map((item) => {
-                const label = formatLaunchOption(item);
-                return (
-                  <option key={item.id} title={label} value={item.id}>
-                    {label}
-                  </option>
-                );
-              })}
-            </select>
-          </label>
+        <div
+          className="launches-reference-comparison-mode"
+          role="group"
+          aria-label="Режим сравнения"
+        >
           <button
-            className="launches-reference-comparison-submit"
-            disabled={baselineId === "" || comparisonState === "loading"}
+            aria-pressed={mode === "pair"}
+            onClick={() => {
+              requestController.current?.abort();
+              if (comparisonState === "loading") setComparisonState("idle");
+              setMode("pair");
+              persistSession({ mode: "pair" });
+            }}
             type="button"
-            onClick={() => void requestComparison(0)}
           >
-            {comparisonState === "loading" ? (
-              <LoaderCircle className="is-spinning" aria-hidden="true" />
-            ) : (
-              <GitCompareArrows aria-hidden="true" />
-            )}
-            <span>{comparisonState === "loading" ? "Сравниваем…" : "Сравнить"}</span>
+            Два запуска
+          </button>
+          <button
+            aria-pressed={mode === "matrix"}
+            onClick={() => {
+              requestController.current?.abort();
+              if (comparisonState === "loading") setComparisonState("idle");
+              setMode("matrix");
+              persistSession({ mode: "matrix" });
+            }}
+            type="button"
+          >
+            Матрица запусков
           </button>
         </div>
 
-        {candidateStatus === "error" || hasMoreCandidates ? (
-          <div className="launches-reference-comparison-candidates-note" role="status">
-            <span>
-              {candidateStatus === "error"
-                ? "Не удалось загрузить полный список запусков."
-                : "Есть более ранние запуски, которые пока не показаны."}
-            </span>
-            {candidateStatus === "error" ? (
-              <button type="button" onClick={reload}>
-                Повторить загрузку
-              </button>
-            ) : (
-              <button
-                disabled={candidateStatus === "loading-more"}
-                type="button"
-                onClick={() => void loadMore()}
-              >
-                {candidateStatus === "loading-more" ? "Загружаем…" : "Показать более ранние"}
-              </button>
-            )}
-          </div>
-        ) : null}
-
-        {comparisonState === "idle" ? (
-          <div className="launches-reference-comparison-empty">
-            <GitCompareArrows aria-hidden="true" />
-            <strong>
-              {candidates.length > 0
-                ? "Выберите запуск для сравнения"
-                : candidateStatus === "loading"
-                  ? "Загружаем запуски проекта…"
-                  : candidateStatus === "error"
-                    ? "Список запусков не загрузился"
-                    : hasMoreCandidates
-                      ? "Показать более ранние запуски"
-                      : "Нет другого запуска для сравнения"}
-            </strong>
-            <span>
-              {candidates.length > 0
-                ? "Выберите базовый запуск и нажмите «Сравнить»."
-                : candidateStatus === "ready" && !hasMoreCandidates
-                  ? "Сравнение станет доступно после появления ещё одного запуска в проекте."
-                  : "Если нужного запуска нет на текущей странице, он появится после загрузки списка проекта."}
-            </span>
-          </div>
-        ) : null}
-        {comparisonState === "loading" ? (
-          <p className="launches-reference-comparison-message">Сравниваем запуски…</p>
-        ) : null}
-        {comparisonState === "error" ? (
-          <p className="launches-reference-comparison-message is-error">
-            Не удалось загрузить сравнение. Проверьте доступность выбранного запуска и повторите
-            запрос.
-          </p>
-        ) : null}
-        {comparison !== undefined ? (
-          <div className="launches-reference-comparison-result">
-            <div className="launches-reference-comparison-pair">
-              <span>
-                <small>Базовый запуск</small>
-                <strong>{comparison.base.name}</strong>
-              </span>
-              <GitCompareArrows aria-hidden="true" />
-              <span>
-                <small>Текущий запуск</small>
-                <strong>{comparison.target.name}</strong>
-              </span>
-            </div>
-            <div className="launches-reference-comparison-metrics" aria-label="Изменения запуска">
-              <ComparisonMetric
-                label="Регрессии"
-                tone="regressed"
-                value={comparison.summary.regressed}
-              />
-              <ComparisonMetric label="Исправлено" tone="fixed" value={comparison.summary.fixed} />
-              <ComparisonMetric label="Новые тесты" tone="new" value={comparison.summary.new} />
-              <ComparisonMetric
-                label="Замедлились"
-                tone="slower"
-                value={comparison.summary.durationRegressions}
-              />
-              <ComparisonMetric
-                label="Успешность"
-                tone="neutral"
-                value={formatPercentDelta(comparison.metricDeltas.passRate)}
-              />
-            </div>
-            <div className="launches-reference-comparison-table-toolbar">
-              <strong>Тесты в сравнении</strong>
-              <label>
-                <span>Изменение</span>
+        {mode === "pair" ? (
+          <>
+            <div className="launches-reference-comparison-request">
+              <label className="launches-reference-comparison-picker">
+                <span>Сравнить текущий запуск с</span>
                 <select
-                  aria-label="Фильтр изменений в сравнении"
-                  disabled={comparisonState === "loading"}
-                  value={filter}
-                  onChange={(event) =>
-                    void requestComparison(0, pageSize, event.target.value as ComparisonFilter)
-                  }
+                  value={baselineId}
+                  disabled={candidates.length === 0 || comparisonState === "loading"}
+                  onChange={(event) => resetSelection(event.target.value)}
                 >
-                  <option value="all">Все</option>
-                  <option value="regressed">Регрессии</option>
-                  <option value="fixed">Исправлено</option>
-                  <option value="new">Новые</option>
-                  <option value="removed">Удалённые</option>
-                  <option value="status-changed">Статус изменён</option>
-                  <option value="unchanged">Без изменения</option>
+                  <option value="">
+                    {candidates.length === 0 && candidateStatus === "loading"
+                      ? "Загружаем запуски…"
+                      : candidates.length === 0
+                        ? hasMoreCandidates
+                          ? "Загрузите более ранние запуски"
+                          : "Нет доступных запусков"
+                        : "Выберите запуск"}
+                  </option>
+                  {candidates.map((item) => {
+                    const label = formatLaunchOption(item);
+                    return (
+                      <option key={item.id} title={label} value={item.id}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
+              <button
+                className="launches-reference-comparison-submit"
+                disabled={baselineId === "" || comparisonState === "loading"}
+                type="button"
+                onClick={() => void requestComparison(0)}
+              >
+                {comparisonState === "loading" ? (
+                  <LoaderCircle className="is-spinning" aria-hidden="true" />
+                ) : (
+                  <GitCompareArrows aria-hidden="true" />
+                )}
+                <span>{comparisonState === "loading" ? "Сравниваем…" : "Сравнить"}</span>
+              </button>
             </div>
-            <div
-              className="launches-reference-comparison-list"
-              role="table"
-              aria-label="Отличия тестов между запусками"
-            >
-              <div className="launches-reference-comparison-table-head" role="row">
-                <span role="columnheader">Тест</span>
-                <span role="columnheader">Базовый прогон</span>
-                <span role="columnheader">Текущий прогон</span>
-                <span role="columnheader">Изменение</span>
-                <span role="columnheader">Разница времени</span>
+
+            {candidateStatus === "error" || hasMoreCandidates ? (
+              <div className="launches-reference-comparison-candidates-note" role="status">
+                <span>
+                  {candidateStatus === "error"
+                    ? "Не удалось загрузить полный список запусков."
+                    : "Есть более ранние запуски, которые пока не показаны."}
+                </span>
+                {candidateStatus === "error" ? (
+                  <button type="button" onClick={reload}>
+                    Повторить загрузку
+                  </button>
+                ) : (
+                  <button
+                    disabled={candidateStatus === "loading-more"}
+                    type="button"
+                    onClick={() => void loadMore()}
+                  >
+                    {candidateStatus === "loading-more" ? "Загружаем…" : "Показать более ранние"}
+                  </button>
+                )}
               </div>
-              {comparison.rows.map((row) => (
-                <button
-                  className={`launches-reference-comparison-row is-${row.change}`}
-                  disabled={row.target === undefined && row.base === undefined}
-                  key={row.testCaseId}
-                  role="row"
-                  type="button"
-                  onClick={() => {
-                    const point = row.target ?? row.base;
-                    if (point !== undefined) {
-                      onSelectResult(
-                        point.resultUuid,
-                        row.target === undefined ? comparison.base.id : undefined
-                      );
-                    }
-                  }}
+            ) : null}
+
+            {comparisonState === "idle" ? (
+              <div className="launches-reference-comparison-empty">
+                <GitCompareArrows aria-hidden="true" />
+                <strong>
+                  {candidates.length > 0
+                    ? "Выберите запуск для сравнения"
+                    : candidateStatus === "loading"
+                      ? "Загружаем запуски проекта…"
+                      : candidateStatus === "error"
+                        ? "Список запусков не загрузился"
+                        : hasMoreCandidates
+                          ? "Показать более ранние запуски"
+                          : "Нет другого запуска для сравнения"}
+                </strong>
+                <span>
+                  {candidates.length > 0
+                    ? "Выберите базовый запуск и нажмите «Сравнить»."
+                    : candidateStatus === "ready" && !hasMoreCandidates
+                      ? "Сравнение станет доступно после появления ещё одного запуска в проекте."
+                      : "Если нужного запуска нет на текущей странице, он появится после загрузки списка проекта."}
+                </span>
+              </div>
+            ) : null}
+            {comparisonState === "loading" ? (
+              <p className="launches-reference-comparison-message">Сравниваем запуски…</p>
+            ) : null}
+            {comparisonState === "error" ? (
+              <p className="launches-reference-comparison-message is-error">
+                Не удалось загрузить сравнение. Проверьте доступность выбранного запуска и повторите
+                запрос.
+              </p>
+            ) : null}
+            {comparison !== undefined ? (
+              <div className="launches-reference-comparison-result">
+                <div className="launches-reference-comparison-pair">
+                  <span>
+                    <small>Базовый запуск</small>
+                    <strong>{comparison.base.name}</strong>
+                  </span>
+                  <GitCompareArrows aria-hidden="true" />
+                  <span>
+                    <small>Текущий запуск</small>
+                    <strong>{comparison.target.name}</strong>
+                  </span>
+                </div>
+                <div
+                  className="launches-reference-comparison-metrics"
+                  aria-label="Изменения запуска"
                 >
-                  <span className="launches-reference-comparison-test" role="cell">
-                    <strong>{row.name}</strong>
-                    <small>{row.testCaseId}</small>
-                  </span>
-                  <ComparisonPoint point={row.base} role="cell" />
-                  <ComparisonPoint point={row.target} role="cell" />
-                  <span
-                    className={`launches-reference-comparison-change typography-role-meta is-${row.change}`}
-                    role="cell"
-                  >
-                    {formatComparisonChange(row.change)}
-                  </span>
-                  <em
-                    className={`launches-reference-comparison-duration typography-role-meta is-${row.durationTrend}`}
-                    role="cell"
-                  >
-                    {row.durationDeltaMs === undefined
-                      ? "—"
-                      : formatDurationDelta(row.durationDeltaMs)}
-                  </em>
-                </button>
-              ))}
-              {comparison.rows.length === 0 ? (
-                <p className="launches-reference-comparison-message">
-                  {filter === "all"
-                    ? "Тестов для сравнения нет."
-                    : "Тестов с таким изменением нет."}
-                </p>
-              ) : null}
-            </div>
-            <ReferenceListPagination
-              count={comparison.page?.total ?? comparison.rows.length}
-              label="сравнение запусков"
-              offset={comparison.page?.offset ?? page * pageSize}
-              onPageChange={(nextPage) => void requestComparison(nextPage)}
-              onPageSizeChange={(nextSize) => void requestComparison(0, nextSize)}
-              page={page}
-              pageSize={pageSize}
-              returned={comparison.page?.returned ?? comparison.rows.length}
-            />
-          </div>
-        ) : null}
+                  <ComparisonMetric
+                    label="Регрессии"
+                    tone="regressed"
+                    value={comparison.summary.regressed}
+                  />
+                  <ComparisonMetric
+                    label="Исправлено"
+                    tone="fixed"
+                    value={comparison.summary.fixed}
+                  />
+                  <ComparisonMetric label="Новые тесты" tone="new" value={comparison.summary.new} />
+                  <ComparisonMetric
+                    label="Замедлились"
+                    tone="slower"
+                    value={comparison.summary.durationRegressions}
+                  />
+                  <ComparisonMetric
+                    label="Успешность"
+                    tone="neutral"
+                    value={formatPercentDelta(comparison.metricDeltas.passRate)}
+                  />
+                </div>
+                <div className="launches-reference-comparison-table-toolbar">
+                  <strong>Тесты в сравнении</strong>
+                  <label>
+                    <span>Изменение</span>
+                    <select
+                      aria-label="Фильтр изменений в сравнении"
+                      disabled={comparisonState === "loading"}
+                      value={filter}
+                      onChange={(event) =>
+                        void requestComparison(0, pageSize, event.target.value as ComparisonFilter)
+                      }
+                    >
+                      <option value="all">Все</option>
+                      <option value="regressed">Регрессии</option>
+                      <option value="fixed">Исправлено</option>
+                      <option value="new">Новые</option>
+                      <option value="removed">Удалённые</option>
+                      <option value="status-changed">Статус изменён</option>
+                      <option value="unchanged">Без изменения</option>
+                    </select>
+                  </label>
+                </div>
+                <div
+                  className="launches-reference-comparison-list"
+                  role="table"
+                  aria-label="Отличия тестов между запусками"
+                >
+                  <div className="launches-reference-comparison-table-head" role="row">
+                    <span role="columnheader">Тест</span>
+                    <span role="columnheader">Базовый прогон</span>
+                    <span role="columnheader">Текущий прогон</span>
+                    <span role="columnheader">Изменение</span>
+                    <span role="columnheader">Разница времени</span>
+                  </div>
+                  {comparison.rows.map((row) => (
+                    <button
+                      className={`launches-reference-comparison-row is-${row.change}`}
+                      disabled={row.target === undefined && row.base === undefined}
+                      key={row.testCaseId}
+                      role="row"
+                      type="button"
+                      onClick={() => {
+                        const point = row.target ?? row.base;
+                        if (point !== undefined) {
+                          onSelectResult(
+                            point.resultUuid,
+                            row.target === undefined ? comparison.base.id : undefined
+                          );
+                        }
+                      }}
+                    >
+                      <span className="launches-reference-comparison-test" role="cell">
+                        <strong>{row.name}</strong>
+                        <small>{row.testCaseId}</small>
+                      </span>
+                      <ComparisonPoint point={row.base} role="cell" />
+                      <ComparisonPoint point={row.target} role="cell" />
+                      <span
+                        className={`launches-reference-comparison-change typography-role-meta is-${row.change}`}
+                        role="cell"
+                      >
+                        {formatComparisonChange(row.change)}
+                      </span>
+                      <em
+                        className={`launches-reference-comparison-duration typography-role-meta is-${row.durationTrend}`}
+                        role="cell"
+                      >
+                        {row.durationDeltaMs === undefined
+                          ? "—"
+                          : formatDurationDelta(row.durationDeltaMs)}
+                      </em>
+                    </button>
+                  ))}
+                  {comparison.rows.length === 0 ? (
+                    <p className="launches-reference-comparison-message">
+                      {filter === "all"
+                        ? "Тестов для сравнения нет."
+                        : "Тестов с таким изменением нет."}
+                    </p>
+                  ) : null}
+                </div>
+                <ReferenceListPagination
+                  count={comparison.page?.total ?? comparison.rows.length}
+                  label="сравнение запусков"
+                  offset={comparison.page?.offset ?? page * pageSize}
+                  onPageChange={(nextPage) => void requestComparison(nextPage)}
+                  onPageSizeChange={(nextSize) => void requestComparison(0, nextSize)}
+                  page={page}
+                  pageSize={pageSize}
+                  returned={comparison.page?.returned ?? comparison.rows.length}
+                />
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <LaunchComparisonMatrix
+            key={launch.id}
+            candidateStatus={candidateStatus}
+            candidates={candidates}
+            hasMoreCandidates={hasMoreCandidates}
+            initialSession={matrixSession}
+            launch={launch}
+            loadMore={loadMore}
+            onSelectResult={(id, launchId) => onSelectResult(id, launchId)}
+            onSessionChange={(next) => {
+              setMatrixSession(next);
+              persistSession({ mode: "matrix", matrixSession: next });
+            }}
+            reloadCandidates={reload}
+          />
+        )}
       </section>
     </div>
   );
