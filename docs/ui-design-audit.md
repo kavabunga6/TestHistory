@@ -65,7 +65,7 @@ an API read model rather than silently presenting a page sample as the entire ru
   dialogs and project workflows.
 - Keep table headers high-contrast enough for modal and settings tables.
 
-## Evidence Set
+## Evidence To Refresh
 
 Run `npm run screenshots:capture` locally when Playwright Chromium is available, or use the CI
 `ui-screenshot-evidence` artifact. The acceptance set includes:
