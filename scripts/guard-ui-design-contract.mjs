@@ -367,7 +367,7 @@ for (const snippet of [
   "Keep UI copy Russian",
   "Use the same modal contract everywhere",
   "Use the same tab contract everywhere",
-  "Evidence Set",
+  "Evidence To Refresh",
   "`ui-screenshot-evidence` artifact"
 ]) {
   expectSnippet("docs/ui-design-audit.md", snippet);
