@@ -1,9 +1,17 @@
-import { AlertTriangle, BarChart3, CheckCircle2, Clock3, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  ShieldAlert
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import {
   buildAnalyticsModel,
   buildServerAnalyticsModel,
+  excludePrioritySignals,
   formatCount,
   formatDurationMilliseconds,
   formatLaunchSeriesCount,
@@ -48,6 +56,8 @@ export function AnalyticsReferenceContent({
   serverReady: boolean;
   trendRead?: AnalyticsRunReadModel["result"] | undefined;
 }) {
+  const distinctSlowSignals = excludePrioritySignals(model.prioritySignals, model.slowSignals);
+
   return (
     <>
       <div className="analytics-reference-summary" aria-label="Сводка аналитики">
@@ -167,17 +177,11 @@ export function AnalyticsReferenceContent({
             <ShieldAlert size={18} />
             <h3>Приоритетные сигналы</h3>
           </div>
-          <div className="analytics-reference-signal-list">
-            {model.prioritySignals.length > 0 ? (
-              model.prioritySignals.map((result) => (
-                <SignalRow key={result.id} result={result} onOpenResult={onOpenResult} />
-              ))
-            ) : (
-              <p className="analytics-reference-empty-note">
-                Критичных падений в текущем фильтре нет
-              </p>
-            )}
-          </div>
+          <SignalPreviewList
+            emptyMessage="Критичных падений в текущем фильтре нет"
+            onOpenResult={onOpenResult}
+            signals={model.prioritySignals}
+          />
         </section>
 
         <section className="analytics-reference-panel" aria-label="Медленные тесты">
@@ -185,17 +189,15 @@ export function AnalyticsReferenceContent({
             <Clock3 size={18} />
             <h3>Медленные тесты</h3>
           </div>
-          <div className="analytics-reference-signal-list">
-            {model.slowSignals.length > 0 ? (
-              model.slowSignals.map((result) => (
-                <SignalRow key={result.id} result={result} onOpenResult={onOpenResult} />
-              ))
-            ) : (
-              <p className="analytics-reference-empty-note">
-                Нет медленных тестов в текущем фильтре
-              </p>
-            )}
-          </div>
+          <SignalPreviewList
+            emptyMessage={
+              model.slowSignals.length > 0
+                ? "Самые медленные тесты уже показаны среди приоритетных"
+                : "Нет медленных тестов в текущем фильтре"
+            }
+            onOpenResult={onOpenResult}
+            signals={distinctSlowSignals}
+          />
         </section>
       </div>
 
@@ -262,6 +264,41 @@ export function AnalyticsReferenceContent({
         ) : null}
       </section>
     </>
+  );
+}
+
+function SignalPreviewList({
+  emptyMessage,
+  onOpenResult,
+  signals
+}: {
+  emptyMessage: string;
+  onOpenResult?: ((id: string, launchId?: string) => void) | undefined;
+  signals: AnalyticsSignal[];
+}) {
+  const preview = signals.slice(0, 3);
+  const remaining = signals.slice(3);
+
+  return (
+    <div className="analytics-reference-signal-list">
+      {signals.length === 0 ? (
+        <p className="analytics-reference-empty-note">{emptyMessage}</p>
+      ) : null}
+      {preview.map((result) => (
+        <SignalRow key={result.id} result={result} onOpenResult={onOpenResult} />
+      ))}
+      {remaining.length > 0 ? (
+        <details className="analytics-reference-signal-more">
+          <summary>
+            <ChevronRight aria-hidden="true" size={14} />
+            Ещё {formatCount(remaining.length)} в этой группе
+          </summary>
+          {remaining.map((result) => (
+            <SignalRow key={result.id} result={result} onOpenResult={onOpenResult} />
+          ))}
+        </details>
+      ) : null}
+    </div>
   );
 }
 

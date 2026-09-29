@@ -19,14 +19,20 @@ import {
   AttachmentPreview,
   AttachmentViewerButton
 } from "../AttachmentViewer.js";
-import type { ResultAttachment, ResultStatus, ScenarioStep, TestResult } from "../m1Workspace.js";
+import type {
+  ResultAttachment,
+  ResultStatus,
+  ResultTrace,
+  ScenarioStep,
+  TestResult
+} from "../m1Workspace.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
 import {
   collapseHistoryToFinalRunResults,
   getCurrentRunAttempts,
   getCurrentRunRetryCount
 } from "../resultHistory.js";
-import { shouldExpandScenarioStep } from "../scenarioStepTree.js";
+import { collectTerminalFailurePaths, shouldExpandScenarioStep } from "../scenarioStepTree.js";
 import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
 import {
@@ -82,8 +88,8 @@ const detailTabs: Array<{ key: DetailTab; label: string; count?: (result: TestRe
     }
   ];
 const TEST_CASE_LIST_WIDTH_KEY = "testhistory:test-case-list-width";
-const TEST_CASE_LIST_DEFAULT_WIDTH = 420;
-const TEST_CASE_LIST_MIN_WIDTH = 390;
+const TEST_CASE_LIST_DEFAULT_WIDTH = 340;
+const TEST_CASE_LIST_MIN_WIDTH = 320;
 const TEST_CASE_LIST_MAX_WIDTH = 720;
 
 function parseDetailTab(value: string | undefined): DetailTab {
@@ -545,6 +551,11 @@ function OverviewTab({
   result: TestResult;
 }) {
   const hasHistory = collapseHistoryToFinalRunResults(result.historyPoints ?? []).length > 0;
+  const terminalFailurePaths = collectTerminalFailurePaths(result.steps);
+  const fallbackPath =
+    (result.status === "failed" || result.status === "broken") && terminalFailurePaths.length === 1
+      ? terminalFailurePaths[0]
+      : undefined;
 
   return (
     <div className="tc-detail-reference-overview">
@@ -566,6 +577,8 @@ function OverviewTab({
             <div className="tc-detail-reference-steps" role="tree">
               {result.steps.map((step, index) => (
                 <StepTreeItem
+                  fallbackPath={fallbackPath}
+                  fallbackTrace={result.trace}
                   index={index}
                   key={`${result.id}-${step.name}-${index}`}
                   path={`${index + 1}`}
@@ -809,11 +822,15 @@ function AttachmentsTab({ result }: { result: TestResult }) {
 
 function StepTreeItem({
   depth = 0,
+  fallbackPath,
+  fallbackTrace,
   index: _index,
   path,
   step
 }: {
   depth?: number;
+  fallbackPath: string | undefined;
+  fallbackTrace: ResultTrace | undefined;
   index: number;
   path: string;
   step: ScenarioStep;
@@ -822,6 +839,12 @@ function StepTreeItem({
   const attachments = step.attachments ?? [];
   const hasChildren = childSteps.length > 0 || attachments.length > 0;
   const [expanded, setExpanded] = useState(() => shouldExpandScenarioStep(step));
+  const trace = step.trace ?? (path === fallbackPath ? fallbackTrace : undefined);
+  const hasFailure =
+    (step.status === "failed" || step.status === "broken") &&
+    (trace?.message.trim() || trace?.stack.some((line) => line.trim()));
+  const failure =
+    hasFailure && trace ? <StepFailure path={path} status={step.status} trace={trace} /> : null;
 
   return (
     <div
@@ -868,9 +891,12 @@ function StepTreeItem({
 
       {expanded ? (
         <div className="tc-detail-reference-step-children" role="group">
+          {failure}
           {childSteps.map((child, childIndex) => (
             <StepTreeItem
               depth={depth + 1}
+              fallbackPath={fallbackPath}
+              fallbackTrace={fallbackTrace}
               index={childIndex}
               key={`${child.name}-${childIndex}`}
               path={`${path}.${childIndex + 1}`}
@@ -885,6 +911,39 @@ function StepTreeItem({
             />
           ))}
         </div>
+      ) : null}
+      {!hasChildren ? failure : null}
+    </div>
+  );
+}
+
+function StepFailure({
+  path,
+  status,
+  trace
+}: {
+  path: string;
+  status: ScenarioStep["status"];
+  trace: ResultTrace;
+}) {
+  const message = trace.message.trim();
+  const stack = trace.stack.map((line) => line.trim()).filter(Boolean);
+  const exception = stack.find((line) => /(?:Error|Exception|Failure)(?::|$)/i.test(line));
+
+  return (
+    <div
+      aria-label={`Диагностика шага ${path}`}
+      className={`tc-detail-reference-step-failure ${status}`}
+      role="group"
+    >
+      <strong>{status === "broken" ? "Сбой на шаге" : "Ошибка на шаге"}</strong>
+      {exception && exception !== message ? <code>{exception}</code> : null}
+      {message ? <p>{message}</p> : null}
+      {stack.length > 0 ? (
+        <details>
+          <summary>Стек вызовов</summary>
+          <pre>{stack.join("\n")}</pre>
+        </details>
       ) : null}
     </div>
   );

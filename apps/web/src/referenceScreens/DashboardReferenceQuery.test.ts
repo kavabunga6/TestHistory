@@ -9,6 +9,14 @@ describe("dashboard widget capabilities", () => {
   it("accepts the supported status metric and rejects silently ignored filters", () => {
     expect(widgetUnavailableReason(metric)).toBeUndefined();
     expect(
+      widgetUnavailableReason({
+        ...metric,
+        kind: "bar",
+        groupBy: "owner",
+        thql: 'status in ["failed", "broken"] and muted = false'
+      })
+    ).toBeUndefined();
+    expect(
       widgetUnavailableReason({ ...metric, thql: "from results where branch = main" })
     ).toContain("не поддерживается");
     expect(widgetUnavailableReason({ ...metric, thql: "from results surprise" })).toContain(

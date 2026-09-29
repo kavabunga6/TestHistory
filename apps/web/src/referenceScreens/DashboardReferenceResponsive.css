@@ -8,6 +8,12 @@
   .dashboard-reference-widget-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .dashboard-reference-widget-card,
+  .dashboard-reference-widget-card.is-metric,
+  .dashboard-reference-widget-card.is-table:last-child {
+    grid-column: 1;
+  }
 }
 
 @media (max-width: 360px) {
@@ -39,10 +45,6 @@
   .dashboard-reference-head > div:first-child {
     width: 100%;
     flex: 0 1 auto;
-  }
-
-  .dashboard-reference-data-summary {
-    padding: 10px 16px;
   }
 
   .dashboard-reference-head-actions {

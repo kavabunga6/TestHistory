@@ -38,9 +38,10 @@ describe("dashboard aggregate states", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    const text = container.textContent?.replaceAll("\u00a0", " ");
-    expect(text).toContain("10 000 результатов · Nightly");
-    expect(text).toContain("Успешных результатов: 9 000");
+    expectDashboardSummary("Nightly", "10 000");
+    expect(container.textContent?.replaceAll("\u00a0", " ")).toContain(
+      "Успешных результатов: 9 000"
+    );
     expect(container.textContent).not.toContain("Ретраи 0");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/launches/launch-1/dashboard/aggregate");
@@ -73,7 +74,7 @@ describe("dashboard aggregate states", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(container.textContent).toContain("1 результат · Nightly");
+    expectDashboardSummary("Nightly", "1");
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
@@ -91,7 +92,7 @@ describe("dashboard aggregate states", () => {
         />
       )
     );
-    expect(container.textContent).toContain("1 результат · First");
+    expectDashboardSummary("First", "1");
 
     const select = container.querySelector<HTMLSelectElement>(
       ".dashboard-reference-launch-picker select"
@@ -101,7 +102,7 @@ describe("dashboard aggregate states", () => {
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
     expect(container.textContent).toContain("Second");
-    expect(container.textContent).toContain("2 результата · Second");
+    expectDashboardSummary("Second", "2");
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toContain(
       "/api/v1/launches/launch-2/dashboard/aggregate"
     );
@@ -152,7 +153,7 @@ describe("dashboard aggregate states", () => {
       select.value = "old-launch";
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    expect(container.textContent).toContain("12 результатов · Old run");
+    expectDashboardSummary("Old run", "12");
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toContain(
       "/api/v1/launches/old-launch/dashboard/aggregate"
     );
@@ -189,10 +190,85 @@ describe("dashboard aggregate states", () => {
     expect(container.querySelector(".dashboard-reference-widget-grid")).not.toBeNull();
   });
 
+  it("links status counts to filtered results when the launch counters are complete", async () => {
+    window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(aggregate(10)));
+    mount();
+    await act(async () =>
+      root.render(
+        <DashboardReferenceScreen
+          launchItems={[
+            {
+              ...launch("launch-1", "Nightly"),
+              counters: { passed: 5, failed: 2, broken: 2, skipped: 1, unknown: 0, muted: 0 }
+            }
+          ]}
+        />
+      )
+    );
+
+    const failed = container.querySelector<HTMLAnchorElement>(
+      ".dashboard-launch-summary__metric.is-failed"
+    );
+    expect(failed?.textContent).toContain("Проваленные");
+    expect(failed?.querySelector("strong")?.textContent).toBe("2");
+    expect(failed?.getAttribute("href")).toContain("status+%3D+%22failed%22");
+    expect(container.querySelectorAll(".dashboard-launch-summary__distribution span")).toHaveLength(
+      4
+    );
+  });
+
+  it("renders an explicitly grouped table as groups rather than individual results", async () => {
+    const ownersWidget = {
+      ...defaultDashboardWidgets[2]!,
+      id: "owners",
+      title: "Проблемные тесты по владельцам",
+      groupBy: "owner",
+      thql: 'from results where status in ["failed", "broken"] group by owner measure count()'
+    };
+    window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify([ownersWidget]));
+    const ownerAggregate = aggregate(3);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        ...ownerAggregate,
+        widgets: [
+          {
+            ...ownerAggregate.widgets[2],
+            id: "owners",
+            groupCount: 2,
+            groups: [
+              { key: "Web QA", label: "Web QA", value: 2, percent: 100 },
+              { key: "API QA", label: "API QA", value: 1, percent: 50 }
+            ]
+          }
+        ]
+      })
+    );
+    mount();
+    await act(async () => root.render(screen()));
+
+    const groupedTable = container.querySelector('[aria-label="Таблица по группам"]');
+    expect(groupedTable?.textContent).toContain("Владелец");
+    expect(groupedTable?.textContent).toContain("Web QA");
+    expect(groupedTable?.textContent).toContain("API QA");
+    expect(groupedTable?.textContent).not.toContain("Risky test");
+  });
+
   function mount() {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
+  }
+
+  function expectDashboardSummary(name: string, total: string) {
+    expect(container.querySelector(".dashboard-launch-summary__title-row h2")?.textContent).toBe(
+      name
+    );
+    expect(
+      container
+        .querySelector(".dashboard-launch-summary__metric.is-total strong")
+        ?.textContent?.replaceAll("\u00a0", " ")
+    ).toBe(total);
   }
 });
 

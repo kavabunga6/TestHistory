@@ -6,8 +6,8 @@ screens, clear list/detail hierarchy, restrained cards, and readable tables.
 
 ## Review Update · 2026-09-29
 
-The current pass was reviewed from 33 synthetic 1440×1000 screenshots by an ordinary-user
-reviewer and a UI/UX reviewer, and checked against the official [TestOps 26.3 release notes](https://docs.qameta.io/reference/release-notes/),
+The current pass builds on earlier ordinary-user and UI/UX reviews, uses 34 synthetic 1440×1000
+screenshots for visual checks, and was checked against the official [TestOps 26.3 release notes](https://docs.qameta.io/reference/release-notes/),
 [launches](https://docs.qameta.io/use-testops/test-plans-and-launches/launches-overview/),
 [test results](https://docs.qameta.io/use-testops/results-and-analytics/test-results/), and
 [dashboards](https://docs.qameta.io/use-testops/results-and-analytics/dashboards/) documentation.
@@ -17,16 +17,19 @@ Implemented in this pass: consistent 25/50/100 pagination for launch, result, de
 comparison lists; project launch lookup for comparison beyond the current list page; selected-item
 context across pages; copyable result identifiers and direct data-section navigation; distinct
 unknown and broken statuses, with skipped results shown in gray; a jump from the result diagnostic
-to the failed scenario step; truthful scope labels on dashboards and charts; and visible expiry for
-API tokens. Result durations use the same Russian units across detail surfaces. The screenshot set
-now includes populated automation, launch errors, charts, comparison, result and test-case tabs,
+to the failed scenario step; and visible expiry for API tokens. The dashboard now places the
+selected launch summary above compact, content-sized widgets. Its saved THQL widget for failed
+results grouped by owner renders the groups, and the screenshot set includes that state. The
+launch duration chart now reads the complete launch from the API, independently of result-page
+pagination. Test-case failure traces appear inside the terminal failed step; the launch list,
+analytics signal panels, and defect owner/tag rows use less space without hiding their context.
+Result durations use the same Russian units across detail surfaces. The screenshot set also
+includes populated automation, launch errors, charts, comparison, result and test-case tabs,
 settings, and dialogs.
 
 Product gaps visible in the comparison: dashboard widgets currently aggregate one selected
 launch, while project-wide analysis lives on a separate Analytics screen; the comparison view
-does not yet provide a TestOps-style multi-launch matrix. Launch charts still derive from the
-loaded result page and therefore state that scope explicitly. Full-launch chart aggregation needs
-an API read model rather than silently presenting a page sample as the entire run.
+does not yet provide a TestOps-style multi-launch matrix.
 
 ## Target UI Contract
 
@@ -58,8 +61,9 @@ an API read model rather than silently presenting a page sample as the entire ru
 
 ## Next Priorities
 
-- Add a full-launch chart aggregate to the API so the graph can cover all result pages.
 - Add a multi-launch comparison matrix if cross-launch trend analysis is a product requirement.
+- Decide whether project trends belong on the dashboard or remain in Analytics; the scope labels
+  should stay explicit either way.
 - Add visual fixtures for longer URLs, token names, scopes, and custom field mappings.
 - Continue making empty, loading, denied, error, and partial states consistent across less-used
   dialogs and project workflows.
@@ -72,6 +76,7 @@ Run `npm run screenshots:capture` locally when Playwright Chromium is available,
 
 - `auth-login`
 - `dashboard`
+- `dashboard-owner-groups`
 - `launches`
 - `launch-detail`
 - `launch-results`

@@ -1,6 +1,7 @@
 .dashboard-reference-screen {
   min-width: 0;
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--workspace-page-gutter, 16px);
   background: #f4f7fb;
   color: #172033;
@@ -17,11 +18,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid #d7e1ee;
-  border-radius: 10px;
-  background: #f8fafc;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+  gap: 14px;
 }
 
 .dashboard-reference-head {
@@ -31,9 +28,11 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
-  border-bottom: 1px solid #e1e7ef;
-  padding: 16px 20px;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
+  padding: 18px 20px;
   background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
 }
 
 .dashboard-reference-head > div:first-child {
@@ -212,41 +211,32 @@
   color: #2d3748;
 }
 
-.dashboard-reference-data-summary {
+.dashboard-reference-widgets-heading {
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px;
-  border-bottom: 1px solid #e1e7ef;
-  padding: 10px 20px;
-  background: #ffffff;
-  color: #526174;
-  font-size: 12px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
 }
 
-.dashboard-reference-data-summary strong {
+.dashboard-reference-widgets-heading h2 {
+  margin: 0;
   color: #172033;
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 1.35;
 }
 
-.dashboard-reference-data-summary button {
-  min-height: 28px;
+.dashboard-reference-widgets-heading span {
+  min-width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  border: 1px solid #d5dde8;
-  border-radius: 6px;
-  padding: 0 9px;
-  background: #ffffff;
-  color: #36465a;
-  font: inherit;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 6px;
+  background: #e9eef6;
+  color: #536277;
+  font-size: 11px;
   font-weight: 700;
-}
-
-.dashboard-reference-data-summary button:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
 }
 
 .dashboard-reference-data-state {

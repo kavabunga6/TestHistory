@@ -694,7 +694,7 @@ export function LaunchesReferenceScreen({
               onUnlinkResultDefect={onUnlinkResultDefect}
             />
           ) : null}
-          {activeTab === "charts" ? <ChartsTab page={resultPage} results={launchResults} /> : null}
+          {activeTab === "charts" ? <ChartsTab launch={selectedLaunch} /> : null}
           {activeTab === "comparison" ? (
             <LaunchComparisonScreen
               initialSession={comparisonSessions[selectedLaunch.id]}

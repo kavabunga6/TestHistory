@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { launchChromiumWithFallback } from "./playwright-browser.mjs";
 import { startPreviewServer, stopPreviewServer } from "./preview-server.mjs";
 import { createEmptyUiApiResponse, createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
+import { seedDashboardOwnerWidgets, seedDashboardWidget } from "./ui-dashboard-screen-state.mjs";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = path.join(workspace, "docs/screenshots/final");
@@ -17,6 +18,17 @@ const screens = [
   { name: "auth-login", hash: "#launch", auth: false },
   { name: "projects", hash: "#projects" },
   { name: "dashboard", hash: "#dashboard" },
+  {
+    name: "dashboard-owner-groups",
+    hash: "#dashboard",
+    beforeNavigate: seedDashboardOwnerWidgets,
+    verify: async (page) => {
+      await page.locator(".dashboard-reference-table-widget.is-grouped tbody tr").first().waitFor();
+      if ((await page.locator(".dashboard-reference-widget-card.is-unavailable").count()) !== 0) {
+        throw new Error("Grouped dashboard screenshot contains an unavailable widget");
+      }
+    }
+  },
   {
     name: "test-cases",
     hash: "#case?list=1",
@@ -193,26 +205,6 @@ const screens = [
     }
   }
 ];
-
-async function seedDashboardWidget(page) {
-  await page.evaluate(() => {
-    localStorage.setItem(
-      "testhistory.dashboard.widgets.v1",
-      JSON.stringify([
-        {
-          entity: "Результаты тестов",
-          groupBy: "status",
-          id: "guard-dashboard-widget",
-          kind: "metric",
-          metric: "Успешность",
-          period: "Последние 14 дней",
-          thql: "from results where muted = false measure passRate()",
-          title: "Guard widget"
-        }
-      ])
-    );
-  });
-}
 
 validateExpectedManifest();
 

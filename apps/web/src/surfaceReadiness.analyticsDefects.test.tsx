@@ -682,7 +682,7 @@ describe("analytics and defects surface readiness", () => {
       "utf8"
     );
 
-    expect(styles).toMatch(/--tc-detail-reference-list-width:\s*clamp\(\d+px,\s*32vw,\s*480px\)/);
+    expect(styles).toMatch(/--tc-detail-reference-list-width:\s*clamp\(\d+px,\s*27vw,\s*390px\)/);
     expect(styles).toMatch(/minmax\(\d+px,\s*var\(--tc-detail-reference-list-width\)\)\s+9px/);
     expect(styles).toContain(".tc-detail-reference-splitter");
     expect(styles).toContain("cursor: col-resize");

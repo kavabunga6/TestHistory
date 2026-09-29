@@ -1,7 +1,7 @@
 import type { AnalyticsResultListReadModel } from "@testhistory/contracts";
 import { describe, expect, it } from "vitest";
 
-import { buildServerAnalyticsModel } from "./AnalyticsReferenceModel.js";
+import { buildServerAnalyticsModel, excludePrioritySignals } from "./AnalyticsReferenceModel.js";
 
 describe("project analytics display model", () => {
   it("uses complete filtered totals while keeping the signal list paginated", () => {
@@ -28,7 +28,10 @@ describe("project analytics display model", () => {
         openRisks: 1
       },
       prioritySignals: [summary("failed-result", "failed")],
-      slowSignals: [summary("slow-result", "passed", 2500)],
+      slowSignals: [
+        summary("failed-result", "failed", 3000),
+        summary("slow-result", "passed", 2500)
+      ],
       items: [summary("failed-result", "failed"), summary("muted-result", "failed", 800, true)]
     };
 
@@ -49,6 +52,9 @@ describe("project analytics display model", () => {
     expect(model.slowCount).toBe(2);
     expect(model.flakyCount).toBe(1);
     expect(model.averageDuration).toBe("1.5s");
+    expect(
+      excludePrioritySignals(model.prioritySignals, model.slowSignals).map((signal) => signal.id)
+    ).toEqual(["launch-1:slow-result"]);
   });
 });
 

@@ -46,20 +46,21 @@ blocked, use the CI `ui-screenshot-evidence` artifact.
 When a local dev server is already running, set `WEB_SCREENSHOT_BASE_URL=http://127.0.0.1:5173`
 to reuse it instead of starting a second preview server.
 
-| File                                | Screen             | Evidence purpose                                                                  |
-| ----------------------------------- | ------------------ | --------------------------------------------------------------------------------- |
-| `final/projects.png`                | Projects           | Project navigation and project state surface.                                     |
-| `final/dashboard.png`               | Dashboard          | Default THQL widgets: pass-rate metric, status distribution, and slow/risk table. |
-| `final/test-cases.png`              | Test case list     | Search, selection, and list pagination.                                           |
-| `final/launches.png`                | Launch list        | Launch table, filters, counters, and lifecycle state.                             |
-| `final/launch-detail.png`           | Launch detail      | A 100-result launch with status counters, artifacts, and close/upload context.    |
-| `final/selected-test-case.png`      | Selected test case | History, retries/flaky state, metadata, and detail tabs.                          |
-| `final/defects.png`                 | Defects            | Defect grouping, mute/readiness state, and operational actions.                   |
-| `final/automation.png`              | Automation         | Empty test-plan state.                                                            |
-| `final/automation-plans.png`        | Test plans         | Populated plans with selectors and lifecycle states.                              |
-| `final/automation-jobs.png`         | CI tasks           | Populated jobs with provider, plan, and varied statuses.                          |
-| `final/automation-integrations.png` | Integrations       | Notifications, issue trackers, and recent deliveries.                             |
-| `final/analytics.png`               | Analytics          | Analytics metrics, risk signals, and table output.                                |
+| File                                | Screen             | Evidence purpose                                                               |
+| ----------------------------------- | ------------------ | ------------------------------------------------------------------------------ |
+| `final/projects.png`                | Projects           | Project navigation and project state surface.                                  |
+| `final/dashboard.png`               | Dashboard          | Launch health summary and default configurable THQL widgets.                   |
+| `final/dashboard-owner-groups.png`  | Dashboard          | Saved problem-owner grouping and active-result metric.                         |
+| `final/test-cases.png`              | Test case list     | Search, selection, and list pagination.                                        |
+| `final/launches.png`                | Launch list        | Launch table, filters, counters, and lifecycle state.                          |
+| `final/launch-detail.png`           | Launch detail      | A 100-result launch with status counters, artifacts, and close/upload context. |
+| `final/selected-test-case.png`      | Selected test case | History, retries/flaky state, metadata, and detail tabs.                       |
+| `final/defects.png`                 | Defects            | Defect grouping, mute/readiness state, and operational actions.                |
+| `final/automation.png`              | Automation         | Empty test-plan state.                                                         |
+| `final/automation-plans.png`        | Test plans         | Populated plans with selectors and lifecycle states.                           |
+| `final/automation-jobs.png`         | CI tasks           | Populated jobs with provider, plan, and varied statuses.                       |
+| `final/automation-integrations.png` | Integrations       | Notifications, issue trackers, and recent deliveries.                          |
+| `final/analytics.png`               | Analytics          | Analytics metrics, risk signals, and table output.                             |
 
 The capture script also records deeper route and dialog states for design review and CI evidence:
 

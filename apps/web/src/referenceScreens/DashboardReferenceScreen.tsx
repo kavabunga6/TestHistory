@@ -1,4 +1,4 @@
-import { BarChart3, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { BarChart3, Plus, Trash2, X } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import type { LaunchListItem, TestResult } from "../m1Workspace.js";
@@ -9,6 +9,7 @@ import "./DashboardReferenceDialogs.css";
 import "./DashboardReferenceResponsive.css";
 
 import { metricLabel } from "./DashboardReferenceVisuals.js";
+import { DashboardLaunchSummary } from "./DashboardLaunchSummary.js";
 import type {
   SavedDashboardWidget,
   WidgetDraft,
@@ -16,7 +17,6 @@ import type {
   WidgetTypeOption
 } from "./DashboardReferenceModel.js";
 import { emptyDraft, widgetTypes } from "./DashboardReferenceModel.js";
-import { formatResultCount } from "./DashboardReferenceFormatting.js";
 import { widgetUnavailableReason } from "./DashboardReferenceQuery.js";
 import { loadSavedDashboardWidgets, saveDashboardWidgets } from "./DashboardReferenceStorage.js";
 import { DashboardWidgetGrid } from "./DashboardReferenceWidgets.js";
@@ -158,7 +158,7 @@ export function DashboardReferenceScreen({
               <h1 id="dashboard-reference-title">Дашборды</h1>
               <span className="dashboard-reference-scope">Один запуск</span>
             </div>
-            <p>Настраиваемые показатели результатов тестов.</p>
+            <p>Сводка и настраиваемые показатели выбранного запуска.</p>
           </div>
           <div className="dashboard-reference-head-actions">
             <div className="dashboard-reference-launch-control">
@@ -167,6 +167,7 @@ export function DashboardReferenceScreen({
                 <select
                   disabled={launchCatalog.items.length === 0}
                   onChange={(event) => setSelectedLaunchId(event.target.value)}
+                  title={selectedLaunch?.name}
                   value={selectedLaunch?.id ?? ""}
                 >
                   {launchCatalog.items.length === 0 ? (
@@ -232,7 +233,7 @@ export function DashboardReferenceScreen({
           <DashboardDataContent
             catalogStatus={launchCatalog.status}
             dataState={dataState}
-            launchName={selectedLaunch?.name}
+            launch={selectedLaunch}
             onRetryCatalog={launchCatalog.retry}
             onRetry={retryDataLoad}
             onDelete={deleteWidget}
@@ -286,7 +287,7 @@ export function DashboardReferenceScreen({
 function DashboardDataContent({
   catalogStatus,
   dataState,
-  launchName,
+  launch,
   onRetry,
   onRetryCatalog,
   onDelete,
@@ -296,7 +297,7 @@ function DashboardDataContent({
 }: {
   catalogStatus: ReturnType<typeof useDashboardLaunchCatalog>["status"];
   dataState: ReturnType<typeof useDashboardAggregate>["state"];
-  launchName?: string | undefined;
+  launch?: LaunchListItem | undefined;
   onRetry: () => void;
   onRetryCatalog: () => void;
   onDelete: (widgetId: string) => void;
@@ -375,14 +376,7 @@ function DashboardDataContent({
   const { aggregate } = dataState;
   return (
     <>
-      <div className="dashboard-reference-data-summary">
-        <strong>{formatResultCount(aggregate.totalResults)}</strong>
-        <span title={launchName}> · {launchName ?? "выбранный запуск"}</span>
-        <button aria-label="Обновить данные дашборда" onClick={onRetry} type="button">
-          <RefreshCw aria-hidden="true" size={14} />
-          Обновить
-        </button>
-      </div>
+      <DashboardLaunchSummary aggregate={aggregate} launch={launch} onRefresh={onRetry} />
       {aggregate.totalResults === 0 ? (
         <div className="dashboard-reference-zero-results" role="status">
           <strong>В этом запуске пока нет результатов</strong>
@@ -391,6 +385,10 @@ function DashboardDataContent({
           </span>
         </div>
       ) : null}
+      <div className="dashboard-reference-widgets-heading">
+        <h2>Виджеты</h2>
+        <span>{widgets.length}</span>
+      </div>
       <DashboardWidgetGrid
         aggregate={aggregate}
         onDelete={onDelete}

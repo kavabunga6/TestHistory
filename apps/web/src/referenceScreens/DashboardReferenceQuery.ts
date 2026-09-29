@@ -1,6 +1,21 @@
 import type { SavedDashboardWidget } from "./DashboardReferenceModel.js";
+import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 
 const supportedFilterFields = new Set([
+  "allureid",
+  "cf",
+  "customfield",
+  "defect",
+  "duration",
+  "durationms",
+  "fullname",
+  "historyid",
+  "id",
+  "issue",
+  "label",
+  "labels",
+  "layer",
+  "link",
   "muted",
   "status",
   "tag",
@@ -8,9 +23,12 @@ const supportedFilterFields = new Set([
   "text",
   "name",
   "owner",
+  "parameter",
   "severity",
-  "layer",
-  "suite"
+  "suite",
+  "testcaseid",
+  "testkey",
+  "uuid"
 ]);
 const supportedGroupFields = new Set([
   "status",
@@ -36,39 +54,49 @@ export function widgetUnavailableReason(
   }
 
   const query = widget.thql.trim();
+  const fromResults = /^from\s+results\b/i.test(query);
   const shorthand = /^[a-z.]+\s*:/i.test(query);
-  if (!/^from\s+results\b/i.test(query) && !shorthand) {
-    return "Используйте запрос по результатам: from results where …";
+  if (!fromResults && !shorthand && !isLikelyThqlQuery(query)) {
+    return 'Используйте THQL по результатам, например status in ["failed", "broken"].';
   }
-  if (!shorthand) {
+  if (fromResults) {
     const tail = query.replace(/^from\s+results\b/i, "").trim();
     if (tail !== "" && !/^(?:where|group\s+by|order\s+by|measure|limit)\b/i.test(tail)) {
       return "Запрос содержит неподдерживаемое выражение.";
     }
   }
 
-  const where = query
-    .match(/\bwhere\b([\s\S]*?)(?:\bgroup\s+by\b|\border\s+by\b|\bmeasure\b|\blimit\b|$)/i)?.[1]
-    ?.trim();
-  if (/\bwhere\b/i.test(query) && !where) {
+  const where = fromResults
+    ? query
+        .match(/\bwhere\b([\s\S]*?)(?:\bgroup\s+by\b|\border\s+by\b|\bmeasure\b|\blimit\b|$)/i)?.[1]
+        ?.trim()
+    : query;
+  if (fromResults && /\bwhere\b/i.test(query) && !where) {
     return "Укажите условие после where.";
   }
-  if (where && /\s+or\s+/i.test(where)) {
-    return "Условия с OR пока не поддерживаются в виджете.";
+  if (where && /\s+or\s+/i.test(where) && !isLikelyThqlQuery(where)) {
+    return "Условия с OR в сокращённой записи не поддерживаются. Используйте THQL.";
   }
-  const filters = (where ?? (/^[a-z.]+\s*:/i.test(query) ? query : ""))
+  const filters = (where ?? "")
     .split(/\s+and\s+/i)
     .map((term) => term.trim())
     .filter(Boolean);
-  for (const filter of filters) {
-    const match = filter.match(/^([a-zA-Z0-9_.]+)\s*(?::|=)\s*(.+)$/);
-    if (!match || !isSupportedField(match[1]!)) {
-      return `Условие «${filter}» пока не поддерживается в виджете.`;
+  if (where && isLikelyThqlQuery(where)) {
+    const leadingField = where.match(/^\s*(?:(?:not\s+|\(\s*)*)([a-z_][a-z0-9_.]*)/i)?.[1];
+    if (leadingField && !isSupportedField(leadingField)) {
+      return `Условие «${leadingField}» пока не поддерживается в виджете.`;
+    }
+  } else if (where) {
+    for (const filter of filters) {
+      const match = filter.match(/^([a-zA-Z0-9_.]+)\s*(?::|=)\s*(.+)$/);
+      if (!match || !isSupportedField(match[1]!)) {
+        return `Условие «${filter}» пока не поддерживается в виджете.`;
+      }
     }
   }
 
-  const groupMatch = query.match(/\bgroup\s+by\s+([a-zA-Z0-9_.]+)/i);
-  if (/\bgroup\s+by\b/i.test(query) && groupMatch === null) {
+  const groupMatch = fromResults ? query.match(/\bgroup\s+by\s+([a-zA-Z0-9_.]+)/i) : null;
+  if (fromResults && /\bgroup\s+by\b/i.test(query) && groupMatch === null) {
     return "Укажите поле после group by.";
   }
   const group = groupMatch?.[1] ?? widget.groupBy;
@@ -76,8 +104,8 @@ export function widgetUnavailableReason(
     return `Группировка «${group}» пока не поддерживается в виджете.`;
   }
 
-  const orderMatch = query.match(/\border\s+by\s+([a-zA-Z0-9_.]+)/i);
-  if (/\border\s+by\b/i.test(query) && orderMatch === null) {
+  const orderMatch = fromResults ? query.match(/\border\s+by\s+([a-zA-Z0-9_.]+)/i) : null;
+  if (fromResults && /\border\s+by\b/i.test(query) && orderMatch === null) {
     return "Укажите поле после order by.";
   }
   const order = orderMatch?.[1];
@@ -88,15 +116,15 @@ export function widgetUnavailableReason(
     return `Сортировка «${order}» пока не поддерживается в виджете.`;
   }
 
-  const measure = query.match(/\bmeasure\s+([a-zA-Z0-9_]+)\s*\(/i)?.[1];
-  if (/\bmeasure\b/i.test(query) && measure === undefined) {
+  const measure = fromResults ? query.match(/\bmeasure\s+([a-zA-Z0-9_]+)\s*\(/i)?.[1] : undefined;
+  if (fromResults && /\bmeasure\b/i.test(query) && measure === undefined) {
     return "Укажите поддерживаемую метрику после measure.";
   }
   if (measure && !["count", "passrate", "averageduration", "avg"].includes(measure.toLowerCase())) {
     return `Метрика «${measure}» пока не поддерживается в виджете.`;
   }
 
-  if (/\blimit\b/i.test(query) && !/\blimit\s+\d+/i.test(query)) {
+  if (fromResults && /\blimit\b/i.test(query) && !/\blimit\s+\d+/i.test(query)) {
     return "Укажите числовой предел после limit.";
   }
 

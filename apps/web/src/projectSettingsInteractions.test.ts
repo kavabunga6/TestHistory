@@ -319,8 +319,8 @@ describe("settings table readability contracts", () => {
     expect(source).toContain("<span>Результат</span>");
     expect(source).toContain("<span>Владелец / теги</span>");
     expect(source).toContain("<span>Длительность</span>");
-    expect(resultHeadBlock).toContain("minmax(82px, 0.15fr)");
-    expect(resultHeadBlock).toContain("minmax(190px, 1fr)");
+    expect(resultHeadBlock).toContain("82px minmax(0, 1fr) minmax(0, 1fr) 86px");
+    expect(styles).toContain(".defects-reference-result-tags");
     expect(resultHeadOwnBlock).toContain("min-height: 38px");
     expect(resultHeadOwnBlock).toContain("font-size: 11px");
     expect(sectionCopyBlock).toContain("min-height: 56px");
@@ -452,7 +452,7 @@ describe("settings table readability contracts", () => {
     expect(source).not.toContain("Нет test keys");
     expect(sectionBlock).toContain("border-bottom: 1px solid #e8edf4");
     expect(sectionBlock).toContain("border-radius: 0");
-    expect(screenBlock).toContain("minmax(390px, var(--tc-detail-reference-list-width)) 9px");
+    expect(screenBlock).toContain("minmax(320px, var(--tc-detail-reference-list-width)) 9px");
     expect(splitterBlock).toContain("cursor: col-resize");
     expect(splitterBlock).toContain("border-right: 1px solid #d9dee8");
     expect(splitterStateBlock).toContain("background: #f4f8ff");
@@ -515,7 +515,11 @@ describe("settings table readability contracts", () => {
       new URL("./referenceScreens/DashboardReferenceModel.ts", import.meta.url),
       "utf8"
     );
-    const dashboardContractSource = `${dashboardSource}\n${dashboardModelSource}`;
+    const dashboardSummarySource = readFileSync(
+      new URL("./referenceScreens/DashboardLaunchSummary.tsx", import.meta.url),
+      "utf8"
+    );
+    const dashboardContractSource = `${dashboardSource}\n${dashboardModelSource}\n${dashboardSummarySource}`;
     const dashboardStyles = readFileSync(
       new URL("./referenceScreens/DashboardReferenceWidgets.css", import.meta.url),
       "utf8"
@@ -555,7 +559,7 @@ describe("settings table readability contracts", () => {
     expect(analyticsSource).not.toContain(">Suite<");
     expect(analyticsSource).not.toContain(">Owner<");
     expect(dashboardContractSource).toContain('metric: "Успешность"');
-    expect(dashboardContractSource).toContain("formatResultCount(aggregate.totalResults)");
+    expect(dashboardContractSource).toContain('aggregate.totalResults.toLocaleString("ru-RU")');
     expect(dashboardContractSource).not.toContain('metric: "Pass rate"');
     expect(dashboardContractSource).not.toContain("mute и истории");
     expect(analyticsSummaryBlock).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
@@ -564,8 +568,8 @@ describe("settings table readability contracts", () => {
     expect(analyticsPanelTitleBlock).toContain("border-bottom: 1px solid #e8edf3");
     expect(analyticsSignalBlock).toContain("border-bottom: 1px solid #e8edf3");
     expect(analyticsSignalBlock).toContain("padding: 10px 0");
-    expect(dashboardGridBlock).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
-    expect(dashboardGridBlock).toContain("gap: 16px");
+    expect(dashboardGridBlock).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(dashboardGridBlock).toContain("gap: 14px");
     expect(dashboardCardBlock).toContain("border: 1px solid #d7e1ee");
     expect(dashboardCardBlock).toContain("border-radius: 10px");
   });

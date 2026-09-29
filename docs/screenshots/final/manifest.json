@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-29T08:41:37.626Z",
+  "generatedAt": "2026-09-29T09:33:22.739Z",
   "viewport": {
     "width": 1440,
     "height": 1000
   },
-  "count": 33,
+  "count": 34,
   "files": [
     {
       "file": "auth-login.png",
@@ -16,28 +16,35 @@
     {
       "file": "projects.png",
       "hash": "#projects",
-      "bytes": 63440,
+      "bytes": 63442,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dashboard.png",
       "hash": "#dashboard",
-      "bytes": 143672,
+      "bytes": 157951,
+      "auth": true,
+      "dialog": false
+    },
+    {
+      "file": "dashboard-owner-groups.png",
+      "hash": "#dashboard",
+      "bytes": 117080,
       "auth": true,
       "dialog": false
     },
     {
       "file": "test-cases.png",
       "hash": "#case?list=1",
-      "bytes": 231401,
+      "bytes": 228494,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launches.png",
       "hash": "#launch",
-      "bytes": 77504,
+      "bytes": 77486,
       "auth": true,
       "dialog": false
     },
@@ -79,7 +86,7 @@
     {
       "file": "launch-charts.png",
       "hash": "#launch/L-1289/charts",
-      "bytes": 87167,
+      "bytes": 88361,
       "auth": true,
       "dialog": false
     },
@@ -93,28 +100,28 @@
     {
       "file": "selected-test-case.png",
       "hash": "#case/PAY-1042/overview",
-      "bytes": 228961,
+      "bytes": 228326,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-history.png",
       "hash": "#case/PAY-1042/history",
-      "bytes": 184437,
+      "bytes": 184475,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-defects.png",
       "hash": "#case/PAY-1042/defects",
-      "bytes": 176989,
+      "bytes": 177048,
       "auth": true,
       "dialog": false
     },
     {
       "file": "defects.png",
       "hash": "#defects/PAY-337",
-      "bytes": 184336,
+      "bytes": 185808,
       "auth": true,
       "dialog": false
     },
@@ -149,14 +156,14 @@
     {
       "file": "analytics.png",
       "hash": "#analytics",
-      "bytes": 215756,
+      "bytes": 200796,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dialog-dashboard-widget-delete.png",
       "hash": "#dashboard",
-      "bytes": 107955,
+      "bytes": 123107,
       "auth": true,
       "dialog": true
     },

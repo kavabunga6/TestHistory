@@ -1,8 +1,8 @@
 .tc-detail-reference-screen {
-  --tc-detail-reference-list-width: clamp(390px, 32vw, 480px);
+  --tc-detail-reference-list-width: clamp(320px, 27vw, 390px);
   display: grid;
   grid-template-columns:
-    minmax(390px, var(--tc-detail-reference-list-width)) 9px
+    minmax(320px, var(--tc-detail-reference-list-width)) 9px
     minmax(0, 1fr);
   height: 100%;
   min-height: 0;
@@ -864,7 +864,7 @@
 
 .tc-detail-reference-overview {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(244px, 270px);
   height: 100%;
   min-height: 0;
   gap: 16px;
@@ -1216,6 +1216,75 @@
   min-width: 0;
   border-left: 2px solid #edf0f5;
   margin-left: 18px;
+}
+
+.tc-detail-reference-step-node:has(> .tc-detail-reference-step-line.failed)
+  > .tc-detail-reference-step-children {
+  border-left-color: #ef9089;
+}
+
+.tc-detail-reference-step-node:has(> .tc-detail-reference-step-line.broken)
+  > .tc-detail-reference-step-children {
+  border-left-color: #e5bd75;
+}
+
+.tc-detail-reference-step-failure {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  border-left: 3px solid #dc574d;
+  margin: 6px 12px 10px 34px;
+  padding: 8px 12px;
+  background: #fff5f4;
+  color: #5d3431;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.tc-detail-reference-step-failure.broken {
+  border-left-color: #d99431;
+  background: #fff9ee;
+  color: #664918;
+}
+
+.tc-detail-reference-step-failure strong,
+.tc-detail-reference-step-failure code,
+.tc-detail-reference-step-failure p {
+  min-width: 0;
+  margin: 0;
+}
+
+.tc-detail-reference-step-failure code {
+  font: inherit;
+  font-weight: 700;
+}
+
+.tc-detail-reference-step-failure p {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.tc-detail-reference-step-failure details {
+  min-width: 0;
+}
+
+.tc-detail-reference-step-failure summary {
+  width: fit-content;
+  cursor: pointer;
+  color: #2255a4;
+  font-weight: 600;
+}
+
+.tc-detail-reference-step-failure pre {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  margin: 8px 0 0;
+  font-size: 11px;
+  white-space: pre;
 }
 
 .tc-detail-reference-step-line {
@@ -1986,12 +2055,6 @@
     border-top: 1px solid #e2e7ef;
     padding: 16px 0 24px;
     background: #ffffff;
-  }
-}
-
-@media (max-width: 1100px) {
-  .tc-detail-reference-screen {
-    --tc-detail-reference-list-width: clamp(390px, 38vw, 420px);
   }
 }
 

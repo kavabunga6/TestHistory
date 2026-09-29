@@ -1,34 +1,73 @@
-import type { LaunchResultPage, ResultStatus, TestResult } from "../m1Workspace.js";
-import { formatStatus } from "./LaunchesReferenceFormatters.js";
+import type { LaunchDurationChartReadModel } from "@testhistory/contracts";
+import { useEffect, useState } from "react";
+import type { LaunchListItem, ResultStatus, TestResult } from "../m1Workspace.js";
+import { formatDurationSeconds, formatStatus } from "./LaunchesReferenceFormatters.js";
 import {
   analyticsStatusOrder,
-  buildDurationBuckets,
   collectTimelineRows,
-  formatAverageDuration,
   getPartialStateMessage,
   type LaunchesReferencePartialState
 } from "./LaunchesReferenceModel.js";
+import { loadLaunchDurationChart } from "./LaunchDurationChartData.js";
 import { ReferenceRouteState } from "./LaunchesReferenceRouteState.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
 import { StatusIcon } from "./LaunchesStatusIcon.js";
 
-export function ChartsTab({
-  page,
-  results
+export function ChartsTab({ launch }: { launch: LaunchListItem }) {
+  const [chart, setChart] = useState<LaunchDurationChartReadModel | undefined>();
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setChart(undefined);
+    setError(false);
+    void loadLaunchDurationChart(launch.id, controller.signal)
+      .then((nextChart) => {
+        if (!controller.signal.aborted) {
+          setChart(nextChart);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError(true);
+        }
+      });
+    return () => controller.abort();
+  }, [launch.id, retry]);
+
+  return (
+    <DurationChartContent
+      chart={chart}
+      error={error}
+      onRetry={() => setRetry((value) => value + 1)}
+    />
+  );
+}
+
+export function DurationChartContent({
+  chart,
+  error = false,
+  onRetry
 }: {
-  page?: LaunchResultPage | undefined;
-  results: TestResult[];
+  chart?: LaunchDurationChartReadModel | undefined;
+  error?: boolean | undefined;
+  onRetry?: (() => void) | undefined;
 }) {
-  const buckets = buildDurationBuckets(results);
+  const buckets = chart?.buckets ?? [];
   const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count));
   const axisMaxCount = getDurationAxisMax(maxCount);
   const yAxisTicks = buildDurationAxisTicks(axisMaxCount);
-  const averageDuration = formatAverageDuration(results);
-  const total = page?.total ?? results.length;
+  const averageDuration =
+    chart?.averageDurationMs === null || chart === undefined
+      ? "нет данных"
+      : formatDurationSeconds(chart.averageDurationMs / 1_000);
   const scope =
-    page !== undefined && (page.offset > 0 || results.length < total)
-      ? `Страница результатов: ${results.length > 0 ? page.offset + 1 : 0}–${page.offset + results.length} из ${total}`
-      : `Результатов на графике: ${results.length}`;
+    chart === undefined
+      ? "Данные по всему запуску"
+      : chart.measuredResults === chart.totalResults
+        ? `Весь запуск: ${chart.totalResults} результатов`
+        : `Весь запуск: длительность указана для ${chart.measuredResults} из ${chart.totalResults} результатов`;
 
   return (
     <div className="launches-reference-chart-page">
@@ -39,10 +78,10 @@ export function ChartsTab({
             <p>{scope}</p>
           </div>
           <span>
-            Средняя по показанным <strong>{averageDuration}</strong>
+            Средняя по запуску <strong>{averageDuration}</strong>
           </span>
         </header>
-        {results.length > 0 ? (
+        {chart !== undefined && chart.measuredResults > 0 ? (
           <div className="launches-reference-chart-wrap">
             <div className="launches-reference-chart-y-axis" aria-hidden="true">
               {[...yAxisTicks].reverse().map((tick) => (
@@ -77,7 +116,26 @@ export function ChartsTab({
             </div>
           </div>
         ) : (
-          <div className="launches-reference-centered">Нет данных для графика</div>
+          <div className="launches-reference-centered">
+            {error ? (
+              <span>
+                Не удалось загрузить график.{" "}
+                {onRetry !== undefined ? (
+                  <button
+                    className="launches-reference-chart-retry"
+                    type="button"
+                    onClick={onRetry}
+                  >
+                    Повторить
+                  </button>
+                ) : null}
+              </span>
+            ) : chart === undefined ? (
+              "Загружаем данные всего запуска…"
+            ) : (
+              "Нет данных о продолжительности результатов"
+            )}
+          </div>
         )}
       </section>
     </div>

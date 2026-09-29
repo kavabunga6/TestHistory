@@ -407,12 +407,15 @@
 .launches-reference-list-row {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-  align-items: center;
-  gap: 12px 20px;
+  grid-template-areas:
+    "main progress"
+    "meta progress";
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+  align-items: start;
+  gap: 10px 20px;
   border: 1px solid #d7e1ee;
   border-radius: 8px;
-  padding: 16px;
+  padding: 14px 16px;
   background: #ffffff;
   color: #303642;
   font: inherit;
@@ -438,9 +441,10 @@
 }
 
 .launches-reference-list-row > .launches-reference-progress-wrap {
-  align-self: center;
+  grid-area: progress;
+  align-self: start;
   justify-self: end;
-  width: min(320px, 100%);
+  width: min(400px, 100%);
   gap: 6px;
 }
 
@@ -453,12 +457,20 @@
   text-align: left;
 }
 
+.launches-reference-list-row .launches-reference-progress-legend {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .launches-reference-list-main,
 .launches-reference-list-main strong,
 .launches-reference-list-meta > span {
   min-width: 0;
   display: grid;
   gap: 6px;
+}
+
+.launches-reference-list-main {
+  grid-area: main;
 }
 
 .launches-reference-list-main strong {
@@ -515,11 +527,11 @@
 .launches-reference-list-meta {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 16px;
-  grid-column: 1 / -1;
+  grid-area: meta;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px 14px;
   border-top: 1px solid #e8edf3;
-  padding-top: 12px;
+  padding-top: 8px;
 }
 
 .launches-reference-list-tags {
@@ -4093,6 +4105,7 @@ body.launches-reference-is-resizing * {
 
 .launches-reference-chart-page,
 .launches-reference-timeline-page {
+  min-height: 100%;
   padding: 20px;
   background: #f8fafc;
 }
@@ -4174,6 +4187,24 @@ body.launches-reference-is-resizing * {
   color: #172033;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
+}
+
+.launches-reference-chart-retry {
+  margin-left: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  padding: 5px 9px;
+  background: #ffffff;
+  color: #2458ad;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.launches-reference-chart-retry:hover,
+.launches-reference-chart-retry:focus-visible {
+  border-color: #8fb1e9;
+  background: #f4f8ff;
 }
 
 .launches-reference-chart {
@@ -4409,6 +4440,10 @@ body.launches-reference-is-resizing * {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .launches-reference-list-row {
+    grid-template-areas: "main" "progress" "meta";
+  }
+
   .launches-reference-list-row > .launches-reference-progress-wrap {
     justify-self: stretch;
     width: 100%;
@@ -4494,6 +4529,10 @@ body.launches-reference-is-resizing * {
   .launches-reference-list {
     gap: 10px;
     padding: 12px;
+  }
+
+  .launches-reference-list-row .launches-reference-progress-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .launches-reference-list-search,

@@ -1,5 +1,5 @@
 import type { NormalizedTestResult } from "@testhistory/contracts";
-import { evaluateThql, parseThql, type ThqlExpression } from "./thql.js";
+import { evaluateThql, getThqlFields, parseThql, type ThqlExpression } from "./thql.js";
 
 // Free-text names often contain "or", brackets, or punctuation. Treat a query as THQL
 // only when it starts with a field comparison (possibly wrapped in NOT/parentheses).
@@ -19,17 +19,20 @@ const thqlFields = new Set([
   "label",
   "labels",
   "link",
+  "layer",
   "muted",
   "name",
   "owner",
   "parameter",
+  "severity",
   "status",
   "suite",
   "tag",
   "tags",
   "testcaseid",
   "testkey",
-  "uuid"
+  "uuid",
+  "text"
 ]);
 
 const statusLabels: Record<NormalizedTestResult["status"], string> = {
@@ -64,6 +67,29 @@ export function compileLaunchResultSearch(
     plainSearchValues(result).some((value) => value.toLocaleLowerCase().includes(needle));
 }
 
+export function compileLaunchResultThql(query: string) {
+  const parsed = parseThql(query);
+  if (parsed === undefined) {
+    throw new Error("THQL expression is empty");
+  }
+  const expression = normalizeFields(parsed);
+  const fields = new Set(getThqlFields(expression));
+  const unsupportedField = [...fields].find(
+    (field) => !thqlFields.has(field) && !field.startsWith("custom.")
+  );
+  if (unsupportedField !== undefined) {
+    throw new Error(`THQL field ${unsupportedField} is not supported for launch results`);
+  }
+  return {
+    fields,
+    matches: (result: NormalizedTestResult, muted: boolean, status?: string) =>
+      evaluateThql(
+        { ...resultSearchRecord(result, muted), status: status ?? result.status },
+        expression
+      )
+  };
+}
+
 function plainSearchValues(result: NormalizedTestResult): string[] {
   return [
     result.uuid,
@@ -92,6 +118,9 @@ function resultSearchRecord(result: NormalizedTestResult, muted: boolean): Recor
         values.join(", ")
       ])
   );
+  const customFieldsByName = Object.fromEntries(
+    Object.entries(customFields).map(([key, value]) => [`custom.${key}`, value])
+  );
   const parameters = Object.fromEntries(
     result.parameters
       .filter(
@@ -117,17 +146,21 @@ function resultSearchRecord(result: NormalizedTestResult, muted: boolean): Recor
     label: keyedLabels,
     labels: keyedLabels,
     link: links,
+    layer: labels.layer?.[0] ?? labels.feature?.[0] ?? "E2E",
     muted,
     name: result.name,
     owner,
     parameter: parameters,
+    severity: labels.severity?.[0] ?? "normal",
     status: result.status,
     suite: result.fullName ?? result.historyId ?? "Imported result",
     tag: labels.tag ?? [],
     tags: labels.tag ?? [],
+    text: result.name,
     testcaseid: result.testCaseId,
     testkey: [...(labels.tms ?? []), ...(labels.testKey ?? [])],
-    uuid: result.uuid
+    uuid: result.uuid,
+    ...customFieldsByName
   };
 }
 

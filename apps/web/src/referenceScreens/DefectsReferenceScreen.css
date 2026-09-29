@@ -618,7 +618,7 @@
 .defects-reference-result-row {
   min-width: 640px;
   display: grid;
-  grid-template-columns: minmax(82px, 0.15fr) minmax(190px, 1fr) minmax(150px, 0.45fr) 86px;
+  grid-template-columns: 82px minmax(0, 1fr) minmax(0, 1fr) 86px;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
@@ -664,6 +664,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.defects-reference-result-context > strong {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.defects-reference-result-tags {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.defects-reference-result-tags small {
+  max-width: 100%;
+  overflow: visible;
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: #f1f5f9;
+  color: #526172;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.defects-reference-result-tags small.is-empty {
+  padding: 0;
+  background: transparent;
 }
 
 .defects-reference-result-list strong {

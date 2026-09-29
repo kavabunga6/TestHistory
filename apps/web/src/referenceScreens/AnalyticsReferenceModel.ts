@@ -14,6 +14,14 @@ export type AnalyticsSignal = {
   duration: string;
 };
 
+export function excludePrioritySignals(
+  prioritySignals: AnalyticsSignal[],
+  slowSignals: AnalyticsSignal[]
+): AnalyticsSignal[] {
+  const priorityIds = new Set(prioritySignals.map((signal) => signal.id));
+  return slowSignals.filter((signal) => !priorityIds.has(signal.id));
+}
+
 type StatusMetric = {
   status: AnalyticsStatus;
   count: number;

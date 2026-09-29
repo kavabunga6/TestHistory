@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { launchChromiumWithFallback } from "./playwright-browser.mjs";
 import { startPreviewServer, stopPreviewServer } from "./preview-server.mjs";
 import { createEmptyUiApiResponse, createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
+import { seedDashboardOwnerWidgets } from "./ui-dashboard-screen-state.mjs";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const expectedManifest = JSON.parse(
@@ -18,6 +19,7 @@ const allScreens = [
   { name: "auth-login", hash: "#launch", auth: false },
   { name: "projects", hash: "#projects" },
   { name: "dashboard", hash: "#dashboard" },
+  { name: "dashboard-owner-groups", hash: "#dashboard", beforeNavigate: seedDashboardOwnerWidgets },
   { name: "test-cases", hash: "#case?list=1" },
   { name: "launches", hash: "#launch" },
   { name: "launch-detail", hash: "#launch/L-1289" },
@@ -154,6 +156,9 @@ try {
           localStorage.setItem("testhistory.actorId", "admin");
           localStorage.setItem("testhistory.userRole", "admin");
         });
+      }
+      if (typeof screen.beforeNavigate === "function") {
+        await screen.beforeNavigate(page);
       }
       const navigationKey = encodeURIComponent(`${viewport.name}-${screen.name}`);
       await page.goto(`${baseUrl}/?guard=${navigationKey}&screen=${screen.name}${screen.hash}`, {

@@ -8,12 +8,16 @@ import type {
   NormalizedTestResult
 } from "@testhistory/contracts";
 import type { Launch } from "../store.js";
+import { compileLaunchResultThql } from "./launchResultSearch.js";
 
 type Widget = LaunchDashboardAggregateRequest["widgets"][number];
 type Row = { result: NormalizedTestResult; status: DashboardAggregateStatus; muted: boolean };
 type ParsedWidget = {
   filters: Array<{ field: string; value: string }>;
+  hasMutedFilter: boolean;
+  predicate?: (row: Row) => boolean;
   groupBy: string;
+  explicitGroupBy: boolean;
   metricKind: DashboardAggregateMetricKind;
   order?: { field: "duration" | "name" | "status"; direction: 1 | -1 };
   limit: number;
@@ -75,9 +79,11 @@ function evaluateWidget(launchId: string, rows: Row[], widget: Widget) {
     return { id: widget.id, status: "unsupported" as const, reason: parsed };
   }
 
-  const hasMutedFilter = parsed.filters.some(({ field }) => field === "muted");
   const filtered = rows.filter(
-    (row) => (hasMutedFilter || !row.muted) && parsed.filters.every((term) => matches(row, term))
+    (row) =>
+      (parsed.hasMutedFilter || !row.muted) &&
+      parsed.filters.every((term) => matches(row, term)) &&
+      (parsed.predicate?.(row) ?? true)
   );
   const passedCount = filtered.filter((row) => !row.muted && row.result.status === "passed").length;
   const counted = filtered.filter((row) => !row.muted).length;
@@ -101,7 +107,11 @@ function evaluateWidget(launchId: string, rows: Row[], widget: Widget) {
         ? averageDuration
         : String(filtered.length);
   const allGroups =
-    widget.kind === "bar" || widget.kind === "donut" ? groupResults(filtered, parsed.groupBy) : [];
+    widget.kind === "bar" ||
+    widget.kind === "donut" ||
+    (widget.kind === "table" && parsed.explicitGroupBy)
+      ? groupResults(filtered, parsed.groupBy)
+      : [];
   const groups =
     widget.kind === "donut" && allGroups.length > maxGroups
       ? [
@@ -146,51 +156,69 @@ function parseWidget(widget: Widget): ParsedWidget | string {
   }
 
   const query = widget.thql.trim();
-  const shorthand = /^[a-z.]+\s*:/i.test(query);
-  if (!/^from\s+results\b/i.test(query) && !shorthand) {
-    return "Используйте запрос по результатам: from results where …";
-  }
-  if (!shorthand) {
+  const fromResults = /^from\s+results\b/i.test(query);
+  if (fromResults) {
     const tail = query.replace(/^from\s+results\b/i, "").trim();
     if (tail !== "" && !/^(?:where|group\s+by|order\s+by|measure|limit)\b/i.test(tail)) {
       return "Запрос содержит неподдерживаемое выражение.";
     }
   }
   const where =
-    query
-      .match(/\bwhere\b([\s\S]*?)(?:\bgroup\s+by\b|\border\s+by\b|\bmeasure\b|\blimit\b|$)/i)?.[1]
-      ?.trim() ?? (shorthand ? query : "");
-  if (/\bwhere\b/i.test(query) && where === "") {
+    (fromResults
+      ? query.match(
+          /\bwhere\b([\s\S]*?)(?:\bgroup\s+by\b|\border\s+by\b|\bmeasure\b|\blimit\b|$)/i
+        )?.[1]
+      : query
+    )?.trim() ?? "";
+  if (fromResults && /\bwhere\b/i.test(query) && where === "") {
     return "Укажите условие после where.";
   }
-  if (/\s+or\s+/i.test(where)) {
-    return "Условия с OR пока не поддерживаются в виджете.";
-  }
   const filters: ParsedWidget["filters"] = [];
-  for (const term of where
-    .split(/\s+and\s+/i)
-    .map((item) => item.trim())
-    .filter(Boolean)) {
-    const match = term.match(/^([a-zA-Z0-9_.]+)\s*(?::|=)\s*(.+)$/);
-    if (match === null || !supportedField(match[1]!)) {
-      return `Условие «${term}» пока не поддерживается в виджете.`;
+  let predicate: ParsedWidget["predicate"];
+  let hasMutedFilter = false;
+  if (/^[a-z.]+\s*:/i.test(where)) {
+    if (/\s+or\s+/i.test(where)) {
+      return "Условия с OR пока не поддерживаются в сокращённой записи. Используйте THQL.";
     }
-    filters.push({
-      field: match[1]!.toLowerCase(),
-      value: unquote(match[2]!.trim()).toLowerCase()
-    });
+    for (const term of where
+      .split(/\s+and\s+/i)
+      .map((item) => item.trim())
+      .filter(Boolean)) {
+      const match = term.match(/^([a-zA-Z0-9_.]+)\s*(?::|=)\s*(.+)$/);
+      if (match === null || !supportedField(match[1]!)) {
+        return `Условие «${term}» пока не поддерживается в виджете.`;
+      }
+      filters.push({
+        field: match[1]!.toLowerCase(),
+        value: unquote(match[2]!.trim()).toLowerCase()
+      });
+    }
+    hasMutedFilter = filters.some(({ field }) => field === "muted");
+  } else if (where !== "") {
+    try {
+      const compiled = compileLaunchResultThql(where);
+      predicate = (row) => compiled.matches(row.result, row.muted, row.status);
+      hasMutedFilter = compiled.fields.has("muted");
+    } catch {
+      return "Условие THQL для результатов не поддерживается или содержит ошибку.";
+    }
   }
 
-  const groupMatch = query.match(/\bgroup\s+by\s+([a-zA-Z0-9_.]+)/i);
-  if (/\bgroup\s+by\b/i.test(query) && groupMatch === null) {
+  const groupMatch = fromResults ? query.match(/\bgroup\s+by\s+([a-zA-Z0-9_.]+)/i) : null;
+  if (fromResults && /\bgroup\s+by\b/i.test(query) && groupMatch === null) {
     return "Укажите поле после group by.";
   }
   const groupBy = (groupMatch?.[1] ?? widget.groupBy ?? "status").trim().toLowerCase();
-  if ((widget.kind === "bar" || widget.kind === "donut") && !groupedField(groupBy)) {
+  if (
+    (widget.kind === "bar" || widget.kind === "donut" || groupMatch !== null) &&
+    !groupedField(groupBy)
+  ) {
     return `Группировка «${groupBy}» пока не поддерживается в виджете.`;
   }
-  const orderMatch = query.match(/\border\s+by\s+([a-zA-Z0-9_.]+)(?:\s+(asc|desc))?/i);
-  if (/\border\s+by\b/i.test(query) && orderMatch === null) {
+  const orderMatch = fromResults
+    ? query.match(/\border\s+by\s+([a-zA-Z0-9_.]+)(?:\s+(asc|desc))?/i)
+    : null;
+  if (fromResults && /\border\s+by\b/i.test(query) && orderMatch === null) {
     return "Укажите поле после order by.";
   }
   if (
@@ -207,8 +235,8 @@ function parseWidget(widget: Widget): ParsedWidget | string {
           field: orderMatch[1]!.toLowerCase() as "duration" | "name" | "status",
           direction: (orderMatch[2]?.toLowerCase() === "asc" ? 1 : -1) as 1 | -1
         };
-  const measure = query.match(/\bmeasure\s+([a-zA-Z0-9_]+)\s*\(/i)?.[1];
-  if (/\bmeasure\b/i.test(query) && measure === undefined) {
+  const measure = fromResults ? query.match(/\bmeasure\s+([a-zA-Z0-9_]+)\s*\(/i)?.[1] : undefined;
+  if (fromResults && /\bmeasure\b/i.test(query) && measure === undefined) {
     return "Укажите поддерживаемую метрику после measure.";
   }
   if (
@@ -227,14 +255,17 @@ function parseWidget(widget: Widget): ParsedWidget | string {
           metricSource.includes("средняя")
         ? "averageDuration"
         : "count";
-  const limitMatch = query.match(/\blimit\s+(\d+)/i);
-  if (/\blimit\b/i.test(query) && limitMatch === null) {
+  const limitMatch = fromResults ? query.match(/\blimit\s+(\d+)/i) : null;
+  if (fromResults && /\blimit\b/i.test(query) && limitMatch === null) {
     return "Укажите числовой предел после limit.";
   }
   const rawLimit = Number(limitMatch?.[1] ?? maxTableRows);
   return {
     filters,
+    hasMutedFilter,
+    ...(predicate !== undefined ? { predicate } : {}),
     groupBy,
+    explicitGroupBy: groupMatch !== null,
     metricKind,
     ...(order !== undefined ? { order } : {}),
     limit: Math.min(maxTableRows, Math.max(1, rawLimit))

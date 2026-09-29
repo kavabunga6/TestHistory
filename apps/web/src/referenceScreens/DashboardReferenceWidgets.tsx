@@ -8,7 +8,7 @@ import { AlertCircle, Pencil, Trash2 } from "lucide-react";
 
 import { buildDonutGradient, emptyGroupRows, formatPercent } from "./DashboardReferenceVisuals.js";
 import { formatResultCount } from "./DashboardReferenceFormatting.js";
-import type { SavedDashboardWidget, WidgetKind } from "./DashboardReferenceModel.js";
+import type { SavedDashboardWidget } from "./DashboardReferenceModel.js";
 import { statusLabels, widgetTypes } from "./DashboardReferenceModel.js";
 
 type AggregateWidget = LaunchDashboardAggregateReadModel["widgets"][number];
@@ -73,7 +73,7 @@ function DashboardWidgetCard({
           <strong>{widget.title}</strong>
           <small>
             {ready
-              ? `${type.title} · ${formatResultCount(ready.filteredCount)} в выбранном запуске`
+              ? `${type.title} · ${formatResultCount(ready.filteredCount)}`
               : `${type.title} · требуется настройка`}
           </small>
         </div>
@@ -92,7 +92,7 @@ function DashboardWidgetCard({
       </header>
 
       {ready ? (
-        <WidgetVisualization evaluation={ready} kind={widget.kind} onOpenResult={onOpenResult} />
+        <WidgetVisualization evaluation={ready} onOpenResult={onOpenResult} widget={widget} />
       ) : (
         <div className="dashboard-reference-widget-unavailable" role="note">
           <AlertCircle aria-hidden="true" size={18} />
@@ -138,26 +138,97 @@ function DashboardWidgetCard({
 
 function WidgetVisualization({
   evaluation,
-  kind,
-  onOpenResult
+  onOpenResult,
+  widget
 }: {
   evaluation: DashboardAggregateReadyWidget;
-  kind: WidgetKind;
   onOpenResult?: OpenResult | undefined;
+  widget: SavedDashboardWidget;
 }) {
-  if (kind === "metric") {
+  if (widget.kind === "metric") {
     return <MetricWidget evaluation={evaluation} />;
   }
-  if (kind === "bar") {
+  if (widget.kind === "bar") {
     return <BarWidget evaluation={evaluation} />;
   }
-  if (kind === "donut") {
+  if (widget.kind === "donut") {
     return <DonutWidget evaluation={evaluation} />;
   }
-  if (kind === "line") {
+  if (widget.kind === "line") {
     return <LineWidget groups={evaluation.groups} />;
   }
+  if (/\bgroup\s+by\b/i.test(widget.thql)) {
+    return (
+      <GroupedTableWidget
+        evaluation={evaluation}
+        groupBy={widget.thql.match(/\bgroup\s+by\s+([a-zA-Z0-9_.]+)/i)?.[1] ?? widget.groupBy}
+      />
+    );
+  }
   return <TableWidget onOpenResult={onOpenResult} rows={evaluation.tableRows} />;
+}
+
+function GroupedTableWidget({
+  evaluation,
+  groupBy
+}: {
+  evaluation: DashboardAggregateReadyWidget;
+  groupBy: string;
+}) {
+  const groupLabel: Record<string, string> = {
+    owner: "Владелец",
+    severity: "Серьёзность",
+    status: "Статус",
+    suite: "Набор",
+    tag: "Тег",
+    tags: "Тег",
+    layer: "Слой"
+  };
+  const parsedGroupBy = groupBy.toLowerCase();
+  const title = groupLabel[parsedGroupBy] ?? "Группа";
+
+  return (
+    <div className="dashboard-reference-widget-visual">
+      <div
+        aria-label="Таблица по группам"
+        className="dashboard-reference-table-widget is-grouped"
+        role="region"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th>{title}</th>
+              <th>Результатов</th>
+            </tr>
+          </thead>
+          <tbody>
+            {evaluation.groups.map((group) => (
+              <tr key={group.key}>
+                <td>{group.label}</td>
+                <td>
+                  <div className="dashboard-reference-grouped-value">
+                    <span aria-hidden="true">
+                      <i
+                        className={group.status ? `is-${group.status}` : undefined}
+                        style={{ width: `${group.percent}%` }}
+                      />
+                    </span>
+                    <strong>{group.value.toLocaleString("ru-RU")}</strong>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {evaluation.groups.length === 0 ? (
+              <tr>
+                <td colSpan={2}>Нет результатов по THQL</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+      <GroupLimitNote evaluation={evaluation} />
+    </div>
+  );
 }
 
 function MetricWidget({ evaluation }: { evaluation: DashboardAggregateReadyWidget }) {

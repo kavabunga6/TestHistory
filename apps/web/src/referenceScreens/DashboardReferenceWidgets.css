@@ -1,16 +1,17 @@
 .dashboard-reference-widget-grid {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
   align-content: start;
-  padding: 16px;
 }
 
 .dashboard-reference-widget-card {
   min-width: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-column: span 2;
+  grid-template-rows: auto auto auto;
   gap: 12px;
   border: 1px solid #d7e1ee;
   border-radius: 10px;
@@ -19,14 +20,12 @@
   box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
 }
 
-.dashboard-reference-widget-card.is-table,
-.dashboard-reference-widget-card.is-line {
-  grid-column: 1 / -1;
+.dashboard-reference-widget-card.is-metric {
+  grid-column: span 1;
 }
 
-.dashboard-reference-widget-card.is-unavailable {
-  grid-column: auto;
-  grid-template-rows: auto 1fr auto;
+.dashboard-reference-widget-card.is-table:last-child {
+  grid-column: 1 / -1;
 }
 
 .dashboard-reference-widget-card header {
@@ -410,7 +409,7 @@
   font-weight: 700;
 }
 
-.dashboard-reference-table-widget td:nth-child(2) {
+.dashboard-reference-table-widget:not(.is-grouped) td:nth-child(2) {
   max-width: 220px;
   overflow: hidden;
   color: #172033;
@@ -495,7 +494,7 @@
 
 .dashboard-reference-widget-details dl {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px 12px;
   margin: 10px 0;
 }
@@ -535,4 +534,53 @@
   line-height: 1.45;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+.dashboard-reference-grouped-value {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-reference-grouped-value > span {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e9eef5;
+}
+
+.dashboard-reference-grouped-value i {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: #4b79d8;
+}
+
+.dashboard-reference-grouped-value strong {
+  min-width: 24px;
+  color: #172033;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.dashboard-reference-grouped-value i.is-passed {
+  background: #3fa34d;
+}
+
+.dashboard-reference-grouped-value i.is-failed {
+  background: #d9534f;
+}
+
+.dashboard-reference-grouped-value i.is-broken {
+  background: #e39b3b;
+}
+
+.dashboard-reference-grouped-value i.is-skipped {
+  background: #8a98aa;
+}
+
+.dashboard-reference-grouped-value i.is-unknown {
+  background: #7c75ad;
 }

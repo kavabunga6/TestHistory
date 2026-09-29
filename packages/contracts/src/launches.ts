@@ -137,6 +137,16 @@ export type LaunchResultListReadModel = {
   items: LaunchResultSummaryReadModel[];
 };
 
+export type LaunchDurationChartReadModel = {
+  kind: "launch-duration-chart";
+  launchId: string;
+  projectId: string;
+  totalResults: number;
+  measuredResults: number;
+  averageDurationMs: number | null;
+  buckets: Array<{ label: string; count: number }>;
+};
+
 export type LaunchCreateRequest = {
   name: string;
   branch?: string;

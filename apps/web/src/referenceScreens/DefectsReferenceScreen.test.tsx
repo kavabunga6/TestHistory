@@ -58,6 +58,40 @@ describe("defect navigation", () => {
     expect(markup).toContain("Checkout timed out");
   });
 
+  it("shows every owner tag in the linked result instead of truncating the data to three", () => {
+    const result = demoM1Workspace.results[0]!;
+    const markup = renderToStaticMarkup(
+      <DefectsReferenceScreen
+        results={[
+          {
+            ...result,
+            defect: "BUG-TAGS",
+            owner: "Very Long Quality Assurance Team",
+            tags: ["recurring", "payment-confirmation", "firefox", "nightly"],
+            historyPoints: [
+              {
+                launchId: "launch-1",
+                launchName: "Release checks",
+                resultUuid: result.id,
+                startedAt: "2026-09-29T00:00:00.000Z",
+                status: "failed",
+                duration: "530ms",
+                retry: false,
+                flaky: false,
+                attempt: 1
+              }
+            ]
+          }
+        ]}
+      />
+    );
+
+    expect(markup).toContain("Very Long Quality Assurance Team");
+    expect(markup).toContain("payment-confirmation");
+    expect(markup).toContain("nightly");
+    expect(markup).toContain("defects-reference-result-tags");
+  });
+
   it("shows a cluster description when the API provides one", () => {
     const result = demoM1Workspace.results[0]!;
     const markup = renderToStaticMarkup(

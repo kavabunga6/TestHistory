@@ -124,11 +124,7 @@ describe("launch dashboard aggregation", () => {
         widgets: [
           { ...widgets[0], id: "line", kind: "line" },
           { ...widgets[0], id: "retry", metric: "Количество ретраев" },
-          {
-            ...widgets[0],
-            id: "unknown",
-            thql: "from results where owner = Team OR status = failed"
-          },
+          { ...widgets[0], id: "unknown", thql: "from results where branch = main" },
           { ...widgets[0], id: "garbage", thql: "from results surprise" },
           { ...widgets[0], id: "empty-where", thql: "from results where" }
         ]
@@ -160,6 +156,135 @@ describe("launch dashboard aggregation", () => {
     });
     expect(denied.statusCode).toBe(403);
     expect(denied.body).not.toContain("Safe");
+  });
+
+  it("uses documented THQL expressions for owner-grouped problem widgets", () => {
+    const launch = {
+      id: "launch-thql",
+      projectId: "project-thql",
+      results: [
+        result({ uuid: "failed-a", name: "A", status: "failed", labels: { owner: ["Web QA"] } }),
+        result({ uuid: "broken-a", name: "B", status: "broken", labels: { owner: ["Web QA"] } }),
+        result({ uuid: "failed-b", name: "C", status: "failed", labels: { owner: ["API QA"] } }),
+        result({ uuid: "passed", name: "D", status: "passed", labels: { owner: ["API QA"] } })
+      ]
+    } as Parameters<typeof buildLaunchDashboardAggregate>[0];
+    const queries = [
+      'status in ["failed", "broken"] and muted = false',
+      'from results where status in ["failed", "broken"] and muted = false group by owner measure count()',
+      'from results where (status = "failed" or status = "broken") and muted = false group by owner measure count()'
+    ];
+
+    for (const thql of queries) {
+      const aggregate = buildLaunchDashboardAggregate(
+        launch,
+        { widgets: [{ id: "owners", kind: "bar", metric: "Количество", groupBy: "owner", thql }] },
+        new Set()
+      );
+      expect(aggregate.widgets[0]).toEqual(
+        expect.objectContaining({
+          id: "owners",
+          status: "ready",
+          filteredCount: 3,
+          groups: [
+            expect.objectContaining({ key: "Web QA", value: 2 }),
+            expect.objectContaining({ key: "API QA", value: 1 })
+          ]
+        })
+      );
+    }
+  });
+
+  it("returns groups for explicitly grouped tables without changing ordinary table rows", async () => {
+    const store = createAppStore();
+    app = await createApiApp(store);
+    const project = await createProject(app);
+    const launch = await createProjectLaunch(app, project.id, "Grouped table launch");
+    store.launches.get(launch.id)!.results.push(
+      result({
+        uuid: "web-1",
+        name: "Web failure",
+        status: "failed",
+        labels: { owner: ["Web QA"] }
+      }),
+      result({
+        uuid: "web-2",
+        name: "Web breakage",
+        status: "broken",
+        labels: { owner: ["Web QA"] }
+      }),
+      result({
+        uuid: "api-1",
+        name: "API failure",
+        status: "failed",
+        labels: { owner: ["API QA"] }
+      })
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/launches/${launch.id}/dashboard/aggregate`,
+      payload: {
+        widgets: [
+          {
+            id: "grouped-table",
+            kind: "table",
+            metric: "Количество",
+            groupBy: "status",
+            thql: 'from results where status in ["failed", "broken"] group by owner measure count()'
+          },
+          {
+            id: "ordinary-table",
+            kind: "table",
+            metric: "Количество",
+            groupBy: "owner",
+            thql: 'from results where status in ["failed", "broken"] order by name asc limit 2'
+          },
+          {
+            id: "status-table",
+            kind: "table",
+            metric: "Количество",
+            groupBy: "owner",
+            thql: "from results group by status measure count()"
+          }
+        ]
+      }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const read = response.json<LaunchDashboardAggregateReadModel>();
+    expect(read.widgets[0]).toEqual(
+      expect.objectContaining({
+        status: "ready",
+        filteredCount: 3,
+        groupCount: 2,
+        groups: [
+          expect.objectContaining({ key: "Web QA", value: 2 }),
+          expect.objectContaining({ key: "API QA", value: 1 })
+        ]
+      })
+    );
+    expect(read.widgets[1]).toEqual(
+      expect.objectContaining({
+        status: "ready",
+        groupCount: 0,
+        groups: [],
+        tableRows: [
+          expect.objectContaining({ name: "API failure" }),
+          expect.objectContaining({ name: "Web breakage" })
+        ]
+      })
+    );
+    expect(read.widgets[2]).toEqual(
+      expect.objectContaining({
+        status: "ready",
+        groupCount: 2,
+        groups: [
+          expect.objectContaining({ key: "failed", value: 2 }),
+          expect.objectContaining({ key: "broken", value: 1 })
+        ]
+      })
+    );
   });
 
   it("keeps muted results out by default and reports truncated groups", () => {

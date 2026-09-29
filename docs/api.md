@@ -373,6 +373,12 @@ The launch result list accepts one `status` or a comma-separated union. For exam
 with `page.total` and `page.nextCursor` calculated after filtering. A single `status=broken`
 matches only broken results. Invalid status names return HTTP 400.
 
+`GET /api/v1/launches/{launchId}/charts/duration` returns a duration histogram for the complete
+launch, independently of result-list pagination. The response contains eight fixed buckets,
+`totalResults`, `measuredResults`, and `averageDurationMs`. Results without a valid duration count
+toward `totalResults` but are excluded from the histogram and average. The endpoint requires
+`launches:read` access to the project.
+
 Always prefer generated Swagger for exact request and response schemas; these examples show the
 auth/scoping headers expected by protected endpoints.
 
@@ -614,6 +620,7 @@ Regenerate it with `npm run api:docs:catalog` after changing paths, tags, or ope
 - `DELETE /api/v1/launches/{launchId}` - `deleteLaunch`
 - `GET /api/v1/launches/{launchId}` - `getLaunch`
 - `POST /api/v1/launches/{launchId}/archive` - `archiveLaunch`
+- `GET /api/v1/launches/{launchId}/charts/duration` - `getLaunchDurationChart`
 - `POST /api/v1/launches/{launchId}/close` - `closeLaunch`
 - `GET /api/v1/launches/{launchId}/results` - `listLaunchResults`
 - `GET /api/v1/launches/{launchId}/results/{resultUuid}` - `getLaunchResultDetails`

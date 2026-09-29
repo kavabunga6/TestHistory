@@ -11,13 +11,11 @@ import { filterRecordsByQuery } from "../analyticsQuery.js";
 import { collapseHistoryToFinalRunResults, getCurrentRunRetryCount } from "../resultHistory.js";
 import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
 import {
-  formatDurationSeconds,
   formatHistoryDate,
   formatHistoryLaunchName,
   formatLaunchId,
   formatOptionalCount,
   formatStatus,
-  parseDurationSeconds,
   uniqueStrings
 } from "./LaunchesReferenceFormatters.js";
 
@@ -504,44 +502,6 @@ export function collectErrorGroups(results: TestResult[]): ErrorGroup[] {
   return Array.from(groups.values()).sort(
     (left, right) => right.failed + right.broken - (left.failed + left.broken)
   );
-}
-
-export function buildDurationBuckets(results: TestResult[]) {
-  const buckets = [
-    { label: "<100ms", maxSeconds: 0.1, count: 0 },
-    { label: "100ms-1s", maxSeconds: 1, count: 0 },
-    { label: "1s-10s", maxSeconds: 10, count: 0 },
-    { label: "10s-1m", maxSeconds: 60, count: 0 },
-    { label: "1m-5m", maxSeconds: 300, count: 0 },
-    { label: "5m-30m", maxSeconds: 1800, count: 0 },
-    { label: "30m-1h", maxSeconds: 3600, count: 0 },
-    { label: ">1h", maxSeconds: Number.POSITIVE_INFINITY, count: 0 }
-  ];
-
-  for (const result of results) {
-    const seconds = parseDurationSeconds(result.duration);
-    const index = buckets.findIndex((bucket) => seconds <= bucket.maxSeconds);
-    const bucket = buckets[index];
-    if (bucket !== undefined) {
-      bucket.count += 1;
-    }
-  }
-
-  return buckets.map(({ count, label }) => ({ count, label }));
-}
-
-export function formatAverageDuration(results: TestResult[]): string {
-  const durations = results
-    .filter((result) => result.status !== "muted")
-    .map((result) => parseDurationSeconds(result.duration))
-    .filter((duration) => Number.isFinite(duration) && duration > 0);
-
-  if (durations.length === 0) {
-    return "нет данных";
-  }
-
-  const average = durations.reduce((total, duration) => total + duration, 0) / durations.length;
-  return formatDurationSeconds(average);
 }
 
 export function collectTimelineRows(results: TestResult[]): TimelineRow[] {

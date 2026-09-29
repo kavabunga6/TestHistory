@@ -1439,6 +1439,32 @@ paths:
                 $ref: "#/components/schemas/PermissionDeniedError"
         "404":
           description: Launch or project not found.
+  /api/v1/launches/{launchId}/charts/duration:
+    get:
+      tags: [launches]
+      operationId: getLaunchDurationChart
+      description: Returns duration buckets and average duration across every result in the launch, independently of result-list pagination.
+      parameters:
+        - name: launchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Complete launch duration histogram.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaunchDurationChartReadModel"
+        "403":
+          description: Missing launch read scope or project visibility membership.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermissionDeniedError"
+        "404":
+          description: Launch or project not found.
   /api/v1/launches/{launchId}/results:
     get:
       tags: [launches]
@@ -4813,6 +4839,29 @@ components:
             oneOf:
               - $ref: "#/components/schemas/DashboardAggregateReadyWidget"
               - $ref: "#/components/schemas/DashboardAggregateUnsupportedWidget"
+    LaunchDurationChartReadModel:
+      type: object
+      additionalProperties: false
+      required:
+        [kind, launchId, projectId, totalResults, measuredResults, averageDurationMs, buckets]
+      properties:
+        kind: { type: string, const: launch-duration-chart }
+        launchId: { type: string }
+        projectId: { type: string }
+        totalResults: { type: integer, minimum: 0 }
+        measuredResults: { type: integer, minimum: 0 }
+        averageDurationMs: { anyOf: [{ type: number, minimum: 0 }, { type: "null" }] }
+        buckets:
+          type: array
+          minItems: 8
+          maxItems: 8
+          items:
+            type: object
+            additionalProperties: false
+            required: [label, count]
+            properties:
+              label: { type: string }
+              count: { type: integer, minimum: 0 }
     DashboardAggregateReadyWidget:
       type: object
       additionalProperties: false

@@ -126,6 +126,33 @@ export function createUiFixtureApiResponse(
   if (pathname === `/api/v1/launches/${launch.id}/results/${result.uuid}`) {
     return resultDetails;
   }
+  if (pathname === `/api/v1/launches/${launch.id}/charts/duration`) {
+    const boundariesMs = [100, 1_000, 10_000, 60_000, 300_000, 1_800_000, 3_600_000];
+    const labels = ["<100ms", "100ms-1s", "1s-10s", "10s-1m", "1m-5m", "5m-30m", "30m-1h", "1h+"];
+    const durations = results
+      .map((item) => item.durationMs)
+      .filter((duration) => Number.isFinite(duration) && duration >= 0);
+    const buckets = labels.map((label, index) => ({
+      label,
+      count: durations.filter((duration) => {
+        const lower = index === 0 ? 0 : boundariesMs[index - 1];
+        const upper = boundariesMs[index] ?? Infinity;
+        return duration >= lower && duration < upper;
+      }).length
+    }));
+    return {
+      kind: "launch-duration-chart",
+      launchId: launch.id,
+      projectId: project.id,
+      totalResults: results.length,
+      measuredResults: durations.length,
+      averageDurationMs:
+        durations.length === 0
+          ? null
+          : durations.reduce((sum, duration) => sum + duration, 0) / durations.length,
+      buckets
+    };
+  }
   if (pathname === `/api/v1/launches/${launch.id}/results`) {
     return paged(
       "launch-result-list",

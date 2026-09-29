@@ -52,7 +52,9 @@ function createDashboardWidget(widget) {
   const groupBy =
     widget.thql.match(/\bgroup\s+by\s+([a-zA-Z0-9_.]+)/i)?.[1] ?? widget.groupBy ?? "status";
   const allGroups =
-    widget.kind === "bar" || widget.kind === "donut"
+    widget.kind === "bar" ||
+    widget.kind === "donut" ||
+    (widget.kind === "table" && /\bgroup\s+by\b/i.test(widget.thql))
       ? groupDashboardResults(matched, groupBy.toLowerCase())
       : [];
   const groups = allGroups.slice(0, 30);
@@ -97,12 +99,19 @@ function createDashboardWidget(widget) {
 
 function filterDashboardResults(thql) {
   if (/\bmuted\s*=\s*true/i.test(thql)) return [];
+  const statusIn = thql.match(/\bstatus\s+in\s*\[([^\]]+)\]/i)?.[1];
+  const selectedStatuses = statusIn
+    ? [...statusIn.matchAll(/\b(failed|broken|passed|skipped|unknown)\b/gi)].map((match) =>
+        match[1].toLowerCase()
+      )
+    : [];
   const status = thql.match(
     /\bstatus\s*(?::|=)\s*['"]?(failed|broken|passed|skipped|unknown)/i
   )?.[1];
   const layer = thql.match(/\blayer\s*(?::|=)\s*['"]?([a-z0-9]+)/i)?.[1];
   return results.filter(
     (item) =>
+      (selectedStatuses.length === 0 || selectedStatuses.includes(item.status)) &&
       (status === undefined || item.status === status.toLowerCase()) &&
       (layer === undefined || item.labels.layer[0].toLowerCase() === layer.toLowerCase())
   );

@@ -54,7 +54,7 @@ type DefectResultLink = {
   name: string;
   owner: string;
   status: TestResult["status"];
-  tags: string;
+  tags: string[];
 };
 
 const DEFECT_LIST_WIDTH_KEY = "testhistory:defect-list-width";
@@ -495,9 +495,15 @@ function DefectResultList({ defect }: { defect: DefectSummary }) {
             <strong>{result.name}</strong>
             <small>{result.launchName}</small>
           </span>
-          <span>
+          <span className="defects-reference-result-context">
             <strong>{result.owner}</strong>
-            <small>{result.tags}</small>
+            <span className="defects-reference-result-tags">
+              {result.tags.length > 0 ? (
+                result.tags.map((tag) => <small key={tag}>{tag}</small>)
+              ) : (
+                <small className="is-empty">Без тегов</small>
+              )}
+            </span>
           </span>
           <time>{formatResultDuration(result.duration)}</time>
         </a>
@@ -679,7 +685,7 @@ function collectResultLinks(defect: DefectSummary): DefectResultLink[] {
         name: result.name,
         owner: result.owner || "Не назначен",
         status: point.status,
-        tags: result.tags.slice(0, 3).join(", ") || "Без тегов"
+        tags: uniqueValues(result.tags)
       });
     }
   }

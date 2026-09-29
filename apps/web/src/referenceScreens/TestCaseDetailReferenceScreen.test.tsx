@@ -162,6 +162,30 @@ describe("test case navigation", () => {
     expect(markup).toContain("result-status-unknown");
   });
 
+  it("shows the inherited exception inside the sole failing step", () => {
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      status: "failed" as const,
+      steps: [
+        { name: "Подготовка", status: "passed" as const, duration: "10ms" },
+        { name: "Проверка ответа", status: "failed" as const, duration: "20ms" }
+      ],
+      trace: {
+        message: "Ожидался код 200",
+        stack: ["AssertionError: expected 200", "at response.test:42"]
+      }
+    };
+    const markup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen results={[result]} selectedId={result.id} />
+    );
+
+    expect(markup).toContain('aria-label="Диагностика шага 2"');
+    expect(markup).toContain("AssertionError: expected 200");
+    expect(markup).toContain("Ожидался код 200");
+    expect(markup).toContain("<summary>Стек вызовов</summary>");
+    expect(markup).not.toContain('aria-label="Диагностика шага 1"');
+  });
+
   it("counts a linked defect once in the tab when issue and defect IDs match", () => {
     const result = {
       ...demoM1Workspace.results[0]!,

@@ -2,7 +2,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 
 import type { ResultTrace, ScenarioStep, TestResult } from "../m1Workspace.js";
-import { shouldExpandScenarioStep } from "../scenarioStepTree.js";
+import { collectTerminalFailurePaths, shouldExpandScenarioStep } from "../scenarioStepTree.js";
 import { AttachmentList } from "./LaunchesResultAttachments.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
 import { StatusIcon } from "./LaunchesStatusIcon.js";
@@ -181,14 +181,4 @@ function StepFailure({
       ) : null}
     </section>
   );
-}
-
-function collectTerminalFailurePaths(steps: ScenarioStep[], parentPath = ""): string[] {
-  return steps.flatMap((step, index) => {
-    const path = parentPath ? `${parentPath}.${index + 1}` : `${index + 1}`;
-    const childFailures = collectTerminalFailurePaths(step.steps ?? [], path);
-    return childFailures.length === 0 && (step.status === "failed" || step.status === "broken")
-      ? [path]
-      : childFailures;
-  });
 }

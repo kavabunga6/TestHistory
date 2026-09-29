@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { ScenarioStep } from "./m1Workspace.js";
-import { containsFailedScenarioStep, shouldExpandScenarioStep } from "./scenarioStepTree.js";
+import {
+  collectTerminalFailurePaths,
+  containsFailedScenarioStep,
+  shouldExpandScenarioStep
+} from "./scenarioStepTree.js";
 
 function step(
   name: string,
@@ -46,5 +50,14 @@ describe("scenario step tree expansion", () => {
       expect(shouldExpandScenarioStep(parent)).toBe(true);
     }
     expect(shouldExpandScenarioStep(failedLeaf)).toBe(false);
+  });
+
+  it("points an inherited result trace at the terminal failing step", () => {
+    const steps = [
+      step("passed", "passed"),
+      step("failed parent", "failed", [step("failed leaf", "failed")])
+    ];
+
+    expect(collectTerminalFailurePaths(steps)).toEqual(["2.1"]);
   });
 });
