@@ -45,18 +45,20 @@ try {
   await expectCount(page, ".project-settings__integrations-table-row", 1);
 
   await page.getByRole("button", { name: "Добавить" }).click();
-  await expectVisibleText(page, "Редактирование интеграции");
+  await expectVisibleText(page, "Добавление интеграции");
   await assertDialogLayout(page, "new integration dialog");
   await expectCount(page, ".project-settings__integrations-table-row", 1);
   await page.getByRole("button", { name: "Отмена" }).click();
   await expectCount(page, ".project-settings__integrations-table-row", 1);
 
   await page.getByRole("button", { name: "Добавить" }).click();
-  await page.getByLabel("Название").fill("GitHub Issues");
-  await page.getByLabel("Лейбл в Allure").fill("GITHUB_ISSUE");
-  await page.getByLabel("Шаблон ссылки").fill("https://github.com/acme/app/issues/{value}");
-  await page.getByLabel("Пример значения").fill("42");
-  await page.getByRole("button", { name: "Сохранить" }).click();
+  await page.getByRole("textbox", { name: "Название *" }).fill("GitHub Issues");
+  await page.getByRole("textbox", { name: "Имя источника *" }).fill("GITHUB_ISSUE");
+  await page
+    .getByRole("textbox", { name: "Шаблон ссылки *" })
+    .fill("https://github.com/acme/app/issues/{value}");
+  await page.getByRole("textbox", { name: "Пример значения" }).fill("42");
+  await page.getByRole("dialog").getByRole("button", { name: "Добавить" }).click();
   await expectCount(page, ".project-settings__integrations-table-row", 2);
   assert(
     savedAccessPayloads

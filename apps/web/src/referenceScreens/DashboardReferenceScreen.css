@@ -269,7 +269,11 @@
   justify-content: center;
   flex-direction: column;
   gap: 8px;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
   padding: 24px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
   color: #526174;
 }
 
@@ -279,6 +283,7 @@
 }
 
 .dashboard-reference-data-state.is-error {
+  border-color: #edc9c4;
   color: #8b3232;
 }
 
@@ -311,7 +316,11 @@
   align-content: center;
   justify-items: center;
   gap: 12px;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
   padding: 42px 18px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
   text-align: center;
 }
 

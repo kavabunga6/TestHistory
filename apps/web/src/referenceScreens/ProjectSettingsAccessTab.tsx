@@ -331,6 +331,9 @@ function RoleMatrixDialog({
             <X aria-hidden="true" size={18} />
           </button>
         </header>
+        <p className="project-settings__matrix-hint">
+          Прокрутите таблицу вправо, чтобы увидеть остальные права.
+        </p>
         <div className="project-settings__matrix" role="table">
           <div className="project-settings__matrix-head" role="row">
             <span role="columnheader">Роль</span>

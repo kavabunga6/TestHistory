@@ -8,6 +8,7 @@ import { AlertCircle, Pencil, Trash2 } from "lucide-react";
 
 import { buildDonutGradient, emptyGroupRows, formatPercent } from "./DashboardReferenceVisuals.js";
 import { formatResultCount } from "./DashboardReferenceFormatting.js";
+import { formatResultDuration } from "./LaunchesResultDuration.js";
 import type { SavedDashboardWidget } from "./DashboardReferenceModel.js";
 import { statusLabels, widgetTypes } from "./DashboardReferenceModel.js";
 
@@ -241,13 +242,17 @@ function MetricWidget({ evaluation }: { evaluation: DashboardAggregateReadyWidge
 
   return (
     <div className="dashboard-reference-metric-widget">
-      <strong>{evaluation.value}</strong>
+      <strong>
+        {evaluation.metricKind === "averageDuration"
+          ? formatResultDuration(evaluation.value)
+          : evaluation.value}
+      </strong>
       <span>{description}</span>
       <div className="dashboard-reference-metric-strip">
         {evaluation.metricKind !== "passRate" ? (
           <span className="is-passed">Успешность {formatPercent(evaluation.passRate)}</span>
         ) : null}
-        <span>Среднее {evaluation.averageDuration}</span>
+        <span>Среднее {formatResultDuration(evaluation.averageDuration)}</span>
         {evaluation.retryCount !== null ? <span>Ретраи {evaluation.retryCount}</span> : null}
       </div>
     </div>
@@ -386,7 +391,7 @@ function TableWidget({
                   result.name
                 )}
               </td>
-              <td>{result.duration}</td>
+              <td>{formatResultDuration(result.duration)}</td>
             </tr>
           ))}
           {rows.length === 0 ? (

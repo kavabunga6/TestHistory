@@ -4,8 +4,7 @@ import { fileURLToPath } from "node:url";
 import { launchChromiumWithFallback } from "./playwright-browser.mjs";
 import { startPreviewServer, stopPreviewServer } from "./preview-server.mjs";
 import { createEmptyUiApiResponse, createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
-import { seedDashboardOwnerWidgets } from "./ui-dashboard-screen-state.mjs";
-import { showComparisonMatrix } from "./ui-comparison-screen-state.mjs";
+import { screens as screenshotScreens } from "./ui-screenshot-screens.mjs";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const expectedManifest = JSON.parse(
@@ -16,101 +15,9 @@ const port = process.env.WEB_BUTTON_OVERFLOW_PORT ?? "5178";
 const existingServerUrl = process.env.WEB_BUTTON_OVERFLOW_BASE_URL;
 const baseUrl = existingServerUrl ?? `http://127.0.0.1:${port}`;
 const tolerancePx = 1;
-const allScreens = [
-  { name: "auth-login", hash: "#launch", auth: false },
-  { name: "projects", hash: "#projects" },
-  { name: "dashboard", hash: "#dashboard" },
-  { name: "dashboard-owner-groups", hash: "#dashboard", beforeNavigate: seedDashboardOwnerWidgets },
-  { name: "test-cases", hash: "#case?list=1" },
-  { name: "launches", hash: "#launch" },
-  { name: "launch-detail", hash: "#launch/L-1289" },
-  { name: "launch-results", hash: "#launch/L-1289/results" },
-  { name: "launch-result-history", hash: "#launch/L-1289/result/PAY-1042/history" },
-  { name: "launch-result-defects", hash: "#launch/L-1289/result/PAY-1042/defects" },
-  { name: "launch-errors", hash: "#launch/L-1289/errors" },
-  { name: "launch-charts", hash: "#launch/L-1289/charts" },
-  {
-    name: "launch-comparison",
-    hash: "#launch/L-1289/comparison",
-    interact: async (page) => {
-      await page.getByLabel("Сравнить текущий запуск с").selectOption("L-1288");
-      await page.getByRole("button", { name: "Сравнить", exact: true }).click();
-    }
-  },
-  {
-    name: "launch-comparison-matrix",
-    hash: "#launch/L-1289/comparison",
-    interact: showComparisonMatrix
-  },
-  { name: "selected-test-case", hash: "#case/PAY-1042/overview" },
-  { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
-  { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
-  { name: "defects", hash: "#defects/PAY-337" },
-  { name: "automation", hash: "#automation" },
-  { name: "automation-plans", hash: "#automation" },
-  {
-    name: "automation-jobs",
-    hash: "#automation",
-    interact: async (page) => page.getByRole("tab", { name: /CI-задачи/ }).click()
-  },
-  {
-    name: "automation-integrations",
-    hash: "#automation",
-    interact: async (page) => page.getByRole("tab", { name: /Интеграции/ }).click()
-  },
-  { name: "analytics", hash: "#analytics" },
-  { name: "settings-access", hash: "#settings/access" },
-  { name: "settings-visibility", hash: "#settings/visibility" },
-  { name: "settings-tokens", hash: "#settings/tokens" },
-  { name: "settings-integrations", hash: "#settings/integrations" },
-  { name: "settings-retention", hash: "#settings/retention" },
-  { name: "settings-fields", hash: "#settings/fields" },
-  {
-    name: "dialog-role-matrix",
-    hash: "#settings/access",
-    prepare: async (page) => {
-      await clickSingle(
-        page,
-        ".project-settings__panel-title--inline .project-settings__icon-button"
-      );
-    }
-  },
-  {
-    name: "dialog-member-edit",
-    hash: "#settings/access",
-    prepare: async (page) => {
-      await page
-        .locator(".project-settings__member-card .project-settings__icon-button")
-        .first()
-        .click();
-    }
-  },
-  {
-    name: "dialog-integration-edit",
-    hash: "#settings/integrations",
-    prepare: async (page) => {
-      await page.locator(".project-settings__actions button").first().click();
-    }
-  },
-  {
-    name: "dialog-api-token",
-    hash: "#settings/tokens",
-    prepare: async (page) => {
-      await page
-        .locator(".project-settings__panel", { hasText: "API токены проекта" })
-        .getByRole("button", { name: "Создать" })
-        .click();
-    }
-  },
-  { name: "quarantine-empty", hash: "#launch/L-1289/results?query=muted+%3D+true" },
-  {
-    name: "dialog-delete-launch",
-    hash: "#launch/L-1289",
-    prepare: async (page) => {
-      await page.locator(".launches-reference-danger-action").click();
-    }
-  }
-];
+const allScreens = screenshotScreens.filter(
+  (screen) => !overflowManifestExclusions.has(screen.name)
+);
 const screenFilter = process.env.WEB_BUTTON_OVERFLOW_SCREEN;
 const screens =
   screenFilter === undefined
@@ -142,7 +49,8 @@ try {
     { height: 1000, name: "desktop", width: 1440 },
     { height: 900, name: "narrow-desktop", width: 1120 },
     { height: 900, name: "tablet", width: 820 },
-    { height: 844, name: "mobile", width: 390 }
+    { height: 844, name: "mobile", width: 390 },
+    { height: 700, name: "small-mobile", width: 320 }
   ];
   const viewportFilter = process.env.WEB_BUTTON_OVERFLOW_VIEWPORT;
   const viewports = viewportFilter
@@ -190,78 +98,92 @@ try {
       }
       const screenFailures = await page.evaluate(
         ({ tolerance }) => {
+          const pageWidth = document.documentElement.scrollWidth;
+          const layoutFailures =
+            pageWidth > window.innerWidth + tolerance
+              ? [
+                  {
+                    index: -1,
+                    label: "Ширина страницы",
+                    problems: [`page ${pageWidth}px > viewport ${window.innerWidth}px`]
+                  }
+                ]
+              : [];
           const controls = Array.from(document.querySelectorAll("button, [role='button']"));
 
-          return controls.flatMap((control, index) => {
-            if (!(control instanceof HTMLElement || control instanceof SVGElement)) {
-              return [];
-            }
-
-            const style = window.getComputedStyle(control);
-            const rect = control.getBoundingClientRect();
-            if (
-              rect.width <= 0 ||
-              rect.height <= 0 ||
-              style.visibility === "hidden" ||
-              style.display === "none"
-            ) {
-              return [];
-            }
-
-            const problems = [];
-            const scrollWidth = "scrollWidth" in control ? control.scrollWidth : rect.width;
-            const scrollHeight = "scrollHeight" in control ? control.scrollHeight : rect.height;
-
-            if (scrollWidth > rect.width + tolerance || scrollHeight > rect.height + tolerance) {
-              problems.push(
-                `scroll ${Math.round(scrollWidth)}x${Math.round(scrollHeight)} > ${Math.round(
-                  rect.width
-                )}x${Math.round(rect.height)}`
-              );
-            }
-
-            for (const childRect of getContentRects(control)) {
-              if (
-                childRect.width <= 0 ||
-                childRect.height <= 0 ||
-                childRect.right < rect.left ||
-                childRect.left > rect.right ||
-                childRect.bottom < rect.top ||
-                childRect.top > rect.bottom
-              ) {
-                continue;
+          return [
+            ...layoutFailures,
+            ...controls.flatMap((control, index) => {
+              if (!(control instanceof HTMLElement || control instanceof SVGElement)) {
+                return [];
               }
 
+              const style = window.getComputedStyle(control);
+              const rect = control.getBoundingClientRect();
               if (
-                childRect.left < rect.left - tolerance ||
-                childRect.right > rect.right + tolerance ||
-                childRect.top < rect.top - tolerance ||
-                childRect.bottom > rect.bottom + tolerance
+                rect.width <= 0 ||
+                rect.height <= 0 ||
+                style.visibility === "hidden" ||
+                style.display === "none"
               ) {
+                return [];
+              }
+
+              const problems = [];
+              const scrollWidth = "scrollWidth" in control ? control.scrollWidth : rect.width;
+              const scrollHeight = "scrollHeight" in control ? control.scrollHeight : rect.height;
+
+              if (scrollWidth > rect.width + tolerance || scrollHeight > rect.height + tolerance) {
                 problems.push(
-                  `content rect ${formatRect(childRect)} outside button ${formatRect(rect)}`
+                  `scroll ${Math.round(scrollWidth)}x${Math.round(scrollHeight)} > ${Math.round(
+                    rect.width
+                  )}x${Math.round(rect.height)}`
                 );
-                break;
               }
-            }
 
-            if (problems.length === 0) {
-              return [];
-            }
+              for (const childRect of getContentRects(control)) {
+                if (
+                  childRect.width <= 0 ||
+                  childRect.height <= 0 ||
+                  childRect.right < rect.left ||
+                  childRect.left > rect.right ||
+                  childRect.bottom < rect.top ||
+                  childRect.top > rect.bottom
+                ) {
+                  continue;
+                }
 
-            return [
-              {
-                index,
-                label:
-                  control.getAttribute("aria-label") ||
-                  control.textContent?.replace(/\s+/g, " ").trim() ||
-                  control.getAttribute("title") ||
-                  control.className.toString() ||
-                  control.tagName,
-                problems
+                if (
+                  childRect.left < rect.left - tolerance ||
+                  childRect.right > rect.right + tolerance ||
+                  childRect.top < rect.top - tolerance ||
+                  childRect.bottom > rect.bottom + tolerance
+                ) {
+                  problems.push(
+                    `content rect ${formatRect(childRect)} outside button ${formatRect(rect)}`
+                  );
+                  break;
+                }
               }
-            ];
-          });
+
+              if (problems.length === 0) {
+                return [];
+              }
+
+              return [
+                {
+                  index,
+                  label:
+                    control.getAttribute("aria-label") ||
+                    control.textContent?.replace(/\s+/g, " ").trim() ||
+                    control.getAttribute("title") ||
+                    control.className.toString() ||
+                    control.tagName,
+                  problems
+                }
+              ];
+            })
+          ];
 
           function getContentRects(root) {
             const rects = [];
@@ -353,31 +275,6 @@ function formatGuardError(error) {
   }
 
   return error.message;
-}
-
-async function clickSingle(page, selector) {
-  const locator = page.locator(selector);
-  try {
-    await locator.first().waitFor({ state: "visible" });
-  } catch (error) {
-    const diagnostics = await page.evaluate(() => ({
-      hash: location.hash,
-      mainText: document
-        .querySelector("main")
-        ?.textContent?.replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 800),
-      role: localStorage.getItem("testhistory.userRole")
-    }));
-    throw new Error(
-      `Could not find ${selector}. Page diagnostics: ${JSON.stringify(diagnostics)}. ${formatGuardError(error)}`
-    );
-  }
-  const count = await locator.count();
-  if (count !== 1) {
-    throw new Error(`Expected one ${selector}, found ${count}`);
-  }
-  await locator.click();
 }
 
 async function installApiMocks(page) {

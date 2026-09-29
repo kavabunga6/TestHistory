@@ -2,7 +2,11 @@ import { Link2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ConfirmDeleteDialog, useModalDialog } from "../AppDialogs.js";
-import type { IntegrationLinkProvider, ProjectSettings } from "../projectSettings.js";
+import type {
+  IntegrationLinkProvider,
+  LinkProviderSourceKind,
+  ProjectSettings
+} from "../projectSettings.js";
 import { Badge, PanelTitle, SwitchControl } from "./ProjectSettingsReferenceCommon.js";
 import {
   getProviderLinkTemplate,
@@ -35,15 +39,15 @@ export function IntegrationsTab({
   const addProvider = () => {
     const id = `provider-${Date.now()}`;
     setEditingProvider({
-      baseUrl: "https://www.jira.ru/browse/",
+      baseUrl: "",
       enabled: true,
       encodeSuffix: true,
       id,
-      name: "Jira",
-      preset: "jira",
-      previewValue: "ANDROID-123",
-      source: { kind: "label", matchMode: "first", name: "JIRA_ISSUE" },
-      suffixTemplate: "{value}"
+      name: "",
+      preset: "custom",
+      previewValue: "",
+      source: { kind: "label", matchMode: "first", name: "" },
+      suffixTemplate: ""
     });
   };
   const deleteProvider = (id: string) => {
@@ -82,7 +86,7 @@ export function IntegrationsTab({
         <div className="project-settings__integration-example">
           <span>В результате теста:</span>
           <code>
-            label {exampleProvider.source.name} = {exampleProvider.previewValue}
+            {formatProviderSource(exampleProvider)} = {exampleProvider.previewValue}
           </code>
           <span>Ссылка:</span>
           <code>
@@ -101,7 +105,7 @@ export function IntegrationsTab({
       >
         <div className="project-settings__integrations-table-head" role="row">
           <span role="columnheader">Название</span>
-          <span role="columnheader">Лейбл в Allure</span>
+          <span role="columnheader">Источник</span>
           <span role="columnheader">Шаблон ссылки</span>
           <span role="columnheader">Статус</span>
           {canEdit ? <span role="columnheader">Действия</span> : null}
@@ -117,7 +121,7 @@ export function IntegrationsTab({
               <strong>{provider.name}</strong>
             </div>
             <div className="project-settings__provider-row-value" role="cell">
-              <code>{provider.source.name || "JIRA_ISSUE"}</code>
+              <code>{formatProviderSource(provider)}</code>
             </div>
             <div className="project-settings__provider-row-template" role="cell">
               <code>{getProviderLinkTemplate(provider)}</code>
@@ -163,6 +167,7 @@ export function IntegrationsTab({
       {editingProvider !== undefined ? (
         <ProviderDialog
           provider={editingProvider}
+          isNew={!providers.some((provider) => provider.id === editingProvider.id)}
           onChange={(patch) => setEditingProvider({ ...editingProvider, ...patch })}
           onClose={() => setEditingProvider(undefined)}
           onSave={() => saveProvider(editingProvider)}
@@ -192,17 +197,22 @@ export function IntegrationsTab({
 }
 
 function ProviderDialog({
+  isNew,
   onChange,
   onClose,
   onSave,
   provider
 }: {
+  isNew: boolean;
   onChange: (patch: Partial<IntegrationLinkProvider>) => void;
   onClose: () => void;
   onSave: () => void;
   provider: IntegrationLinkProvider;
 }) {
   const dialogRef = useModalDialog<HTMLElement>(onClose);
+  const [submitted, setSubmitted] = useState(false);
+  const validationError = getProviderValidationError(provider);
+  const title = isNew ? "Добавление интеграции" : "Редактирование интеграции";
 
   return (
     <div className="project-settings__dialog-backdrop" role="presentation">
@@ -215,9 +225,9 @@ function ProviderDialog({
         tabIndex={-1}
       >
         <header>
-          <h2 id="provider-dialog-title">Редактирование интеграции</h2>
+          <h2 id="provider-dialog-title">{title}</h2>
           <button
-            aria-label="Закрыть редактирование интеграции"
+            aria-label={`Закрыть ${title.toLocaleLowerCase()}`}
             className="project-settings__icon-button"
             type="button"
             onClick={onClose}
@@ -227,42 +237,70 @@ function ProviderDialog({
         </header>
         <div className="project-settings__dialog-body">
           <label>
-            <span>Название</span>
+            <span>Название *</span>
             <input
+              required
+              placeholder="Например, Jira"
               value={provider.name}
               onChange={(event) => onChange({ name: event.target.value })}
             />
           </label>
           <label>
-            <span>Лейбл в Allure</span>
+            <span>Тип источника</span>
+            <select
+              value={provider.source.kind}
+              onChange={(event) =>
+                onChange({
+                  source: {
+                    ...provider.source,
+                    kind: event.target.value as LinkProviderSourceKind
+                  }
+                })
+              }
+            >
+              {Object.entries(providerSourceLabels).map(([kind, label]) => (
+                <option key={kind} value={kind}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>
+              Имя источника
+              {provider.source.kind === "label" || provider.source.kind === "customField"
+                ? " *"
+                : ""}
+            </span>
             <input
+              required={provider.source.kind === "label" || provider.source.kind === "customField"}
+              placeholder="Например, JIRA_ISSUE"
               value={provider.source.name ?? ""}
               onChange={(event) =>
                 onChange({
                   source: {
                     ...provider.source,
-                    kind: "label",
-                    matchMode: "first",
                     name: event.target.value
                   }
                 })
               }
             />
-            <small>
-              Например: JIRA_ISSUE. В allure-results кладем label JIRA_ISSUE = ANDROID-123.
-            </small>
+            <small>Для лейбла укажите ключ из allure-results, например JIRA_ISSUE.</small>
           </label>
           <label>
-            <span>Шаблон ссылки</span>
+            <span>Шаблон ссылки *</span>
             <input
+              required
+              placeholder="https://tracker.example/browse/{value}"
               value={getProviderLinkTemplate(provider)}
               onChange={(event) => onChange(patchProviderLinkTemplate(event.target.value))}
             />
-            <small>Например: https://www.jira.ru/browse/{"{value}"}</small>
+            <small>Укажите полный адрес с {"{value}"} в месте идентификатора задачи.</small>
           </label>
           <label>
             <span>Пример значения</span>
             <input
+              placeholder="Например, EXAMPLE-123"
               value={provider.previewValue}
               onChange={(event) => onChange({ previewValue: event.target.value })}
             />
@@ -274,6 +312,11 @@ function ProviderDialog({
               onChange={() => onChange({ enabled: !provider.enabled })}
             />
           </div>
+          {submitted && validationError ? (
+            <p className="project-settings__dialog-validation" role="status">
+              {validationError}
+            </p>
+          ) : null}
         </div>
         <footer>
           <button className="project-settings__button" type="button" onClick={onClose}>
@@ -282,12 +325,65 @@ function ProviderDialog({
           <button
             className="project-settings__button project-settings__button--primary"
             type="button"
-            onClick={onSave}
+            onClick={() => {
+              if (validationError) {
+                setSubmitted(true);
+                return;
+              }
+              onSave();
+            }}
           >
-            <span>Сохранить</span>
+            <span>{isNew ? "Добавить" : "Сохранить"}</span>
           </button>
         </footer>
       </section>
     </div>
   );
+}
+
+function getProviderValidationError(provider: IntegrationLinkProvider): string | undefined {
+  if (!provider.name.trim()) {
+    return "Укажите название интеграции.";
+  }
+  if (
+    (provider.source.kind === "label" || provider.source.kind === "customField") &&
+    !provider.source.name?.trim()
+  ) {
+    return "Укажите имя источника значения.";
+  }
+  if (!provider.suffixTemplate.includes("{value}")) {
+    return "Добавьте {value} в шаблон ссылки.";
+  }
+  try {
+    const url = new URL(provider.baseUrl);
+    if (url.username || url.password) {
+      return "Уберите логин и пароль из адреса интеграции.";
+    }
+    if (url.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(url.hostname)) {
+      return "Используйте адрес HTTPS.";
+    }
+    if (/token|secret|signature|password|api[-_]?key/i.test(url.search)) {
+      return "Уберите секрет из параметров ссылки.";
+    }
+    return undefined;
+  } catch {
+    return "Укажите корректный полный адрес ссылки.";
+  }
+}
+
+const providerSourceLabels: Record<LinkProviderSourceKind, string> = {
+  label: "Лейбл Allure",
+  customField: "Кастомное поле",
+  issue: "Задача",
+  testKey: "Ключ теста",
+  link: "Ссылка",
+  testCaseId: "ID тест-кейса",
+  historyId: "ID истории",
+  fullName: "Полное имя теста",
+  name: "Название теста"
+};
+
+function formatProviderSource(provider: IntegrationLinkProvider): string {
+  const kind = providerSourceLabels[provider.source.kind];
+  return provider.source.name ? `${kind}: ${provider.source.name}` : kind;
 }

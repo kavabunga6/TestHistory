@@ -77,18 +77,11 @@ export function TokensTab({
         </div>
 
         {personalTokenSecret ? (
-          <div className="project-settings__secret" role="status">
-            <strong>Личный токен создан</strong>
-            <code>{personalTokenSecret}</code>
-            <button
-              className="project-settings__button"
-              type="button"
-              onClick={() => onCopySecret(personalTokenSecret)}
-            >
-              <Copy aria-hidden="true" size={16} />
-              <span>Копировать</span>
-            </button>
-          </div>
+          <TokenSecretNotice
+            label="Личный токен создан"
+            secret={personalTokenSecret}
+            onCopySecret={onCopySecret}
+          />
         ) : null}
 
         <div
@@ -159,10 +152,11 @@ export function TokensTab({
           </div>
 
           {createdSecret ? (
-            <div className="project-settings__secret" role="status">
-              <strong>Токен создан</strong>
-              <code>{createdSecret}</code>
-            </div>
+            <TokenSecretNotice
+              label="Токен проекта создан"
+              secret={createdSecret}
+              onCopySecret={onCopySecret}
+            />
           ) : null}
 
           <div className="project-settings__table project-settings__table--tokens" role="table">
@@ -220,5 +214,30 @@ export function TokensTab({
         </section>
       ) : null}
     </>
+  );
+}
+
+function TokenSecretNotice({
+  label,
+  onCopySecret,
+  secret
+}: {
+  label: string;
+  onCopySecret: (secret: string) => void;
+  secret: string;
+}) {
+  return (
+    <div className="project-settings__secret" role="status">
+      <strong>{label}</strong>
+      <code>{secret}</code>
+      <button
+        className="project-settings__button"
+        type="button"
+        onClick={() => onCopySecret(secret)}
+      >
+        <Copy aria-hidden="true" size={16} />
+        <span>Копировать</span>
+      </button>
+    </div>
   );
 }

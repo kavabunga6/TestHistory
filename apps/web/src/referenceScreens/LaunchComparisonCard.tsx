@@ -407,6 +407,9 @@ export function LaunchComparisonScreen({
                     </select>
                   </label>
                 </div>
+                <p className="launches-reference-comparison-scroll-hint">
+                  Листайте таблицу по горизонтали: название теста остаётся слева.
+                </p>
                 <div
                   className="launches-reference-comparison-list"
                   role="table"
@@ -437,7 +440,7 @@ export function LaunchComparisonScreen({
                       }}
                     >
                       <span className="launches-reference-comparison-test" role="cell">
-                        <strong>{row.name}</strong>
+                        <strong title={row.name}>{row.name}</strong>
                         <small>{row.testCaseId}</small>
                       </span>
                       <ComparisonPoint point={row.base} role="cell" />

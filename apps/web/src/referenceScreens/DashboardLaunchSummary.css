@@ -240,3 +240,18 @@
     padding-left: 0;
   }
 }
+
+@media (min-width: 761px) and (max-width: 1000px) {
+  .dashboard-launch-summary__metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-launch-summary__metric:nth-child(3n + 1) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .dashboard-launch-summary__metric:nth-child(n + 4) {
+    border-top: 1px solid #e7ecf3;
+  }
+}

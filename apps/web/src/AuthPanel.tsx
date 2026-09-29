@@ -1,5 +1,5 @@
 ﻿import { Eye, EyeOff, KeyRound, LogIn, LogOut, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   clearSessionToken,
   getStoredSessionToken,
@@ -27,6 +27,8 @@ export function AuthPanel({
   const [message, setMessage] = useState<AuthMessage | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const loginTabRef = useRef<HTMLButtonElement>(null);
+  const registerTabRef = useRef<HTMLButtonElement>(null);
   const [form, setForm] = useState({
     email: "",
     name: "",
@@ -100,6 +102,30 @@ export function AuthPanel({
     dispatchAuthStateChanged();
   };
 
+  const selectMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setMessage(undefined);
+    setPasswordVisible(false);
+  };
+
+  const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextMode =
+      event.key === "Home"
+        ? "login"
+        : event.key === "End"
+          ? "register"
+          : mode === "login"
+            ? "register"
+            : "login";
+    selectMode(nextMode);
+    (nextMode === "login" ? loginTabRef : registerTabRef).current?.focus();
+  };
+
   if (user !== undefined) {
     const displayName = user.name.trim() || user.email;
     const secondary =
@@ -149,17 +175,22 @@ export function AuthPanel({
           </p>
         </div>
       </header>
-      <div className="auth-login__switch" role="tablist" aria-label="Режим авторизации">
+      <div
+        className="auth-login__switch"
+        role="tablist"
+        aria-label="Режим авторизации"
+        onKeyDown={onTabKeyDown}
+      >
         <button
           className={`auth-login__tab${mode === "login" ? " auth-login__tab--active" : ""}`}
           type="button"
           role="tab"
+          id="auth-login-tab"
+          ref={loginTabRef}
+          tabIndex={mode === "login" ? 0 : -1}
+          aria-controls="auth-form-panel"
           aria-selected={mode === "login"}
-          onClick={() => {
-            setMode("login");
-            setMessage(undefined);
-            setPasswordVisible(false);
-          }}
+          onClick={() => selectMode("login")}
         >
           <LogIn size={16} aria-hidden="true" />
           <span>Вход</span>
@@ -168,12 +199,12 @@ export function AuthPanel({
           className={`auth-login__tab${mode === "register" ? " auth-login__tab--active" : ""}`}
           type="button"
           role="tab"
+          id="auth-register-tab"
+          ref={registerTabRef}
+          tabIndex={mode === "register" ? 0 : -1}
+          aria-controls="auth-form-panel"
           aria-selected={mode === "register"}
-          onClick={() => {
-            setMode("register");
-            setMessage(undefined);
-            setPasswordVisible(false);
-          }}
+          onClick={() => selectMode("register")}
         >
           <UserPlus size={16} aria-hidden="true" />
           <span>Регистрация</span>
@@ -181,6 +212,9 @@ export function AuthPanel({
       </div>
       <form
         className="auth-login__form"
+        id="auth-form-panel"
+        role="tabpanel"
+        aria-labelledby={mode === "login" ? "auth-login-tab" : "auth-register-tab"}
         aria-busy={submitting}
         onSubmit={(event) => {
           event.preventDefault();

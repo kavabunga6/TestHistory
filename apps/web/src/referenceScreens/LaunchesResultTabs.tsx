@@ -36,6 +36,17 @@ export function ResultTabs({
     clippedTabs: []
   });
 
+  const alignSelectedTab = useCallback(() => {
+    const tabs = tabsRef.current;
+    const selected = tabs?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (tabs === null || tabs === undefined || selected === null || selected === undefined) return;
+
+    const viewport = tabs.getBoundingClientRect();
+    const selectedBounds = selected.getBoundingClientRect();
+    const selectedLeft = tabs.scrollLeft + selectedBounds.left - viewport.left;
+    tabs.scrollLeft = selectedLeft - (tabs.clientWidth - selectedBounds.width) / 2;
+  }, []);
+
   const updateScrollState = useCallback(() => {
     const wrapper = wrapperRef.current;
     const tabs = tabsRef.current;
@@ -51,11 +62,9 @@ export function ResultTabs({
     const viewport = tabs.getBoundingClientRect();
     const clippedTabs = Array.from(track.querySelectorAll<HTMLButtonElement>("button"))
       .filter((button) => {
+        if (button.getAttribute("aria-current") === "page") return false;
         const bounds = button.getBoundingClientRect();
-        return (
-          (bounds.left < viewport.left - 1 && bounds.right > viewport.left + 1) ||
-          (bounds.right > viewport.right + 1 && bounds.left < viewport.right - 1)
-        );
+        return bounds.left < viewport.left - 1 || bounds.right > viewport.right + 1;
       })
       .map((button) => button.dataset.tabId ?? "");
     const next = {
@@ -75,6 +84,7 @@ export function ResultTabs({
   }, []);
 
   useLayoutEffect(() => {
+    alignSelectedTab();
     updateScrollState();
     const wrapper = wrapperRef.current;
     const tabs = tabsRef.current;
@@ -83,34 +93,26 @@ export function ResultTabs({
       return;
     }
 
+    const handleResize = () => {
+      alignSelectedTab();
+      updateScrollState();
+    };
     if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", updateScrollState);
-      return () => window.removeEventListener("resize", updateScrollState);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
     }
 
-    const observer = new ResizeObserver(updateScrollState);
+    const observer = new ResizeObserver(handleResize);
     observer.observe(wrapper);
     observer.observe(tabs);
     observer.observe(track);
     return () => observer.disconnect();
-  }, [updateScrollState]);
+  }, [alignSelectedTab, updateScrollState]);
 
   useLayoutEffect(() => {
-    const tabs = tabsRef.current;
-    const selected = tabs?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (tabs === null || selected === null || selected === undefined) {
-      return;
-    }
-
-    const viewport = tabs.getBoundingClientRect();
-    const selectedBounds = selected.getBoundingClientRect();
-    if (selectedBounds.left < viewport.left - 1) {
-      tabs.scrollLeft += selectedBounds.left - viewport.left - 12;
-    } else if (selectedBounds.right > viewport.right + 1) {
-      tabs.scrollLeft += selectedBounds.right - viewport.right + 12;
-    }
+    alignSelectedTab();
     updateScrollState();
-  }, [activeTab, result.id, scrollState.overflowing, updateScrollState]);
+  }, [activeTab, result.id, scrollState.overflowing, alignSelectedTab, updateScrollState]);
 
   const scrollTabs = (direction: -1 | 1) => {
     const tabs = tabsRef.current;
@@ -166,7 +168,11 @@ export function ResultTabs({
               <button
                 className={activeTab === tab.id && !disabled ? "active" : ""}
                 data-tab-id={tab.id}
-                data-clipped={scrollState.clippedTabs.includes(tab.id) ? "true" : undefined}
+                data-clipped={
+                  activeTab !== tab.id && scrollState.clippedTabs.includes(tab.id)
+                    ? "true"
+                    : undefined
+                }
                 disabled={disabled}
                 key={tab.id}
                 type="button"

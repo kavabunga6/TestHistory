@@ -1,5 +1,5 @@
-﻿import { ChevronRight, RefreshCw, Trash2 } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, RefreshCw, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type {
   LaunchListItem,
@@ -167,6 +167,11 @@ export function LaunchesReferenceScreen({
   const [localSelectedResultId, setLocalSelectedResultId] = useState(selectedResultId ?? "");
   const [view, setView] = useState<LaunchView>(routeLaunchId !== undefined ? "detail" : "list");
   const launchTabsRef = useRef<HTMLElement | null>(null);
+  const [launchTabEdges, setLaunchTabEdges] = useState({
+    left: false,
+    right: false,
+    clippedTabs: [] as string[]
+  });
   const tabBodyRef = useRef<HTMLDivElement | null>(null);
   const resultListPositionsRef = useRef(new Map<string, number>());
   const resultListSelectionsRef = useRef(new Map<string, string>());
@@ -241,21 +246,58 @@ export function LaunchesReferenceScreen({
     }
   };
 
+  const updateLaunchTabEdges = useCallback(() => {
+    const tabs = launchTabsRef.current;
+    const buttons = tabs?.querySelectorAll<HTMLButtonElement>("button");
+    if (!tabs || !buttons || buttons.length === 0) return;
+    const viewport = tabs.getBoundingClientRect();
+    const left = buttons[0]!.getBoundingClientRect().left < viewport.left - 2;
+    const right = buttons[buttons.length - 1]!.getBoundingClientRect().right > viewport.right + 2;
+    const next = {
+      left,
+      right,
+      clippedTabs: Array.from(buttons)
+        .filter((button) => {
+          if (button.getAttribute("aria-current") === "page") return false;
+          const bounds = button.getBoundingClientRect();
+          return (
+            bounds.left < viewport.left + (left ? 24 : 0) ||
+            bounds.right > viewport.right - (right ? 24 : 0)
+          );
+        })
+        .map((button) => button.dataset.tabId ?? "")
+    };
+    setLaunchTabEdges((current) =>
+      current.left === next.left &&
+      current.right === next.right &&
+      current.clippedTabs.join(",") === next.clippedTabs.join(",")
+        ? current
+        : next
+    );
+  }, []);
+
   useLayoutEffect(() => {
     const tabs = launchTabsRef.current;
     const active = tabs?.querySelector<HTMLElement>('button[aria-current="page"]');
-    if (!tabs || !active) {
-      return;
-    }
+    if (!tabs || !active) return;
 
-    const tabsRect = tabs.getBoundingClientRect();
-    const activeRect = active.getBoundingClientRect();
-    if (activeRect.left < tabsRect.left) {
-      tabs.scrollLeft += activeRect.left - tabsRect.left - 12;
-    } else if (activeRect.right > tabsRect.right) {
-      tabs.scrollLeft += activeRect.right - tabsRect.right + 12;
+    const alignActiveTab = () => {
+      const tabsRect = tabs.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      const activeLeft = tabs.scrollLeft + activeRect.left - tabsRect.left;
+      tabs.scrollLeft = activeLeft - (tabs.clientWidth - activeRect.width) / 2;
+      updateLaunchTabEdges();
+    };
+    alignActiveTab();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", alignActiveTab);
+      return () => window.removeEventListener("resize", alignActiveTab);
     }
-  }, [activeTab, view]);
+    const observer = new ResizeObserver(alignActiveTab);
+    observer.observe(tabs);
+    observer.observe(active);
+    return () => observer.disconnect();
+  }, [activeTab, view, updateLaunchTabEdges]);
 
   useLayoutEffect(() => {
     if (activeTab !== "results" || view !== "detail") {
@@ -611,10 +653,16 @@ export function LaunchesReferenceScreen({
 
       <article className="launches-reference-frame">
         <div className="launches-reference-section-bar">
+          {launchTabEdges.left ? (
+            <span className="launches-reference-tab-edge is-left" aria-hidden="true">
+              <ChevronLeft size={16} />
+            </span>
+          ) : null}
           <nav
             className="launches-reference-tabs launches-reference-tabs--top"
             aria-label="Разделы запуска"
             ref={launchTabsRef}
+            onScroll={updateLaunchTabEdges}
           >
             {primaryTabs.map((tab) => {
               const active = activeTab === tab.id;
@@ -622,6 +670,8 @@ export function LaunchesReferenceScreen({
               return (
                 <button
                   aria-current={active ? "page" : undefined}
+                  data-clipped={launchTabEdges.clippedTabs.includes(tab.id) ? "true" : undefined}
+                  data-tab-id={tab.id}
                   key={tab.id}
                   type="button"
                   onClick={() => {
@@ -637,6 +687,11 @@ export function LaunchesReferenceScreen({
               );
             })}
           </nav>
+          {launchTabEdges.right ? (
+            <span className="launches-reference-tab-edge is-right" aria-hidden="true">
+              <ChevronRight size={16} />
+            </span>
+          ) : null}
         </div>
 
         <div className="launches-reference-tab-body" ref={tabBodyRef}>
@@ -672,6 +727,7 @@ export function LaunchesReferenceScreen({
               onQueryChange={changeResultQuery}
               onResultPageIndexChange={changeResultPageIndex}
               onResultPageSizeChange={changeResultPageSize}
+              onCloseResult={() => onOpenTab?.("results")}
               onFilterByTag={openResultsByTag}
               onSelectResult={(id) => openResultReport(id)}
               onStatusFilterChange={changeResultStatusFilter}
@@ -695,6 +751,8 @@ export function LaunchesReferenceScreen({
               launchId={selectedLaunch.id}
               loading={isResultLoading || isLaunchDetailLoading}
               results={launchResults}
+              onCloseResult={() => onOpenTab?.("errors")}
+              requestedResultId={routeResultId}
               routeResultTab={routeResultTab}
               selectedResult={selectedResult}
               onOpenResultTab={onOpenResultTab}

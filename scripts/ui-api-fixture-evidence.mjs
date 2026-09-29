@@ -67,10 +67,14 @@ function createVideoAttachment(item) {
 
 function createResultSteps(item, index) {
   const terminalStatus = item.status;
+  const terminalFailureDetails = item.statusDetails ?? item.raw?.statusDetails;
   const depth = index === 0 ? 6 : 2 + (index % 5);
   let nested = {
     name: "Проверить итоговое состояние",
     status: terminalStatus,
+    ...((terminalStatus === "failed" || terminalStatus === "broken") && terminalFailureDetails
+      ? { statusDetails: terminalFailureDetails }
+      : {}),
     start: 300,
     stop: item.durationMs - 40,
     attachments: [

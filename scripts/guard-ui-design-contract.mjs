@@ -84,6 +84,7 @@ const sources = new Map([
   ["apps/web/src/styles.css", read("apps/web/src/styles.css")],
   ["scripts/guard-button-overflow.mjs", read("scripts/guard-button-overflow.mjs")],
   ["scripts/capture-ui-screenshots.mjs", read("scripts/capture-ui-screenshots.mjs")],
+  ["scripts/ui-screenshot-screens.mjs", read("scripts/ui-screenshot-screens.mjs")],
   ["scripts/preview-server.mjs", read("scripts/preview-server.mjs")],
   ["scripts/ui-api-fixtures.mjs", read("scripts/ui-api-fixtures.mjs")]
 ]);
@@ -123,7 +124,7 @@ if (new Set(requiredScreens).size !== requiredScreens.length) {
 for (const screen of requiredScreens) {
   expectSnippet("docs/screenshots/expected-manifest.json", `"name": "${screen}"`);
   expectSnippet("docs/screenshots/README.md", `final/${screen}.png`);
-  expectSnippet("scripts/capture-ui-screenshots.mjs", `name: "${screen}"`);
+  expectSnippet("scripts/ui-screenshot-screens.mjs", `name: "${screen}"`);
 }
 
 for (const snippet of [
@@ -200,9 +201,8 @@ for (const route of [
   expectSnippet("docs/screenshots/expected-manifest.json", `"hash": "${route}"`);
 }
 
-for (const screen of requiredScreens.filter((screen) => !overflowGuardExclusions.has(screen))) {
-  expectSnippet("scripts/guard-button-overflow.mjs", `name: "${screen}"`);
-}
+expectSnippet("scripts/guard-button-overflow.mjs", "screens as screenshotScreens");
+expectSnippet("scripts/capture-ui-screenshots.mjs", 'screens } from "./ui-screenshot-screens.mjs"');
 
 for (const screen of overflowGuardExclusions) {
   expectSnippet("scripts/guard-button-overflow.mjs", `"${screen}"`);
@@ -385,8 +385,14 @@ for (const snippet of [
 
 for (const snippet of [
   "writeScreenshotManifest",
-  "viewport: { width: 1440, height: 1000 }",
+  "parseViewportDimension",
   'dialog: typeof screen.prepare === "function"',
+  "validateExpectedManifest"
+]) {
+  expectSnippet("scripts/capture-ui-screenshots.mjs", snippet);
+}
+
+for (const snippet of [
   "#settings/access",
   "#settings/tokens",
   "#settings/integrations",
@@ -397,7 +403,7 @@ for (const snippet of [
   "#launch/L-1289/result/PAY-1042/history",
   "#launch/L-1289/result/PAY-1042/defects"
 ]) {
-  expectSnippet("scripts/capture-ui-screenshots.mjs", snippet);
+  expectSnippet("scripts/ui-screenshot-screens.mjs", snippet);
 }
 
 for (const [relativePath, snippets] of [

@@ -71,6 +71,26 @@ describe("WorkspaceNavigation", () => {
     act(() => homeButton?.click());
     expect(container.querySelector('.nav-link[aria-current="page"]')?.textContent).toBe("Дашборды");
   });
+  it("keeps keyboard focus inside the mobile navigation dialog", () => {
+    act(() => root.render(<NavigationHarness />));
+
+    const menuButton = container.querySelector<HTMLButtonElement>(".mobile-shell-menu-button");
+    act(() => menuButton?.click());
+    expect(menuButton?.tabIndex).toBe(-1);
+    expect(
+      container.querySelector<HTMLButtonElement>(".mobile-navigation-backdrop")?.tabIndex
+    ).toBe(-1);
+
+    act(() => {
+      menuButton?.focus();
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    });
+    expect(document.activeElement).toBe(container.querySelector(".brand-home"));
+
+    act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(menuButton?.tabIndex).toBe(0);
+    expect(document.activeElement).toBe(menuButton);
+  });
 });
 
 function NavigationHarness({ initialMode = "dashboard" }: { initialMode?: WorkspaceMode }) {

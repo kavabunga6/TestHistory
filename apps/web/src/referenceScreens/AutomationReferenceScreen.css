@@ -385,6 +385,55 @@
   font: inherit;
 }
 
+.automation-events {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #dbe3ee;
+  border-radius: 7px;
+  padding: 10px 12px 12px;
+}
+
+.automation-events legend {
+  padding: 0 4px;
+  color: #52647c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.automation-events-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.automation-form .automation-events-options label {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  color: #33445c;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.automation-form .automation-events-options input[type="checkbox"] {
+  width: 16px;
+  min-height: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  padding: 0;
+}
+
+.automation-events-hint {
+  margin: 8px 0 0;
+  color: #9a4b11;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .automation-plan-form-heading {
   grid-column: 1 / -1;
   display: grid;
@@ -505,6 +554,17 @@
   padding: 7px 12px;
   color: #24324a;
   background: #fff;
+}
+
+.automation-form-actions .reference-primary-action {
+  border-color: #2563eb;
+  color: #fff;
+  background: #2563eb;
+}
+
+.automation-form-actions .reference-primary-action:hover:not(:disabled) {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
 }
 
 .automation-integration-columns {
@@ -700,8 +760,26 @@
     padding: 14px;
   }
 
+  .automation-plan-thql-label,
+  .automation-plan-thql-value {
+    grid-column: 1 / -1;
+  }
+
+  .automation-plan-thql-value code {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 8px;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
   .automation-form-actions {
     flex-wrap: wrap;
+  }
+
+  .automation-events-options {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .automation-form-actions button {
@@ -745,6 +823,8 @@
 
   .automation-table-row:not(.automation-table-head) > span:first-child {
     grid-column: 1 / -1;
+    justify-content: stretch;
+    justify-items: start;
   }
 
   .automation-table-row:not(.automation-table-head) > span:nth-child(2)::before,
@@ -805,5 +885,21 @@
 @media (max-width: 420px) {
   .automation-tabs button span {
     display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .automation-screen {
+    padding: 10px;
+  }
+
+  .automation-tabs button {
+    padding-inline: 1px;
+    font-size: 11px;
+  }
+
+  .automation-toolbar-actions button {
+    gap: 5px;
+    padding-inline: 9px;
   }
 }

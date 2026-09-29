@@ -41,7 +41,30 @@
 
 @media (max-width: 760px) {
   .launches-reference-section-bar {
+    position: relative;
     padding: 0;
+  }
+
+  .launches-reference-tab-edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    width: 24px;
+    display: grid;
+    place-items: center;
+    color: #52678b;
+    pointer-events: none;
+  }
+
+  .launches-reference-tab-edge.is-left {
+    left: 0;
+    background: #ffffff;
+  }
+
+  .launches-reference-tab-edge.is-right {
+    right: 0;
+    background: #ffffff;
   }
 
   .launches-reference-tabs--top {
@@ -51,6 +74,15 @@
     overflow-y: hidden;
     padding: 0 16px;
     scroll-padding-inline: 16px;
+  }
+
+  .launches-reference-tabs--top button[data-clipped="true"] {
+    visibility: hidden;
+  }
+
+  .launches-reference-tabs--top::after {
+    flex: 0 0 min(40vw, 180px);
+    content: "";
   }
 
   .launches-reference-heading h1 {

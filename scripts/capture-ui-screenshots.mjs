@@ -4,220 +4,43 @@ import { fileURLToPath } from "node:url";
 import { launchChromiumWithFallback } from "./playwright-browser.mjs";
 import { startPreviewServer, stopPreviewServer } from "./preview-server.mjs";
 import { createEmptyUiApiResponse, createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
-import { seedDashboardOwnerWidgets, seedDashboardWidget } from "./ui-dashboard-screen-state.mjs";
-import { showComparisonMatrix, verifyComparisonMatrix } from "./ui-comparison-screen-state.mjs";
-import { verifyLaunchErrorsScreen } from "./ui-launch-error-screen-state.mjs";
+import { screens } from "./ui-screenshot-screens.mjs";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const outputDir = path.join(workspace, "docs/screenshots/final");
+const outputDir = path.resolve(
+  workspace,
+  process.env.WEB_SCREENSHOT_OUTPUT_DIR ?? "docs/screenshots/final"
+);
 const expectedManifestPath = path.join(workspace, "docs/screenshots/expected-manifest.json");
 const expectedManifest = JSON.parse(readFileSync(expectedManifestPath, "utf8"));
+const viewport = {
+  width: parseViewportDimension(process.env.WEB_SCREENSHOT_WIDTH, 1440),
+  height: parseViewportDimension(process.env.WEB_SCREENSHOT_HEIGHT, 1000)
+};
+const requestedScreenNames = (process.env.WEB_SCREENSHOT_ONLY ?? "")
+  .split(",")
+  .map((name) => name.trim())
+  .filter(Boolean);
+if (
+  (viewport.width !== 1440 || viewport.height !== 1000 || requestedScreenNames.length > 0) &&
+  process.env.WEB_SCREENSHOT_OUTPUT_DIR === undefined
+) {
+  throw new Error("Set WEB_SCREENSHOT_OUTPUT_DIR for a non-default viewport or screen subset");
+}
 const port = process.env.WEB_SCREENSHOT_PORT ?? "5174";
 const existingServerUrl = process.env.WEB_SCREENSHOT_BASE_URL;
 const baseUrl = existingServerUrl ?? `http://127.0.0.1:${port}`;
 
-const screens = [
-  { name: "auth-login", hash: "#launch", auth: false },
-  { name: "projects", hash: "#projects" },
-  { name: "dashboard", hash: "#dashboard" },
-  {
-    name: "dashboard-owner-groups",
-    hash: "#dashboard",
-    beforeNavigate: seedDashboardOwnerWidgets,
-    verify: async (page) => {
-      await page.locator(".dashboard-reference-table-widget.is-grouped tbody tr").first().waitFor();
-      if ((await page.locator(".dashboard-reference-widget-card.is-unavailable").count()) !== 0) {
-        throw new Error("Grouped dashboard screenshot contains an unavailable widget");
-      }
-    }
-  },
-  {
-    name: "test-cases",
-    hash: "#case?list=1",
-    interact: async (page) => {
-      await page.getByRole("searchbox", { name: "THQL поиск тест-кейсов" }).fill("Оплата");
-    }
-  },
-  { name: "launches", hash: "#launch" },
-  {
-    name: "launch-detail",
-    hash: "#launch/L-1289",
-    verify: async (page) => {
-      await page
-        .locator('.launches-reference-overview-donut[aria-label="Результаты запуска: 100 тестов"]')
-        .waitFor();
-      for (const [status, count] of [
-        ["passed", "62"],
-        ["failed", "18"],
-        ["broken", "8"],
-        ["unknown", "4"],
-        ["skipped", "8"]
-      ]) {
-        const actual = await page
-          .locator(`.launches-reference-overview-legend-item.is-${status} strong`)
-          .textContent();
-        if (actual?.trim() !== count) {
-          throw new Error(`Launch overview screenshot has ${status}=${actual}, expected ${count}`);
-        }
-      }
-    }
-  },
-  {
-    name: "launch-results",
-    hash: "#launch/L-1289/results",
-    verify: async (page) => {
-      await page.locator(".launches-reference-result-table > button").first().waitFor();
-      const rowCount = await page.locator(".launches-reference-result-table > button").count();
-      const pageRange = await page.locator(".launches-results-pagination-range").textContent();
-      if (rowCount !== 25 || !/1\s*[–-]\s*25\s+из\s+100/.test(pageRange ?? "")) {
-        throw new Error(
-          `Launch results screenshot requires 25 of 100 rows; got ${rowCount}, ${pageRange}`
-        );
-      }
-    }
-  },
-  { name: "launch-result-history", hash: "#launch/L-1289/result/PAY-1042/history" },
-  { name: "launch-result-defects", hash: "#launch/L-1289/result/PAY-1042/defects" },
-  {
-    name: "launch-errors",
-    hash: "#launch/L-1289/errors",
-    verify: verifyLaunchErrorsScreen
-  },
-  {
-    name: "launch-charts",
-    hash: "#launch/L-1289/charts",
-    verify: async (page) => {
-      await page.getByLabel("Распределение по продолжительности").waitFor();
-    }
-  },
-  {
-    name: "launch-comparison",
-    hash: "#launch/L-1289/comparison",
-    interact: async (page) => {
-      await page.getByLabel("Сравнить текущий запуск с").selectOption("L-1288");
-      await page.getByRole("button", { name: "Сравнить", exact: true }).click();
-    },
-    verify: async (page) => {
-      await page.getByRole("table", { name: "Отличия тестов между запусками" }).waitFor();
-      await page.getByText("Оплата картой после повторной авторизации").waitFor();
-    }
-  },
-  {
-    name: "launch-comparison-matrix",
-    hash: "#launch/L-1289/comparison",
-    interact: showComparisonMatrix,
-    verify: verifyComparisonMatrix
-  },
-  { name: "selected-test-case", hash: "#case/PAY-1042/overview" },
-  { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
-  { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
-  { name: "defects", hash: "#defects/PAY-337" },
-  { name: "automation", hash: "#automation" },
-  {
-    name: "automation-plans",
-    hash: "#automation",
-    verify: async (page) => {
-      await page.getByText("Регрессия оформления заказа").waitFor();
-      if ((await page.locator(".automation-grid .automation-card").count()) !== 3) {
-        throw new Error("Automation plans screenshot requires three populated plans");
-      }
-    }
-  },
-  {
-    name: "automation-jobs",
-    hash: "#automation",
-    interact: async (page) => {
-      await page.getByRole("tab", { name: /CI-задачи/ }).click();
-    },
-    verify: async (page) => {
-      await page.getByText("Checkout regression #7842").waitFor();
-      if ((await page.locator('[aria-label="CI-задачи"] .automation-table-row').count()) !== 5) {
-        throw new Error("Automation jobs screenshot requires four populated jobs");
-      }
-    }
-  },
-  {
-    name: "automation-integrations",
-    hash: "#automation",
-    interact: async (page) => {
-      await page.getByRole("tab", { name: /Интеграции/ }).click();
-    },
-    verify: async (page) => {
-      await page.getByText("QA: результаты прогонов").waitFor();
-      await page
-        .getByRole("table", { name: "Доставки интеграций" })
-        .getByText("automation-job.failed")
-        .first()
-        .waitFor();
-    }
-  },
-  { name: "analytics", hash: "#analytics" },
-  {
-    name: "dialog-dashboard-widget-delete",
-    hash: "#dashboard",
-    beforeNavigate: async (page) => {
-      await seedDashboardWidget(page);
-    },
-    prepare: async (page) => {
-      await page.locator(".dashboard-reference-widget-actions button").last().click();
-    }
-  },
-  { name: "settings-access", hash: "#settings/access" },
-  {
-    name: "settings-visibility",
-    hash: "#settings/visibility",
-    verify: async (page) => {
-      await page.locator(".project-settings__policy-list").waitFor();
-    }
-  },
-  { name: "settings-tokens", hash: "#settings/tokens" },
-  { name: "settings-integrations", hash: "#settings/integrations" },
-  { name: "settings-retention", hash: "#settings/retention" },
-  { name: "settings-fields", hash: "#settings/fields" },
-  {
-    name: "dialog-role-matrix",
-    hash: "#settings/access",
-    prepare: async (page) => {
-      await page.getByTitle("Показать матрицу прав").click();
-    }
-  },
-  {
-    name: "dialog-member-edit",
-    hash: "#settings/access",
-    prepare: async (page) => {
-      await page
-        .locator(".project-settings__member-card .project-settings__icon-button")
-        .first()
-        .click();
-    }
-  },
-  {
-    name: "dialog-integration-edit",
-    hash: "#settings/integrations",
-    prepare: async (page) => {
-      await page.getByRole("button", { name: "Добавить" }).click();
-    }
-  },
-  {
-    name: "dialog-api-token",
-    hash: "#settings/tokens",
-    prepare: async (page) => {
-      await page
-        .locator(".project-settings__panel")
-        .filter({ hasText: "API токены проекта" })
-        .getByRole("button", { name: "Создать", exact: true })
-        .click();
-    }
-  },
-  { name: "quarantine-empty", hash: "#launch/L-1289/results?query=muted+%3D+true" },
-  {
-    name: "dialog-delete-launch",
-    hash: "#launch/L-1289",
-    prepare: async (page) => {
-      await page.getByRole("button", { name: "Удалить" }).first().click();
-    }
-  }
-];
+const unknownScreenNames = requestedScreenNames.filter(
+  (name) => !screens.some((screen) => screen.name === name)
+);
+if (unknownScreenNames.length > 0) {
+  throw new Error(`Unknown screenshot screens: ${unknownScreenNames.join(", ")}`);
+}
+const captureScreens =
+  requestedScreenNames.length > 0
+    ? screens.filter((screen) => requestedScreenNames.includes(screen.name))
+    : screens;
 
 validateExpectedManifest();
 
@@ -240,14 +63,14 @@ try {
   browser = await launchScreenshotBrowser();
   const page = await browser.newPage({
     deviceScaleFactor: 1,
-    viewport: { width: 1440, height: 1000 }
+    viewport
   });
   page.setDefaultTimeout(5_000);
   page.setDefaultNavigationTimeout(15_000);
   await installApiMocks(page);
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
 
-  for (const screen of screens) {
+  for (const screen of captureScreens) {
     await page.evaluate(() => localStorage.clear()).catch(() => undefined);
     if (screen.auth !== false) {
       await page.addInitScript(() => {
@@ -289,7 +112,9 @@ try {
 
   await browser.close();
   writeScreenshotManifest();
-  console.log(`Captured ${screens.length} screenshots in ${path.relative(workspace, outputDir)}`);
+  console.log(
+    `Captured ${captureScreens.length} screenshots in ${path.relative(workspace, outputDir)}`
+  );
 } catch (error) {
   console.error(formatScreenshotError(error));
   process.exitCode = 1;
@@ -299,7 +124,7 @@ try {
 }
 
 function writeScreenshotManifest() {
-  const files = screens.map((screen) => {
+  const files = captureScreens.map((screen) => {
     const file = `${screen.name}.png`;
     const fullPath = path.join(outputDir, file);
     const stats = statSync(fullPath);
@@ -321,7 +146,7 @@ function writeScreenshotManifest() {
     `${JSON.stringify(
       {
         generatedAt: new Date().toISOString(),
-        viewport: expectedManifest.viewport,
+        viewport,
         count: files.length,
         files
       },
@@ -371,6 +196,15 @@ function validateExpectedManifest() {
   if (mismatches.length > 0) {
     throw new Error(`Screenshot expected manifest drift:\n- ${mismatches.join("\n- ")}`);
   }
+}
+
+function parseViewportDimension(value, fallback) {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`Invalid screenshot viewport dimension: ${value}`);
+  }
+  return parsed;
 }
 
 function formatScreenshotError(error) {

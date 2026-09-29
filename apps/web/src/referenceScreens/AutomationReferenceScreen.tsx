@@ -46,6 +46,14 @@ const deliveryEventLabels: Record<string, string> = {
   "launch.failed": "Запуск завершился ошибкой",
   "quality-gate.failed": "Порог качества не пройден"
 };
+const notificationEvents = [
+  "automation-job.failed",
+  "automation-job.succeeded",
+  "automation-job.canceled",
+  "launch.closed",
+  "launch.failed",
+  "quality-gate.failed"
+] as const;
 function integrationAddressLabel(value: string): string {
   try {
     const url = new URL(value);
@@ -506,8 +514,13 @@ function NotificationIntegrationForm({
   onCreated: () => Promise<void>;
 }) {
   const { busy, error, submit } = useAutomationFormSubmit();
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([
+    "automation-job.failed",
+    "automation-job.succeeded"
+  ]);
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (selectedEvents.length === 0) return;
     const form = new FormData(event.currentTarget);
     const secretEnvVar = String(form.get("secretEnvVar") ?? "").trim();
     await submit(async () => {
@@ -515,7 +528,7 @@ function NotificationIntegrationForm({
         name: String(form.get("name")),
         provider: String(form.get("provider")),
         endpointUrl: String(form.get("endpointUrl")),
-        events: ["automation-job.failed", "automation-job.succeeded"],
+        events: selectedEvents,
         ...(secretEnvVar ? { secretEnvVar } : {})
       });
       await onCreated();
@@ -553,12 +566,46 @@ function NotificationIntegrationForm({
           placeholder="TESTHISTORY_WEBHOOK_SECRET"
         />
       </label>
+      <fieldset
+        aria-describedby={selectedEvents.length === 0 ? "automation-events-hint" : undefined}
+        className="automation-events automation-form-wide"
+      >
+        <legend>События для уведомлений</legend>
+        <div className="automation-events-options">
+          {notificationEvents.map((eventName) => (
+            <label key={eventName}>
+              <input
+                checked={selectedEvents.includes(eventName)}
+                type="checkbox"
+                value={eventName}
+                onChange={(event) =>
+                  setSelectedEvents((current) =>
+                    event.target.checked
+                      ? [...current, eventName]
+                      : current.filter((item) => item !== eventName)
+                  )
+                }
+              />
+              <span>{deliveryEventLabels[eventName]}</span>
+            </label>
+          ))}
+        </div>
+        {selectedEvents.length === 0 ? (
+          <p className="automation-events-hint" id="automation-events-hint" role="status">
+            Выберите хотя бы одно событие, чтобы сохранить уведомление.
+          </p>
+        ) : null}
+      </fieldset>
       <AutomationFormError error={error} />
       <div className="automation-form-actions">
         <button disabled={busy} type="button" onClick={onCancel}>
           Отмена
         </button>
-        <button className="reference-primary-action" disabled={busy} type="submit">
+        <button
+          className="reference-primary-action"
+          disabled={busy || selectedEvents.length === 0}
+          type="submit"
+        >
           {busy ? "Сохраняем…" : "Сохранить"}
         </button>
       </div>
@@ -702,8 +749,8 @@ function PlansPanel({ data, creating, setCreating, onChanged }: PanelProps) {
             <dl>
               {plan.selector.thql ? (
                 <>
-                  <dt>THQL</dt>
-                  <dd>
+                  <dt className="automation-plan-thql-label">THQL</dt>
+                  <dd className="automation-plan-thql-value">
                     <code>{plan.selector.thql}</code>
                   </dd>
                 </>

@@ -316,8 +316,7 @@
 }
 
 .launches-reference-result-report .launches-reference-result-tabs button[data-clipped="true"] {
-  opacity: 0;
-  pointer-events: none;
+  visibility: hidden;
 }
 
 .launches-reference-result-report .launches-reference-result-overview {

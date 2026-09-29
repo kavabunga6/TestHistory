@@ -4,7 +4,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 760px) {
   .dashboard-reference-widget-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -61,6 +61,10 @@
     max-width: none;
   }
 
+  .dashboard-reference-launch-control {
+    flex: 0 0 auto;
+  }
+
   .dashboard-reference-head-actions > button {
     height: auto;
     white-space: normal;
@@ -69,7 +73,7 @@
 
   .dashboard-reference-widget-grid {
     gap: 12px;
-    padding: 12px;
+    padding: 0;
   }
 
   .dashboard-reference-table-widget:not(.is-grouped) td:nth-child(2) {

@@ -77,7 +77,16 @@ import type {
   ApiTestCaseListReadModel,
   ApiTestCaseSummaryReadModel
 } from "./m1WorkspaceApiTypes.js";
-import { mapApiLaunch, mapApiLaunchListItem, mapApiResult } from "./m1WorkspaceMappers.js";
+import {
+  mapApiLaunch,
+  mapApiLaunchListItem,
+  mapApiResult,
+  mapApiTestCaseSummary
+} from "./m1WorkspaceMappers.js";
+import {
+  loadLatestTestCaseHistoryPage,
+  selectLatestTestCaseResultPoint
+} from "./m1WorkspaceTestCaseEvidence.js";
 
 export function mapM1WorkspaceResponse(response: M1WorkspaceResponse): M1Workspace {
   return {
@@ -338,16 +347,38 @@ export async function fetchM1Workspace(options: LoadM1WorkspaceOptions = {}): Pr
         )}/history?projectId=${encodeURIComponent(project.id)}&limit=${workspaceInitialHistoryLimit}`
       )
     ]);
+    const latestHistory = await loadLatestTestCaseHistoryPage(
+      project.id,
+      preferredTestCaseId,
+      history
+    );
     const hydratedTestCase =
-      history.points.length > 0 ? { ...testCase, history: history.points } : testCase;
-
-    return mapTestCaseSummariesToWorkspace({
+      latestHistory.points.length > 0 ? { ...testCase, history: latestHistory.points } : testCase;
+    const latestPoint = selectLatestTestCaseResultPoint(hydratedTestCase.history ?? []);
+    const latestResult =
+      latestPoint === undefined
+        ? undefined
+        : await getJson<ApiResultDetailsReadModel>(
+            `/api/v1/launches/${encodeURIComponent(latestPoint.launchId)}/results/${encodeURIComponent(latestPoint.resultUuid)}`
+          ).catch(() => undefined);
+    const mappedWorkspace = mapTestCaseSummariesToWorkspace({
       launchDetails: catalogLaunchDetails,
       launches,
       testCases: testCasesPayload.items,
       page: testCasesPayload.page,
       selectedTestCase: hydratedTestCase
     });
+    const selectedTestCaseDetail = mapApiTestCaseSummary(
+      hydratedTestCase,
+      latestResult?.uuid === latestPoint?.resultUuid ? latestResult : undefined
+    );
+    return {
+      ...mappedWorkspace,
+      selectedTestCaseDetail,
+      results: mappedWorkspace.results.map((result) =>
+        result.id === selectedTestCaseDetail.id ? selectedTestCaseDetail : result
+      )
+    };
   }
 
   if (selectedLaunch === undefined) {

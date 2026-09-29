@@ -644,15 +644,20 @@ describe("settings table readability contracts", () => {
       new URL("../../../scripts/guard-button-overflow.mjs", import.meta.url),
       "utf8"
     );
+    const screenDefinitions = readFileSync(
+      new URL("../../../scripts/ui-screenshot-screens.mjs", import.meta.url),
+      "utf8"
+    );
 
     for (const source of [captureScript, buttonGuardScript]) {
-      expect(source).toContain("#case/PAY-1042");
-      expect(source).toContain("#defects/PAY-337");
-      expect(source).not.toContain('hash: "#case"');
-      expect(source).not.toContain('hash: "#defects"');
+      expect(source).toContain('from "./ui-screenshot-screens.mjs"');
     }
-    expect(captureScript).toContain("#launch/L-1289/result/PAY-1042/history");
-    expect(captureScript).toContain("#launch/L-1289/result/PAY-1042/defects");
+    expect(screenDefinitions).toContain("#case/PAY-1042");
+    expect(screenDefinitions).toContain("#defects/PAY-337");
+    expect(screenDefinitions).toContain('name: "defects-list", hash: "#defects"');
+    expect(screenDefinitions).toContain("#launch/L-1289/result/PAY-1042/history");
+    expect(screenDefinitions).toContain("#launch/L-1289/result/PAY-1042/defects");
+    expect(screenDefinitions).not.toContain('hash: "#case"');
   });
 
   it("keeps settings dialogs visually aligned with global modal rules", () => {

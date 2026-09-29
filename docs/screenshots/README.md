@@ -17,7 +17,7 @@ Rules:
 
 Expected final screen set:
 
-- Auth login
+- Auth login and registration
 - Projects
 - Dashboard
 - Test case list
@@ -26,7 +26,7 @@ Expected final screen set:
 - Launch result tabs
 - Selected test case
 - Selected test case tabs
-- Defects
+- Defect list and detail
 - Automation
 - Analytics
 - Project settings tabs
@@ -45,35 +45,42 @@ headless shell or a regular Chromium executable from the local cache. If local b
 blocked, use the CI `ui-screenshot-evidence` artifact.
 When a local dev server is already running, set `WEB_SCREENSHOT_BASE_URL=http://127.0.0.1:5173`
 to reuse it instead of starting a second preview server.
+For responsive review, set `WEB_SCREENSHOT_WIDTH`, `WEB_SCREENSHOT_HEIGHT`, and
+`WEB_SCREENSHOT_OUTPUT_DIR` to capture the same routes at another viewport without replacing the
+desktop evidence. `WEB_SCREENSHOT_ONLY` accepts comma-separated screen names for a focused check;
+it also requires a separate output directory.
 
-| File                                | Screen             | Evidence purpose                                                               |
-| ----------------------------------- | ------------------ | ------------------------------------------------------------------------------ |
-| `final/projects.png`                | Projects           | Project navigation and project state surface.                                  |
-| `final/dashboard.png`               | Dashboard          | Launch health summary and default configurable THQL widgets.                   |
-| `final/dashboard-owner-groups.png`  | Dashboard          | Saved problem-owner grouping and active-result metric.                         |
-| `final/test-cases.png`              | Test case list     | Search, selection, and list pagination.                                        |
-| `final/launches.png`                | Launch list        | Launch table, filters, counters, and lifecycle state.                          |
-| `final/launch-detail.png`           | Launch detail      | A 100-result launch with status counters, artifacts, and close/upload context. |
-| `final/selected-test-case.png`      | Selected test case | History, retries/flaky state, metadata, and detail tabs.                       |
-| `final/defects.png`                 | Defects            | Defect grouping, mute/readiness state, and operational actions.                |
-| `final/automation.png`              | Automation         | Empty test-plan state.                                                         |
-| `final/automation-plans.png`        | Test plans         | Populated plans with selectors and lifecycle states.                           |
-| `final/automation-jobs.png`         | CI tasks           | Populated jobs with provider, plan, and varied statuses.                       |
-| `final/automation-integrations.png` | Integrations       | Notifications, issue trackers, and recent deliveries.                          |
-| `final/analytics.png`               | Analytics          | Analytics metrics, risk signals, and table output.                             |
+| File                                | Screen             | Evidence purpose                                                                                    |
+| ----------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `final/projects.png`                | Projects           | Project navigation and project state surface.                                                       |
+| `final/dashboard.png`               | Dashboard          | Launch health summary and default configurable THQL widgets.                                        |
+| `final/dashboard-owner-groups.png`  | Dashboard          | Saved problem-owner grouping and active-result metric; mobile capture scrolls the widget into view. |
+| `final/test-cases.png`              | Test case list     | Search, selection, and list pagination.                                                             |
+| `final/launches.png`                | Launch list        | Launch table, filters, counters, and lifecycle state.                                               |
+| `final/launch-detail.png`           | Launch detail      | A 100-result launch with status counters, artifacts, and close/upload context.                      |
+| `final/selected-test-case.png`      | Selected test case | History, retries/flaky state, metadata, and detail tabs.                                            |
+| `final/defects.png`                 | Defects            | Defect grouping, mute/readiness state, and operational actions.                                     |
+| `final/automation.png`              | Automation         | Empty test-plan state.                                                                              |
+| `final/automation-plans.png`        | Test plans         | Populated plans with selectors and lifecycle states.                                                |
+| `final/automation-jobs.png`         | CI tasks           | Populated jobs with provider, plan, and varied statuses.                                            |
+| `final/automation-integrations.png` | Integrations       | Notifications, issue trackers, and recent deliveries.                                               |
+| `final/analytics.png`               | Analytics          | Analytics metrics, risk signals, and table output.                                                  |
 
 The capture script also records deeper route and dialog states for design review and CI evidence:
 
 - `final/auth-login.png`
+- `final/auth-register.png`
 - `final/launch-results.png` shows the 100-result launch with a 25-row first page and test detail.
 - `final/launch-result-history.png`
 - `final/launch-result-defects.png`
 - `final/launch-errors.png` shows grouped failures and their selected result.
-- `final/launch-charts.png` shows duration distribution for the loaded page of the 100-result launch.
+- `final/launch-charts.png` shows duration distribution for the complete 100-result launch.
 - `final/launch-comparison.png` shows a populated comparison against a second synthetic launch.
 - `final/launch-comparison-matrix.png` shows test status history across three launches, including a test present only in the intermediate run.
 - `final/selected-test-case-history.png`
+- `final/selected-test-case-scenario.png` shows real nested steps and the exception inside the failed step.
 - `final/selected-test-case-defects.png`
+- `final/defects-list.png` from `#defects`
 - `final/defects.png` from `#defects/PAY-337`
 - `final/dialog-dashboard-widget-delete.png`
 - `final/settings-access.png`
@@ -85,6 +92,7 @@ The capture script also records deeper route and dialog states for design review
 - `final/dialog-role-matrix.png`
 - `final/dialog-member-edit.png`
 - `final/dialog-integration-edit.png`
+- `final/dialog-integration-add.png`
 - `final/dialog-api-token.png`
 - `final/quarantine-empty.png` shows the empty filtered state with a reset action.
 - `final/dialog-delete-launch.png`

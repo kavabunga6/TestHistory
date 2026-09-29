@@ -31,7 +31,7 @@ import {
 } from "./ReferenceListPagination.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 import { useResizableListWidth } from "./useResizableListWidth.js";
-import { useMobileDetailNavigation } from "./useMobileDetailNavigation.js";
+import { useMobileDetailNavigation, useMobileWidth } from "./useMobileDetailNavigation.js";
 
 import "./DefectsReferenceScreen.css";
 
@@ -76,6 +76,7 @@ const DEFECT_LIST_MAX_WIDTH = 720;
 export function DefectsReferenceScreen({
   onDeleteDefect,
   onOpenDefect,
+  onOpenList,
   onPageIndexChange,
   onPageSizeChange,
   page: serverPage,
@@ -90,6 +91,7 @@ export function DefectsReferenceScreen({
 }: {
   onDeleteDefect?: ((id: string) => void) | undefined;
   onOpenDefect?: ((id: string) => void) | undefined;
+  onOpenList?: (() => void) | undefined;
   onPageIndexChange?: ((index: number) => void) | undefined;
   onPageSizeChange?: ((size: number) => void) | undefined;
   page?: ReferenceListPage | undefined;
@@ -106,6 +108,7 @@ export function DefectsReferenceScreen({
   const query = controlledQuery ?? localQuery;
   const setQuery = onQueryChange ?? setLocalQuery;
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
+  const isMobile = useMobileWidth(980);
   const [selectedDefectId, setSelectedDefectId] = useState<string | undefined>();
   const listRef = useRef<HTMLDivElement>(null);
   const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
@@ -207,7 +210,7 @@ export function DefectsReferenceScreen({
   return (
     <section
       ref={screenRef}
-      className={`defects-reference-screen ${resizing ? "is-resizing" : ""}`}
+      className={`defects-reference-screen ${resizing ? "is-resizing" : ""} ${!effectiveSelectedDefectId ? "is-mobile-list-route" : selectedDefect ? "is-mobile-detail-route" : ""}`}
       style={screenStyle}
       aria-label="Дефекты"
     >
@@ -269,14 +272,17 @@ export function DefectsReferenceScreen({
           <div className="defects-reference-list" ref={listRef}>
             {visibleDefects.map((defect) => (
               <button
-                aria-pressed={selectedDefect?.id === defect.id}
+                aria-pressed={
+                  (Boolean(effectiveSelectedDefectId) || !isMobile) &&
+                  selectedDefect?.id === defect.id
+                }
                 aria-label={`${defect.title}, ${formatDefectStatus(defect.status)}, ${defect.id}`}
-                className={`defects-reference-row ${selectedDefect?.id === defect.id ? "selected" : ""}`}
+                className={`defects-reference-row ${(effectiveSelectedDefectId || !isMobile) && selectedDefect?.id === defect.id ? "selected" : ""}`}
                 key={defect.id}
                 type="button"
                 onClick={() => {
-                  setSelectedDefectId(defect.id);
-                  onOpenDefect?.(defect.id);
+                  if (onOpenDefect) onOpenDefect(defect.id);
+                  else setSelectedDefectId(defect.id);
                   if (selectedDefect?.id === defect.id) showDetail();
                 }}
               >
@@ -350,7 +356,13 @@ export function DefectsReferenceScreen({
         ) : (
           <DefectDetails
             defect={selectedDefect}
-            onBackToList={onBackToList}
+            onBackToList={() => {
+              if (onOpenList) onOpenList();
+              else {
+                setSelectedDefectId(undefined);
+                onBackToList();
+              }
+            }}
             onDeleteDefect={onDeleteDefect}
           />
         )}

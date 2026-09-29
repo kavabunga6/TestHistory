@@ -44,6 +44,10 @@ describe("dashboard aggregate states", () => {
       "Успешных результатов: 9 000"
     );
     expect(container.textContent).not.toContain("Ретраи 0");
+    expect(container.textContent).toContain("Среднее 120 мс");
+    expect(
+      container.querySelector(".dashboard-reference-table-widget tbody td:last-child")?.textContent
+    ).toBe("120 мс");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/launches/launch-1/dashboard/aggregate");
 

@@ -1,5 +1,13 @@
 import type { LaunchErrorSummaryReadModel } from "@testhistory/contracts";
 import { requestJson } from "../apiHttp.js";
+import { formatStatus } from "./LaunchesReferenceFormatters.js";
+
+export function formatLaunchErrorGroupHeading(name: string): string {
+  return name.replace(
+    /(со статусом )(failed|broken)$/,
+    (_, prefix: string, status: "failed" | "broken") => `${prefix}«${formatStatus(status)}»`
+  );
+}
 
 export async function loadLaunchErrorSummary(
   launchId: string,

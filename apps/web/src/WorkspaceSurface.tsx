@@ -1,5 +1,5 @@
 import { ChevronRight, CircleDot, GitBranch, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 
 import {
   getDeniedUiModel,
@@ -199,6 +199,35 @@ export function WorkspaceSurface({
     () => (selectedProject === undefined ? undefined : emptyProjectSettings(selectedProject)),
     [selectedProject]
   );
+  const primaryColumnRef = useRef<HTMLElement>(null);
+  const previousModeRef = useRef(mode);
+  const headingFocusPendingRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (previousModeRef.current !== mode) {
+      previousModeRef.current = mode;
+      headingFocusPendingRef.current = document.activeElement === document.body;
+    }
+    if (!headingFocusPendingRef.current) {
+      return;
+    }
+
+    const screen = primaryColumnRef.current?.firstElementChild;
+    if (screen === null || screen === undefined) {
+      return;
+    }
+    if (mode !== "projects" && screen.classList.contains("projects-reference")) {
+      return;
+    }
+
+    const heading = screen.querySelector<HTMLElement>("h1");
+    if (heading === null) {
+      return;
+    }
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    headingFocusPendingRef.current = false;
+  }, [mode, projectSelection?.selectedProjectId, projectSelection?.status, workspaceLoading]);
   const runtimeModel = getRuntimeUiModel(apiState);
   const denied = apiState.denied;
   const referenceMode =
@@ -241,6 +270,7 @@ export function WorkspaceSurface({
           }`}
         >
           <section
+            ref={primaryColumnRef}
             className={`primary-column ${referenceMode ? "reference-primary-column" : ""} ${
               splitReferenceMode ? "reference-primary-column--split" : ""
             }`}
@@ -364,6 +394,7 @@ export function WorkspaceSurface({
                 results={workspace.results}
                 selectedId={testCaseRouteId ?? selectedId}
                 onSelect={onSelect}
+                onOpenList={() => onModeChange("case")}
                 onPageIndexChange={onListPageIndexChange}
                 onPageSizeChange={onListPageSizeChange}
                 onQueryChange={onListQueryChange}
@@ -389,6 +420,7 @@ export function WorkspaceSurface({
                 onPageSizeChange={onListPageSizeChange}
                 onQueryChange={onListQueryChange}
                 onOpenDefect={onOpenDefect}
+                onOpenList={() => onModeChange("defects")}
               />
             ) : mode === "automation" ? (
               <AutomationReferenceScreen projectId={projectSelection?.selectedProjectId} />

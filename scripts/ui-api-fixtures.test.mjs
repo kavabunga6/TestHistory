@@ -74,6 +74,13 @@ test("UI fixture exposes 100 varied results with navigable details and evidence"
   assert.ok(
     selected.attachments.some((attachment) => attachment.previewUrl?.startsWith("data:image/"))
   );
+  let failedStep = selected.steps.find((step) => step.status === "failed");
+  while (failedStep?.steps?.some((step) => step.status === "failed")) {
+    failedStep = failedStep.steps.find((step) => step.status === "failed");
+  }
+  assert.equal(failedStep?.name, "Проверить итоговое состояние");
+  assert.equal(failedStep.statusDetails.message, selected.statusDetails.message);
+  assert.equal(failedStep.statusDetails.trace, selected.statusDetails.trace);
 });
 
 test("UI fixture pagination, analytics and dashboard agree on 100 results", () => {

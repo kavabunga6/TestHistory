@@ -12,7 +12,7 @@
   Trash2,
   XCircle
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 import {
@@ -58,7 +58,7 @@ import {
 } from "./ReferenceListPagination.js";
 import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 import { useResizableListWidth } from "./useResizableListWidth.js";
-import { useMobileDetailNavigation } from "./useMobileDetailNavigation.js";
+import { useMobileDetailNavigation, useMobileWidth } from "./useMobileDetailNavigation.js";
 
 import "./TestCaseDetailReferenceScreen.css";
 
@@ -104,6 +104,7 @@ export function TestCaseDetailReferenceScreen({
   onPageSizeChange,
   onDeleteTestCase,
   onOpenResult,
+  onOpenList,
   onOpenLaunchResultsByTag,
   onOpenTab,
   onSelect,
@@ -124,6 +125,7 @@ export function TestCaseDetailReferenceScreen({
   onPageSizeChange?: ((size: number) => void) | undefined;
   onDeleteTestCase?: ((id: string) => void) | undefined;
   onOpenResult?: OpenTestResult | undefined;
+  onOpenList?: (() => void) | undefined;
   onOpenLaunchResultsByTag?: ((tag: string, resultId: string) => void) | undefined;
   onOpenTab?: ((tab: string) => void) | undefined;
   onSelect?: ((id: string) => void) | undefined;
@@ -144,6 +146,7 @@ export function TestCaseDetailReferenceScreen({
   const query = controlledQuery ?? localQuery;
   const setQuery = onQueryChange ?? setLocalQuery;
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
+  const isMobile = useMobileWidth(860);
   const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
     useResizableListWidth({
       bodyClass: "tc-detail-reference-is-resizing",
@@ -192,10 +195,10 @@ export function TestCaseDetailReferenceScreen({
   );
 
   useEffect(() => {
-    if (!hasRequestedResult && selectedResult !== undefined) {
+    if (!hasRequestedResult && selectedResult !== undefined && !isMobile) {
       onSelect?.(selectedResult.id);
     }
-  }, [hasRequestedResult, onSelect, selectedResult?.id]);
+  }, [hasRequestedResult, isMobile, onSelect, selectedResult?.id]);
   const screenStyle = {
     "--tc-detail-reference-list-width": `${listWidth}px`
   } as CSSProperties;
@@ -207,7 +210,7 @@ export function TestCaseDetailReferenceScreen({
   return (
     <section
       ref={screenRef}
-      className={`tc-detail-reference-screen ${resizing ? "is-resizing" : ""}`}
+      className={`tc-detail-reference-screen ${resizing ? "is-resizing" : ""} ${!hasRequestedResult ? "is-mobile-list-route" : selectedResult ? "is-mobile-detail-route" : ""}`}
       style={screenStyle}
       aria-label="Тест-кейсы"
     >
@@ -266,7 +269,7 @@ export function TestCaseDetailReferenceScreen({
         <div className="tc-detail-reference-list">
           {visibleResults.map((result) => (
             <article
-              className={`tc-detail-reference-row ${selectedResult?.id === result.id ? "selected" : ""} ${
+              className={`tc-detail-reference-row ${(hasRequestedResult || !isMobile) && selectedResult?.id === result.id ? "selected" : ""} ${
                 result.deletedAt !== undefined ? "deleted" : ""
               }`}
               key={result.id}
@@ -274,7 +277,7 @@ export function TestCaseDetailReferenceScreen({
               <button
                 className="tc-detail-reference-row-main"
                 type="button"
-                aria-pressed={selectedResult?.id === result.id}
+                aria-pressed={(hasRequestedResult || !isMobile) && selectedResult?.id === result.id}
                 aria-label={`${result.name}, последний результат: ${formatStatus(result.status)}, владелец: ${result.owner || "не назначен"}`}
                 onClick={() => {
                   onSelect?.(result.id);
@@ -349,7 +352,7 @@ export function TestCaseDetailReferenceScreen({
           integrationProviders={integrationProviders}
           result={selectedResult}
           routeTab={routeTab}
-          onBackToList={onBackToList}
+          onBackToList={onOpenList ?? onBackToList}
           onDeleteTestCase={onDeleteTestCase}
           onOpenResult={onOpenResult}
           onOpenTab={onOpenTab}
@@ -387,6 +390,7 @@ function TestCaseDetails({
   result: TestResult;
 }) {
   const [activeTab, setActiveTab] = useState<DetailTab>(parseDetailTab(routeTab));
+  const tabsRef = useRef<HTMLElement>(null);
   const isQuarantined = isResultQuarantined(result);
   const latestAvailablePoint = collapseHistoryToFinalRunResults(result.historyPoints ?? [])
     .filter((point) => point.launchId.trim() !== "" && point.resultUuid.trim() !== "")
@@ -402,6 +406,14 @@ function TestCaseDetails({
       onOpenTab?.("overview");
     }
   }, [activeTab, isQuarantined, onOpenTab]);
+  useLayoutEffect(() => {
+    const tabs = tabsRef.current;
+    const active = tabs?.querySelector<HTMLElement>('button[aria-current="page"]');
+    if (!tabs || !active) return;
+
+    const tabLeft = active.getBoundingClientRect().left - tabs.getBoundingClientRect().left;
+    tabs.scrollLeft += tabLeft - (tabs.clientWidth - active.clientWidth) / 2;
+  }, [activeTab, result.id]);
 
   return (
     <section
@@ -487,7 +499,12 @@ function TestCaseDetails({
             title={`Открыть результат из загруженной истории: ${latestAvailablePoint.launchName}`}
             onClick={() => openHistoryPoint(latestAvailablePoint, onOpenResult, result.id)}
           >
-            Открыть результат из истории «{latestAvailablePoint.launchName}»
+            <span className="tc-detail-reference-open-latest-full">
+              Открыть результат из истории «{latestAvailablePoint.launchName}»
+            </span>
+            <span className="tc-detail-reference-open-latest-compact">
+              Открыть последний результат
+            </span>
             <ChevronRight aria-hidden="true" size={15} />
           </button>
         ) : null}
@@ -496,6 +513,11 @@ function TestCaseDetails({
             Поля и связи <ChevronDown aria-hidden="true" size={15} />
           </summary>
           <div className="tc-detail-reference-quick-fields-grid">
+            {result.allureId && result.allureId !== result.id ? (
+              <span className="tc-detail-reference-mobile-allure-id">
+                Allure ID: {result.allureId}
+              </span>
+            ) : null}
             <TestCaseMetadataSections
               compact
               integrationProviders={integrationProviders}
@@ -506,7 +528,7 @@ function TestCaseDetails({
         </details>
       </header>
 
-      <nav className="tc-detail-reference-tabs" aria-label="Вкладки тест-кейса">
+      <nav ref={tabsRef} className="tc-detail-reference-tabs" aria-label="Вкладки тест-кейса">
         {detailTabs.map((tab) => {
           const count = tab.count?.(result);
           const disabled = tab.key === "quarantine" && !isQuarantined;
@@ -834,7 +856,7 @@ function StepTreeItem({
   depth = 0,
   fallbackPath,
   fallbackTrace,
-  index: _index,
+  index,
   path,
   step
 }: {
@@ -862,10 +884,7 @@ function StepTreeItem({
       role="treeitem"
       aria-expanded={hasChildren ? expanded : undefined}
     >
-      <div
-        className={`tc-detail-reference-step-line ${step.status}`}
-        style={{ "--step-indent": `${depth * 22}px` } as CSSProperties}
-      >
+      <div className={`tc-detail-reference-step-line ${step.status}`}>
         {hasChildren ? (
           <button
             className="tc-detail-reference-step-expander"
@@ -878,7 +897,14 @@ function StepTreeItem({
         ) : (
           <span className="tc-detail-reference-step-expander" aria-hidden="true" />
         )}
-        <span className="tc-detail-reference-step-index">{path}</span>
+        <span className="tc-detail-reference-step-index" aria-label={`Шаг ${path}`}>
+          <span className="tc-detail-reference-step-index-full">
+            {depth <= 1 ? path : index + 1}
+          </span>
+          <span className="tc-detail-reference-step-index-compact" aria-hidden="true">
+            {index + 1}
+          </span>
+        </span>
         <span
           className={`tc-detail-reference-status-mark ${step.status}`}
           title={formatStatus(step.status)}
@@ -916,7 +942,6 @@ function StepTreeItem({
           {attachments.map((attachment) => (
             <StepAttachmentRow
               attachment={attachment}
-              depth={depth + 1}
               key={`${step.name}-${attachment.source}-${attachment.name}`}
             />
           ))}
@@ -959,12 +984,9 @@ function StepFailure({
   );
 }
 
-function StepAttachmentRow({ attachment, depth }: { attachment: ResultAttachment; depth: number }) {
+function StepAttachmentRow({ attachment }: { attachment: ResultAttachment }) {
   return (
-    <div
-      className="tc-detail-reference-step-attachment-row"
-      style={{ "--step-indent": `${depth * 22}px` } as CSSProperties}
-    >
+    <div className="tc-detail-reference-step-attachment-row">
       <Paperclip size={14} />
       <span>
         <strong>{attachment.name}</strong>

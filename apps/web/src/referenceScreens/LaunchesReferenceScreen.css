@@ -1316,6 +1316,14 @@
   background: #ffffff;
 }
 
+.launches-reference-comparison-scroll-hint {
+  display: none;
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .launches-reference-comparison-table-head {
   min-width: 920px;
   min-height: calc(38px + var(--th-font-meta-delta));
@@ -2352,6 +2360,10 @@ body.launches-reference-is-resizing * {
   position: relative;
   background: #f8fafc;
   overflow: hidden;
+}
+
+.launches-reference-mobile-back {
+  display: none;
 }
 
 .launches-reference-empty-selection {
@@ -4110,9 +4122,12 @@ body.launches-reference-is-resizing * {
 
 .launches-reference-error-group summary span {
   min-width: 0;
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+  padding: 7px 0;
 }
 
 .launches-reference-errors-list em {
@@ -4769,6 +4784,80 @@ body.launches-reference-is-resizing * {
     overflow: visible;
   }
 
+  .launches-reference-tab-body:has(.launches-reference-split.is-mobile-list),
+  .launches-reference-tab-body:has(.launches-reference-split.is-mobile-detail) {
+    overflow-y: hidden;
+  }
+
+  .launches-reference-split.is-mobile-list,
+  .launches-reference-split.is-mobile-detail {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .launches-reference-split.is-mobile-list > .launches-reference-detail-pane,
+  .launches-reference-split.is-mobile-detail > .launches-reference-results-pane,
+  .launches-reference-split.is-mobile-detail > .launches-reference-errors-list {
+    display: none;
+  }
+
+  .launches-reference-results-split.is-mobile-list .launches-reference-results-pane {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
+    border: 0;
+  }
+
+  .launches-reference-results-split.is-mobile-list .launches-reference-result-table {
+    max-height: none;
+    min-height: 0;
+  }
+
+  .launches-reference-errors.is-mobile-list .launches-reference-errors-list,
+  .launches-reference-errors.is-mobile-list .launches-reference-errors-content {
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+  }
+
+  .launches-reference-errors.is-mobile-list .launches-reference-errors-list {
+    overflow: hidden;
+    border: 0;
+  }
+
+  .launches-reference-split.is-mobile-detail > .launches-reference-detail-pane {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .launches-reference-detail-pane > .launches-reference-mobile-back {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    border: 0;
+    border-bottom: 1px solid #dbe3ee;
+    padding: 0 16px;
+    background: #ffffff;
+    color: #2454aa;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .launches-reference-detail-pane > .launches-reference-mobile-back:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -3px;
+  }
+
   .launches-reference-result-report {
     grid-template-rows: auto auto auto;
   }
@@ -4807,6 +4896,62 @@ body.launches-reference-is-resizing * {
 
   .launches-reference-comparison-pair > span:last-child {
     text-align: left;
+  }
+
+  .launches-reference-comparison-scroll-hint {
+    display: block;
+  }
+
+  .launches-reference-comparison-list {
+    --launches-comparison-columns: 165px 145px 145px 145px 120px;
+  }
+
+  .launches-reference-comparison-table-head,
+  .launches-reference-comparison-row {
+    min-width: 820px;
+  }
+
+  .launches-reference-comparison-row {
+    overflow: visible;
+  }
+
+  .launches-reference-comparison-table-head > span:first-child,
+  .launches-reference-comparison-row > .launches-reference-comparison-test {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #ffffff;
+    box-shadow:
+      1px 0 #e2e8f0,
+      6px 0 8px -6px rgb(15 23 42 / 15%);
+  }
+
+  .launches-reference-comparison-table-head > span:first-child {
+    min-height: calc(38px + var(--th-font-meta-delta));
+    display: flex;
+    align-items: center;
+    margin: -8px 0 -8px -14px;
+    padding: 8px 12px 8px 14px;
+    background: #f8fafc;
+  }
+
+  .launches-reference-comparison-row > .launches-reference-comparison-test {
+    align-self: stretch;
+    align-content: center;
+    margin: -10px 0 -10px -14px;
+    padding: 10px 12px 10px 14px;
+  }
+
+  .launches-reference-comparison-test strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+
+  .launches-reference-comparison-row:hover:not(:disabled) > .launches-reference-comparison-test {
+    background: #f8fafc;
   }
 
   .launches-reference-variables div,
@@ -4901,5 +5046,15 @@ body.launches-reference-is-resizing * {
 
   .launches-reference-list-meta > span:last-child {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 350px) {
+  .launches-reference-result-table > button {
+    min-height: calc(64px + var(--th-font-body-delta));
+  }
+
+  .launches-reference-result-table-name strong {
+    -webkit-line-clamp: 3;
   }
 }

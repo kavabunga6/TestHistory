@@ -27,7 +27,7 @@ import type {
   ApiTestCaseHistoryPointReadModel
 } from "./m1WorkspaceApiTypes.js";
 import { mergeHistoryComparePermissionAuditRead } from "./m1WorkspacePermissionAudit.js";
-import { defaultResultSteps, PREVIEW_MAX_BYTES } from "./m1WorkspaceMockPreview.js";
+import { PREVIEW_MAX_BYTES } from "./m1WorkspaceMockPreview.js";
 import { mapCurrentLaunchAttempts } from "./resultHistory.js";
 
 export function mapApiLaunch(launch: ApiLaunchReadModel): Launch {
@@ -140,11 +140,17 @@ export function mapApiResult(
   };
 }
 
-export function mapApiTestCaseSummary(summary: ApiTestCaseSummaryReadModel): TestResult {
+export function mapApiTestCaseSummary(
+  summary: ApiTestCaseSummaryReadModel,
+  latestResult?: ApiResultDetailsReadModel
+): TestResult {
   const metadata = summary.testCase;
   const status = mapResultStatus(summary.lastStatus);
-  const historyPoints = mapTestCaseSummaryHistoryPoints(summary, status);
+  const historyPoints = mapTestCaseSummaryHistoryPoints(summary, status).sort(
+    (left, right) => Date.parse(right.startedAt) - Date.parse(left.startedAt)
+  );
   const history = historyPoints.length > 0 ? historyPoints.map((point) => point.status) : [status];
+  const trace = mapTrace(latestResult?.statusDetails ?? latestResult?.raw?.statusDetails);
 
   return {
     id: summary.id,
@@ -175,11 +181,19 @@ export function mapApiTestCaseSummary(summary: ApiTestCaseSummaryReadModel): Tes
     muted: false,
     history,
     historyPoints,
-    retryAttempts: mapCurrentLaunchAttempts(historyPoints, summary.id),
-    steps: defaultResultSteps,
-    parameters: [],
-    attachments: [],
-    ...(metadata?.description !== undefined ? { description: metadata.description } : {}),
+    retryAttempts: mapCurrentLaunchAttempts(
+      historyPoints,
+      latestResult?.uuid ?? historyPoints[0]?.resultUuid ?? summary.id
+    ),
+    steps: mapApiSteps(latestResult?.steps),
+    parameters: mapParameters(latestResult?.raw?.parameters),
+    attachments: mapAttachments(latestResult?.attachments ?? latestResult?.raw?.attachments),
+    ...(metadata?.description !== undefined
+      ? { description: metadata.description }
+      : latestResult?.raw?.description !== undefined
+        ? { description: latestResult.raw.description }
+        : {}),
+    ...(trace !== undefined ? { trace } : {}),
     ...(metadata?.workflowStatus === "deprecated" || metadata?.workflowStatus === "archived"
       ? {
           deletedAt: metadata.updatedAt ?? summary.lastSeenAt ?? new Date(0).toISOString(),
@@ -231,7 +245,7 @@ export function mapApiDefectCluster(cluster: ApiDefectClusterReadModel): TestRes
     muted: false,
     history: (cluster.results ?? []).map((result) => mapResultStatus(result.status)),
     historyPoints: mapDefectClusterHistoryPoints(cluster, status),
-    steps: defaultResultSteps,
+    steps: [],
     parameters: [],
     attachments: [],
     description: cluster.signature?.reason ?? cluster.title,
@@ -327,8 +341,7 @@ export function matchesResultHistoryPoint(
 }
 
 export function mapSteps(steps: ApiResultStepReadModel[] | undefined): ScenarioStep[] {
-  const mapped = mapApiSteps(steps);
-  return mapped.length > 0 ? mapped : defaultResultSteps;
+  return mapApiSteps(steps);
 }
 
 export function mapApiSteps(steps: ApiResultStepReadModel[] | undefined): ScenarioStep[] {

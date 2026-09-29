@@ -53,4 +53,31 @@ describe("AuthPanel", () => {
     expect(container.querySelector<HTMLInputElement>("#auth-password")?.type).toBe("password");
     expect(container.querySelector<HTMLInputElement>("#auth-name")?.value).toBe("");
   });
+
+  it("moves between login and registration tabs with the keyboard", () => {
+    act(() => root.render(<AuthPanel />));
+
+    const login = container.querySelector<HTMLButtonElement>("#auth-login-tab");
+    const register = container.querySelector<HTMLButtonElement>("#auth-register-tab");
+    const panel = container.querySelector<HTMLFormElement>("#auth-form-panel");
+    expect(login?.tabIndex).toBe(0);
+    expect(register?.tabIndex).toBe(-1);
+    expect(panel?.getAttribute("aria-labelledby")).toBe("auth-login-tab");
+
+    act(() => {
+      login?.focus();
+      login?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    });
+    expect(document.activeElement).toBe(register);
+    expect(register?.tabIndex).toBe(0);
+    expect(login?.tabIndex).toBe(-1);
+    expect(panel?.getAttribute("aria-labelledby")).toBe("auth-register-tab");
+    expect(container.querySelector("#auth-name")).not.toBeNull();
+
+    act(() => {
+      register?.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    });
+    expect(document.activeElement).toBe(login);
+    expect(container.querySelector("#auth-name")).toBeNull();
+  });
 });

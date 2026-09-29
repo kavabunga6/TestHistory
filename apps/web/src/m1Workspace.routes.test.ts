@@ -339,6 +339,17 @@ describe("m1 workspace mapping", () => {
         });
       }
 
+      if (url === "/api/v1/launches/launch-heavy/results/result-selected") {
+        return jsonResponse({
+          uuid: "result-selected",
+          testCaseId: "case-selected",
+          name: "selected case result",
+          status: "passed",
+          labels: {},
+          steps: [{ name: "Real result step", status: "passed" }]
+        });
+      }
+
       if (
         url === `/api/v1/test-cases?projectId=project-heavy&limit=${workspaceInitialTestCaseLimit}`
       ) {
@@ -409,9 +420,8 @@ describe("m1 workspace mapping", () => {
     expect(calls).not.toContain(
       `/api/v1/launches/launch-heavy/results?limit=${workspaceResultListLimit}`
     );
-    expect(calls.some((url) => /^\/api\/v1\/launches\/launch-heavy\/results\//.test(url))).toBe(
-      false
-    );
+    expect(calls).toContain("/api/v1/launches/launch-heavy/results/result-selected");
+    expect(workspace.selectedTestCaseDetail?.steps[0]?.name).toBe("Real result step");
   });
 
   it("loads the defects route from the bounded defects read model", async () => {

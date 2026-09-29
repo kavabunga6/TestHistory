@@ -20,7 +20,7 @@ import {
   matchesStatusFilter
 } from "./LaunchesReferenceModel.js";
 import { ResultReport } from "./LaunchesResultReport.js";
-import { loadLaunchErrorSummary } from "./LaunchErrorSummaryData.js";
+import { formatLaunchErrorGroupHeading, loadLaunchErrorSummary } from "./LaunchErrorSummaryData.js";
 import { LaunchesResultsPagination } from "./LaunchesResultsPagination.js";
 import { ReferenceRouteState } from "./LaunchesReferenceRouteState.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
@@ -41,6 +41,25 @@ const launchSplitListMaxWidth = 1080;
 const launchResultDetailMinWidth = 500;
 const launchSplitListDefaultRatio = 0.43;
 const launchSplitListWidthKey = "testhistory:launch-detail-list-width-v3";
+const mobileLaunchViewport = "(max-width: 760px)";
+
+function useMobileLaunchViewport(): boolean {
+  const [mobile, setMobile] = useState(
+    () =>
+      typeof window !== "undefined" && (window.matchMedia?.(mobileLaunchViewport).matches ?? false)
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia?.(mobileLaunchViewport);
+    if (media === undefined) return;
+    const update = () => setMobile(media.matches);
+    media.addEventListener("change", update);
+    update();
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return mobile;
+}
 
 function compactResultId(id: string): string {
   const numericSuffix = /(?:^|[-_#])(\d{3,})$/.exec(id)?.[1];
@@ -224,6 +243,7 @@ export function ResultsTab({
   onQueryChange,
   onResultPageIndexChange,
   onResultPageSizeChange,
+  onCloseResult,
   onOpenResultTab,
   onSelectResult,
   onStatusFilterChange,
@@ -252,6 +272,7 @@ export function ResultsTab({
   onQueryChange: (query: string) => void;
   onResultPageIndexChange?: ((index: number) => void) | undefined;
   onResultPageSizeChange?: ((size: number) => void) | undefined;
+  onCloseResult?: (() => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
   onSelectResult: (id: string) => void;
   onStatusFilterChange: (status: ResultStatus | undefined) => void;
@@ -268,6 +289,7 @@ export function ResultsTab({
   selectedResult: TestResult | undefined;
 }) {
   const splitResize = useLaunchSplitResize();
+  const mobile = useMobileLaunchViewport();
   const countForStatus = (status: ResultStatus) => {
     const pageCount = results.filter((result) => matchesStatusFilter(result, status)).length;
     return status === "muted"
@@ -282,8 +304,8 @@ export function ResultsTab({
     <div
       ref={splitResize.splitRef}
       className={`launches-reference-split launches-reference-results-split launches-reference-resizable-split ${
-        splitResize.resizing ? "is-resizing" : ""
-      }`}
+        requestedResultId === undefined ? "is-mobile-list" : "is-mobile-detail"
+      } ${splitResize.resizing ? "is-resizing" : ""}`}
       style={splitResize.splitStyle}
     >
       <aside className="launches-reference-results-pane">
@@ -383,8 +405,16 @@ export function ResultsTab({
           ) : (
             filteredResults.map((result) => (
               <button
-                className={selectedResult?.id === result.id ? "selected" : ""}
-                aria-current={selectedResult?.id === result.id ? "true" : undefined}
+                className={
+                  selectedResult?.id === result.id && (!mobile || requestedResultId !== undefined)
+                    ? "selected"
+                    : ""
+                }
+                aria-current={
+                  selectedResult?.id === result.id && (!mobile || requestedResultId !== undefined)
+                    ? "true"
+                    : undefined
+                }
                 key={result.id}
                 title={`${formatStatus(result.status)} · ${result.name}`}
                 type="button"
@@ -425,6 +455,11 @@ export function ResultsTab({
       <LaunchSplitResizer label="Изменить ширину списка тестов" resize={splitResize} />
 
       <section className="launches-reference-detail-pane">
+        {requestedResultId !== undefined ? (
+          <button className="launches-reference-mobile-back" onClick={onCloseResult} type="button">
+            ← К списку результатов
+          </button>
+        ) : null}
         {loading && selectedResult === undefined ? (
           <ReferenceRouteState
             kind="loading"
@@ -477,12 +512,14 @@ export function ErrorsTab({
   launchId,
   loading,
   onFilterByTag,
+  onCloseResult,
   onOpenResultTab,
   onSelectResult,
   onShowProblemResults,
   onToggleMuteResult,
   onUnlinkResultDefect,
   results,
+  requestedResultId,
   routeResultTab,
   selectedResult
 }: {
@@ -490,22 +527,26 @@ export function ErrorsTab({
   launchId: string;
   loading: boolean;
   onFilterByTag?: ((tag: string) => void) | undefined;
+  onCloseResult?: (() => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
   onSelectResult: (id: string) => void;
   onShowProblemResults?: (() => void) | undefined;
   onToggleMuteResult?: ((id: string) => void) | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
   results: TestResult[];
+  requestedResultId?: string | undefined;
   routeResultTab?: string | undefined;
   selectedResult: TestResult | undefined;
 }) {
   const splitResize = useLaunchSplitResize();
+  const mobile = useMobileLaunchViewport();
   const [summaryState, setSummaryState] = useState<
     | { status: "loading" }
     | { status: "ready"; summary: LaunchErrorSummaryReadModel }
     | { status: "error" }
   >({ status: "loading" });
   const [summaryRetry, setSummaryRetry] = useState(0);
+  const [explicitErrorResultId, setExplicitErrorResultId] = useState(requestedResultId);
   useEffect(() => {
     const controller = new AbortController();
     setSummaryState({ status: "loading" });
@@ -550,10 +591,17 @@ export function ErrorsTab({
         }))
       }));
   const firstErrorId = errorGroups[0]?.examples[0]?.id;
+  const preferredErrorResultId = requestedResultId ?? explicitErrorResultId ?? firstErrorId;
   const selectedErrorResult =
-    selectedResult?.status === "failed" || selectedResult?.status === "broken"
+    selectedResult !== undefined &&
+    selectedResult.id === preferredErrorResultId &&
+    (selectedResult.status === "failed" || selectedResult.status === "broken")
       ? selectedResult
-      : results.find((result) => result.id === firstErrorId);
+      : results.find(
+          (result) =>
+            result.id === preferredErrorResultId &&
+            (result.status === "failed" || result.status === "broken")
+        );
   const selectedErrorGroupIndex = errorGroups.findIndex((group) =>
     group.examples.some((example) => example.id === selectedErrorResult?.id)
   );
@@ -594,15 +642,27 @@ export function ErrorsTab({
       loading ||
       summaryState.status === "loading" ||
       initialSelectionResolved.current ||
+      requestedResultId !== undefined ||
+      explicitErrorResultId !== undefined ||
       firstErrorId === undefined
     ) {
       return;
     }
+    if (mobile) return;
     initialSelectionResolved.current = true;
     if (selectedErrorResult?.trace === undefined) {
       onSelectResult(firstErrorId);
     }
-  }, [firstErrorId, loading, onSelectResult, selectedErrorResult, summaryState.status]);
+  }, [
+    explicitErrorResultId,
+    firstErrorId,
+    loading,
+    mobile,
+    onSelectResult,
+    requestedResultId,
+    selectedErrorResult,
+    summaryState.status
+  ]);
 
   if (!loading && summary?.failedResults === 0 && summary.brokenResults === 0) {
     return (
@@ -622,8 +682,8 @@ export function ErrorsTab({
     <div
       ref={splitResize.splitRef}
       className={`launches-reference-split launches-reference-errors launches-reference-resizable-split ${
-        splitResize.resizing ? "is-resizing" : ""
-      }`}
+        requestedResultId === undefined ? "is-mobile-list" : "is-mobile-detail"
+      } ${splitResize.resizing ? "is-resizing" : ""}`}
       style={splitResize.splitStyle}
     >
       <aside className="launches-reference-errors-list">
@@ -688,19 +748,33 @@ export function ErrorsTab({
               >
                 <summary>
                   <ChevronRight size={18} />
-                  <span>{group.name}</span>
-                  {group.failed > 0 ? <em className="failed">{group.failed}</em> : null}
-                  {group.broken > 0 ? <em className="broken">{group.broken}</em> : null}
+                  <span title={group.name}>{formatLaunchErrorGroupHeading(group.name)}</span>
+                  {group.failed > 0 ? (
+                    <em aria-label={`Проваленных: ${group.failed}`} className="failed">
+                      {group.failed}
+                    </em>
+                  ) : null}
+                  {group.broken > 0 ? (
+                    <em aria-label={`Сломанных: ${group.broken}`} className="broken">
+                      {group.broken}
+                    </em>
+                  ) : null}
                 </summary>
                 <div className="launches-reference-error-results">
                   {group.examples.map((result) => (
                     <button
                       className={
-                        (selectedErrorResult?.id ?? firstErrorId) === result.id ? "selected" : ""
+                        (selectedErrorResult?.id ?? firstErrorId) === result.id &&
+                        (!mobile || requestedResultId !== undefined)
+                          ? "selected"
+                          : ""
                       }
                       key={result.id}
                       type="button"
-                      onClick={() => onSelectResult(result.id)}
+                      onClick={() => {
+                        setExplicitErrorResultId(result.id);
+                        onSelectResult(result.id);
+                      }}
                     >
                       <StatusIcon status={result.status} />
                       <span>{result.name}</span>
@@ -729,6 +803,11 @@ export function ErrorsTab({
       <LaunchSplitResizer label="Изменить ширину списка ошибок" resize={splitResize} />
 
       <section className="launches-reference-detail-pane">
+        {requestedResultId !== undefined ? (
+          <button className="launches-reference-mobile-back" onClick={onCloseResult} type="button">
+            ← К списку ошибок
+          </button>
+        ) : null}
         {(loading || summaryState.status === "loading") &&
         selectedErrorResult?.trace === undefined ? (
           <ReferenceRouteState

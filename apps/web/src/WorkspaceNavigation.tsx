@@ -84,7 +84,10 @@ export function WorkspaceNavigation({
       if (first === undefined || last === undefined) {
         return;
       }
-      if (event.shiftKey && document.activeElement === first) {
+      if (!sidebar.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -141,6 +144,7 @@ export function WorkspaceNavigation({
           className="mobile-navigation-backdrop"
           type="button"
           aria-label="Закрыть меню разделов"
+          tabIndex={-1}
           onClick={closeMobileMenu}
         />
       ) : null}
@@ -167,6 +171,7 @@ export function WorkspaceNavigation({
           ref={mobileMenuButtonRef}
           aria-controls="workspace-navigation"
           aria-expanded={mobileMenuOpen}
+          tabIndex={mobileMenuOpen ? -1 : 0}
           aria-label={mobileMenuOpen ? "Закрыть меню разделов" : "Открыть меню разделов"}
           onClick={() => setMobileMenuOpen((open) => !open)}
         >

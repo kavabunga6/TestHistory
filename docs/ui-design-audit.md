@@ -6,7 +6,7 @@ screens, clear list/detail hierarchy, restrained cards, and readable tables.
 
 ## Review Update · 2026-09-29
 
-The current pass builds on earlier ordinary-user and UI/UX reviews, uses 36 synthetic 1440×1000
+The current pass builds on earlier ordinary-user and UI/UX reviews, uses 40 synthetic 1440×1000
 screenshots for visual checks, and was checked against the official [TestOps 26.3 release notes](https://docs.qameta.io/reference/release-notes/),
 [launches](https://docs.qameta.io/use-testops/test-plans-and-launches/launches-overview/),
 [test results](https://docs.qameta.io/use-testops/results-and-analytics/test-results/), and
@@ -49,7 +49,20 @@ have clearer empty and error states, and settings save actions become available 
 edit. Automation integrations show readable event names and copyable endpoint URLs. Analytics
 uses the same localized durations as result details. Authentication fields now start empty,
 support password visibility, and respect native form validation. The screenshot set includes a
-visibility-settings state, and the button overflow check covers 390px as well as desktop widths.
+visibility-settings state, and the button overflow check covers 320px and 390px as well as desktop widths.
+
+The full-screen review checked every captured route at 1440px and 390px, plus the dashboard and
+analytics at 820px. Mobile test-case and defect navigation now separates list and detail views;
+the back action restores the list route. Result and error selection in launches also moves to the
+report on mobile. Dashboard widgets and analytics signals have compact mobile layouts, and all
+displayed durations use Russian units. Integration creation opens an empty, validated form rather
+than an edit template. The evidence set adds registration, the defect list, and separate integration
+create/edit dialogs. Capture supports alternate viewports and focused screen subsets without
+overwriting desktop evidence. Mobile evidence scrolls to the grouped dashboard widget and the
+test-case scenario so their content is visible below the compact headers. The button guard checks
+both button content and page width at 320, 390, 820, 1120, and 1440px.
+The selected test-case scenario now loads the latest real result instead of placeholder steps;
+its nested failed step shows the exception beside the step, including in the mobile screenshot.
 
 ## Target UI Contract
 
@@ -94,6 +107,7 @@ Run `npm run screenshots:capture` locally when Playwright Chromium is available,
 `ui-screenshot-evidence` artifact. The acceptance set includes:
 
 - `auth-login`
+- `auth-register`
 - `dashboard`
 - `dashboard-owner-groups`
 - `launches`
@@ -109,6 +123,7 @@ Run `npm run screenshots:capture` locally when Playwright Chromium is available,
 - `selected-test-case-history`
 - `selected-test-case-defects`
 - `defects`
+- `defects-list`
 - `automation`, `automation-plans`, `automation-jobs`, and `automation-integrations`
 - `analytics`
 - all `settings-*`

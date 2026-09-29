@@ -236,7 +236,10 @@ function ProjectSettingsProjectScreen({
   };
   const copyTokenSecret = async (secret: string) => {
     try {
-      await globalThis.navigator?.clipboard?.writeText(secret);
+      if (!globalThis.navigator?.clipboard?.writeText) {
+        throw new Error("Clipboard API недоступен");
+      }
+      await globalThis.navigator.clipboard.writeText(secret);
       setApiMessage("Токен скопирован");
     } catch {
       setApiMessage("Не удалось скопировать токен автоматически");

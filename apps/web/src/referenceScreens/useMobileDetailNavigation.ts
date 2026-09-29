@@ -1,4 +1,19 @@
-import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+
+export function useMobileWidth(breakpoint: number): boolean {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth <= breakpoint
+  );
+
+  useEffect(() => {
+    const update = () => setMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", update);
+    update();
+    return () => window.removeEventListener("resize", update);
+  }, [breakpoint]);
+
+  return mobile;
+}
 
 export function useMobileDetailNavigation(
   screenRef: RefObject<HTMLElement | null>,
@@ -22,6 +37,7 @@ export function useMobileDetailNavigation(
   useLayoutEffect(() => {
     if (!selectedId) {
       revealedId.current = undefined;
+      if (window.innerWidth <= breakpoint && screenRef.current) screenRef.current.scrollTop = 0;
       return;
     }
     if (revealedId.current === selectedId) return;

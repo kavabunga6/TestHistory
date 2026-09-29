@@ -2,6 +2,7 @@
   "viewport": { "width": 1440, "height": 1000 },
   "files": [
     { "name": "auth-login", "hash": "#launch", "auth": false, "dialog": false },
+    { "name": "auth-register", "hash": "#launch", "auth": false, "dialog": false },
     { "name": "projects", "hash": "#projects", "auth": true, "dialog": false },
     { "name": "dashboard", "hash": "#dashboard", "auth": true, "dialog": false },
     { "name": "dashboard-owner-groups", "hash": "#dashboard", "auth": true, "dialog": false },
@@ -42,6 +43,12 @@
       "dialog": false
     },
     {
+      "name": "selected-test-case-scenario",
+      "hash": "#case/PAY-1042/overview",
+      "auth": true,
+      "dialog": false
+    },
+    {
       "name": "selected-test-case-history",
       "hash": "#case/PAY-1042/history",
       "auth": true,
@@ -53,6 +60,7 @@
       "auth": true,
       "dialog": false
     },
+    { "name": "defects-list", "hash": "#defects", "auth": true, "dialog": false },
     { "name": "defects", "hash": "#defects/PAY-337", "auth": true, "dialog": false },
     { "name": "automation", "hash": "#automation", "auth": true, "dialog": false },
     { "name": "automation-plans", "hash": "#automation", "auth": true, "dialog": false },
@@ -90,6 +98,12 @@
     { "name": "dialog-member-edit", "hash": "#settings/access", "auth": true, "dialog": true },
     {
       "name": "dialog-integration-edit",
+      "hash": "#settings/integrations",
+      "auth": true,
+      "dialog": true
+    },
+    {
+      "name": "dialog-integration-add",
       "hash": "#settings/integrations",
       "auth": true,
       "dialog": true

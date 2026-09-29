@@ -33,7 +33,16 @@ export function ProjectsReferenceScreen({
             <h1 id="projects-reference-title">
               Проекты
               {status === "ready" ? (
-                <span className="projects-reference__count">{projects.length}</span>
+                <span
+                  className="projects-reference__count"
+                  title={
+                    query.trim()
+                      ? `Найдено ${visibleProjects.length} из ${projects.length} проектов`
+                      : `Всего проектов: ${projects.length}`
+                  }
+                >
+                  {visibleProjects.length}
+                </span>
               ) : null}
             </h1>
             <p>Выберите проект, чтобы открыть его запуски, тест-кейсы и аналитику.</p>
@@ -57,6 +66,14 @@ export function ProjectsReferenceScreen({
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
+
+            {status === "ready" ? (
+              <span className="projects-reference__sr-only" role="status" aria-live="polite">
+                {query.trim()
+                  ? `Найдено ${visibleProjects.length} из ${projects.length} проектов`
+                  : `Всего проектов: ${projects.length}`}
+              </span>
+            ) : null}
 
             <div className="projects-reference__grid" role="list" aria-busy={loading}>
               {loading ? (

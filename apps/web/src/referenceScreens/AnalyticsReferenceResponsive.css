@@ -1,0 +1,206 @@
+@media (max-width: 1320px) {
+  .analytics-reference-status-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-reference-status-row:nth-child(n + 3) {
+    border-top: 1px solid #e8edf3;
+  }
+}
+
+@media (max-width: 1180px) {
+  .analytics-reference-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-reference-metric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .analytics-reference-metric:nth-child(-n + 2) {
+    border-bottom: 1px solid #e8edf3;
+  }
+}
+
+@media (max-width: 900px) {
+  .analytics-reference-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analytics-reference-search {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .analytics-reference-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .analytics-reference-screen {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .analytics-reference-header {
+    padding: 16px;
+  }
+
+  .analytics-reference-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analytics-reference-metric {
+    min-height: 78px;
+    align-items: center;
+    border-right: 0;
+    border-bottom: 1px solid #e8edf3;
+    padding: 12px 16px;
+  }
+
+  .analytics-reference-metric:last-child {
+    border-bottom: 0;
+  }
+
+  .analytics-reference-search {
+    min-width: 0;
+    min-height: 40px;
+  }
+
+  .analytics-reference-status-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analytics-reference-status-row:nth-child(n + 2) {
+    border-top: 1px solid #e8edf3;
+  }
+
+  .analytics-reference-availability {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 8px 12px;
+  }
+
+  .analytics-reference-availability button {
+    grid-column: 2;
+    justify-self: start;
+    margin-left: 0;
+  }
+
+  .analytics-reference-panel-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 760px) {
+  .analytics-reference-signal-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+  }
+
+  .analytics-reference-signal-card > div {
+    grid-column: 1 / -1;
+  }
+
+  .analytics-reference-signal-card div span {
+    overflow: hidden;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .analytics-reference-signal-card > em {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .analytics-reference-signal-card > small {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+  }
+
+  .analytics-reference-table-head,
+  .analytics-reference-signal-row {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .analytics-reference-table-head span:nth-child(n + 3) {
+    display: none;
+  }
+
+  .analytics-reference-signal-row {
+    align-items: start;
+    gap: 5px 10px;
+  }
+
+  .analytics-reference-signal-row > strong {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .analytics-reference-signal-row > .analytics-reference-status-badge {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .analytics-reference-signal-row > span:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .analytics-reference-signal-row > span:nth-child(4) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .analytics-reference-signal-row > em {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .analytics-reference-signal-row > span:nth-child(3),
+  .analytics-reference-signal-row > span:nth-child(4),
+  .analytics-reference-signal-row > em {
+    color: #526172;
+    font-size: 11px;
+  }
+
+  .analytics-reference-signal-row [data-label]::before {
+    content: attr(data-label) ": ";
+    color: #748094;
+  }
+}
+
+@media (max-width: 420px) {
+  .analytics-reference-status-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    row-gap: 6px;
+  }
+
+  .analytics-reference-status-row > span {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .analytics-reference-status-row > strong {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .analytics-reference-status-row > em {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .analytics-reference-status-track {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 6px;
+  }
+}

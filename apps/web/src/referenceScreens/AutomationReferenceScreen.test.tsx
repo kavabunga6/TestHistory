@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import {
+  createNotificationIntegration,
   createTestPlan,
   loadAutomationWorkspace,
   updateTestPlan,
@@ -16,6 +17,7 @@ vi.mock("../automationApi.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../automationApi.js")>();
   return {
     ...actual,
+    createNotificationIntegration: vi.fn(),
     createTestPlan: vi.fn(),
     loadAutomationWorkspace: vi.fn(),
     updateTestPlan: vi.fn()
@@ -37,8 +39,105 @@ afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
   vi.mocked(loadAutomationWorkspace).mockReset();
+  vi.mocked(createNotificationIntegration).mockReset();
   vi.mocked(createTestPlan).mockReset();
   vi.mocked(updateTestPlan).mockReset();
+});
+
+it("subscribes a new notification only to selected events", async () => {
+  const workspace: AutomationWorkspaceData = {
+    projectId: "project-1",
+    plans: [],
+    jobs: [],
+    notifications: [],
+    issueTrackers: [],
+    deliveries: []
+  };
+  vi.mocked(loadAutomationWorkspace).mockResolvedValue(workspace);
+  vi.mocked(createNotificationIntegration).mockResolvedValue(undefined);
+
+  await act(async () => root.render(<AutomationReferenceScreen projectId="project-1" />));
+  await act(async () => {
+    container.querySelector<HTMLButtonElement>('[data-tab="integrations"]')?.click();
+  });
+  await act(async () => {
+    Array.from(container.querySelectorAll<HTMLButtonElement>(".automation-toolbar-actions button"))
+      .find((button) => button.textContent?.includes("Уведомление"))
+      ?.click();
+  });
+
+  const form = container.querySelector<HTMLFormElement>(".automation-form");
+  const checkboxes = Array.from(
+    form?.querySelectorAll<HTMLInputElement>('.automation-events input[type="checkbox"]') ?? []
+  );
+  expect(
+    checkboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value)
+  ).toEqual(["automation-job.failed", "automation-job.succeeded"]);
+  await act(async () => {
+    checkboxes.find((checkbox) => checkbox.value === "automation-job.succeeded")?.click();
+    checkboxes.find((checkbox) => checkbox.value === "launch.failed")?.click();
+  });
+  const name = form?.querySelector<HTMLInputElement>('input[name="name"]');
+  const endpointUrl = form?.querySelector<HTMLInputElement>('input[name="endpointUrl"]');
+  if (name) name.value = "QA alerts";
+  if (endpointUrl) endpointUrl.value = "https://hooks.example.test/qa";
+  await act(async () =>
+    form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+  );
+
+  expect(createNotificationIntegration).toHaveBeenCalledWith("project-1", {
+    name: "QA alerts",
+    provider: "generic",
+    endpointUrl: "https://hooks.example.test/qa",
+    events: ["automation-job.failed", "launch.failed"]
+  });
+});
+
+it("explains why a notification cannot be saved without events", async () => {
+  vi.mocked(loadAutomationWorkspace).mockResolvedValue({
+    projectId: "project-1",
+    plans: [],
+    jobs: [],
+    notifications: [],
+    issueTrackers: [],
+    deliveries: []
+  });
+
+  await act(async () => root.render(<AutomationReferenceScreen projectId="project-1" />));
+  await act(async () =>
+    container.querySelector<HTMLButtonElement>('[data-tab="integrations"]')?.click()
+  );
+  await act(async () => {
+    Array.from(container.querySelectorAll<HTMLButtonElement>(".automation-toolbar-actions button"))
+      .find((button) => button.textContent?.includes("Уведомление"))
+      ?.click();
+  });
+
+  const form = container.querySelector<HTMLFormElement>(".automation-form");
+  const fieldset = form?.querySelector<HTMLFieldSetElement>(".automation-events");
+  const checkboxes = Array.from(
+    fieldset?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? []
+  );
+  await act(async () => {
+    checkboxes.filter((checkbox) => checkbox.checked).forEach((checkbox) => checkbox.click());
+  });
+
+  const save = Array.from(form?.querySelectorAll<HTMLButtonElement>("button") ?? []).find(
+    (button) => button.textContent?.trim() === "Сохранить"
+  );
+  expect(save?.disabled).toBe(true);
+  expect(fieldset?.getAttribute("aria-describedby")).toBe("automation-events-hint");
+  expect(fieldset?.querySelector('[role="status"]')?.textContent).toContain(
+    "Выберите хотя бы одно событие"
+  );
+  await act(async () =>
+    form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+  );
+  expect(createNotificationIntegration).not.toHaveBeenCalled();
+
+  await act(async () => checkboxes[0]?.click());
+  expect(save?.disabled).toBe(false);
+  expect(fieldset?.querySelector('[role="status"]')).toBeNull();
 });
 
 it("keeps tab counts and content visible during a refresh", async () => {

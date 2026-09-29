@@ -5,6 +5,7 @@ import type { TestResult } from "../m1Workspace.js";
 import { getHashFromRoute } from "../workspaceRouting.js";
 
 import "./AnalyticsReferenceScreen.css";
+import "./AnalyticsReferenceResponsive.css";
 import {
   buildAnalyticsModel,
   buildServerAnalyticsModel,

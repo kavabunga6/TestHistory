@@ -178,9 +178,15 @@ export function AnalyticsReferenceContent({
               >
                 {formatStatus(result.status)}
               </span>
-              <span role="cell">{result.suite}</span>
-              <span role="cell">{result.owner || "Не назначен"}</span>
-              <em role="cell">{result.duration}</em>
+              <span data-label="Набор" role="cell" title={result.suite}>
+                {result.suite}
+              </span>
+              <span data-label="Владелец" role="cell" title={result.owner || "Не назначен"}>
+                {result.owner || "Не назначен"}
+              </span>
+              <em data-label="Длит." role="cell">
+                {result.duration}
+              </em>
             </div>
           ))}
           {model.visibleSignals.length === 0 ? (
@@ -298,7 +304,7 @@ function SignalRow({
             </button>
           )}
         </strong>
-        {metadata.length > 0 ? <span>{metadata}</span> : null}
+        {metadata.length > 0 ? <span title={metadata}>{metadata}</span> : null}
       </div>
       <em
         className={`analytics-reference-status-badge analytics-reference-status-badge--${result.status}`}

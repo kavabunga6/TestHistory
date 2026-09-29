@@ -64,7 +64,7 @@ export function patchProviderLinkTemplate(
   if (markerIndex === -1) {
     return {
       baseUrl: template,
-      suffixTemplate: "{value}"
+      suffixTemplate: ""
     };
   }
 

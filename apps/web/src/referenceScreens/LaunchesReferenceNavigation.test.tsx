@@ -24,6 +24,7 @@ describe("launch results navigation", () => {
     container.remove();
     window.localStorage.clear();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("leaves a routed result when a new status filter is selected", async () => {
@@ -59,6 +60,88 @@ describe("launch results navigation", () => {
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain(
       "/api/v1/thql/filters?entity=launchResults&projectId=project-sandbox"
     );
+  });
+
+  it("follows result route changes between mobile list and detail", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const onOpenTab = vi.fn();
+    const props = {
+      launchItems: demoM1Workspace.launchItems,
+      onOpenTab,
+      projectId: "project-sandbox",
+      results: demoM1Workspace.results,
+      routeLaunchId: demoM1Workspace.launchItems[0]!.id,
+      routeLaunchTab: "results"
+    };
+
+    await act(async () => root.render(<LaunchesReferenceScreen {...props} />));
+    expect(
+      container.querySelector(".launches-reference-results-split.is-mobile-list")
+    ).not.toBeNull();
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen {...props} routeResultId={demoM1Workspace.results[0]!.id} />
+      )
+    );
+    expect(
+      container.querySelector(".launches-reference-results-split.is-mobile-detail")
+    ).not.toBeNull();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>(".launches-reference-mobile-back")!.click()
+    );
+    expect(onOpenTab).toHaveBeenCalledWith("results");
+
+    await act(async () => root.render(<LaunchesReferenceScreen {...props} />));
+    expect(
+      container.querySelector(".launches-reference-results-split.is-mobile-list")
+    ).not.toBeNull();
+  });
+
+  it("does not mark a default result as selected in the mobile list", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const listeners = new Set<() => void>();
+    const media = {
+      matches: true,
+      addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_: string, listener: () => void) => listeners.delete(listener)
+    };
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => media)
+    );
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={demoM1Workspace.launchItems}
+          projectId="project-sandbox"
+          results={demoM1Workspace.results}
+          routeLaunchId={demoM1Workspace.launchItems[0]!.id}
+          routeLaunchTab="results"
+          selectedResultId={demoM1Workspace.results[0]!.id}
+        />
+      )
+    );
+
+    expect(
+      container.querySelector(".launches-reference-result-table > button.selected")
+    ).toBeNull();
+    expect(
+      container.querySelector('.launches-reference-result-table > button[aria-current="true"]')
+    ).toBeNull();
+
+    media.matches = false;
+    await act(async () => listeners.forEach((listener) => listener()));
+    expect(
+      container.querySelector(".launches-reference-result-table > button.selected")
+    ).not.toBeNull();
   });
 
   it("keeps launches after the first 50 available through pagination", async () => {
