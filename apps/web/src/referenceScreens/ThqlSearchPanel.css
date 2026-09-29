@@ -713,6 +713,16 @@
 }
 
 @media (max-width: 420px) {
+  .thql-search__manage--labeled {
+    width: 40px;
+    min-width: 40px;
+    justify-content: center;
+  }
+
+  .thql-search__manage--labeled span {
+    display: none;
+  }
+
   .thql-dialog > header {
     align-items: flex-start;
   }

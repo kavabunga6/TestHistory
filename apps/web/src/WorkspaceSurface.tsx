@@ -108,6 +108,7 @@ export function WorkspaceSurface({
   onRefreshProjects,
   onSelectProject,
   onOpenLaunch,
+  onOpenLaunchStatus,
   onOpenLaunchList,
   onOpenLaunchResult,
   onOpenLaunchResultsByTag,
@@ -159,6 +160,7 @@ export function WorkspaceSurface({
   onRefreshProjects?: (() => void) | undefined;
   onSelectProject?: ((projectId: string) => void) | undefined;
   onOpenLaunch?: ((id: string) => void) | undefined;
+  onOpenLaunchStatus?: ((id: string, status: ResultStatus) => void) | undefined;
   onOpenLaunchList?: (() => void) | undefined;
   onOpenLaunchResult?: ((id: string, launchId?: string, testCaseId?: string) => void) | undefined;
   onOpenLaunchResultsByTag?: ((tag: string, resultId: string) => void) | undefined;
@@ -364,6 +366,7 @@ export function WorkspaceSurface({
                 selectedResultDetail={workspace.selectedResultDetail}
                 selectedResultId={selectedId}
                 onOpenLaunch={onOpenLaunch}
+                onOpenLaunchStatus={onOpenLaunchStatus}
                 onLaunchPageIndexChange={onListPageIndexChange}
                 onLaunchPageSizeChange={onListPageSizeChange}
                 onLaunchQueryChange={onListQueryChange}

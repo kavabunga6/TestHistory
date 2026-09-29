@@ -466,66 +466,66 @@ function TestCaseDetails({
             </div>
           ) : null}
         </div>
-        {result.suite ? <p>{result.suite}</p> : null}
-        <div className="tc-detail-reference-heading-line">
-          <h2>{result.name}</h2>
-          <div className="tc-detail-reference-badges">
-            <span className={caseState.className}>Состояние кейса: {caseState.label}</span>
-            <span className={`result-status-${result.status}`}>
-              Последний результат: {formatStatus(result.status)}
-            </span>
-            {isQuarantined ? <span className="muted">Карантин</span> : null}
+        <div className="tc-detail-reference-primary">
+          {result.suite ? <p>{result.suite}</p> : null}
+          <div className="tc-detail-reference-heading-line">
+            <h2>{result.name}</h2>
+            <div className="tc-detail-reference-badges">
+              <span className={caseState.className}>Состояние кейса: {caseState.label}</span>
+              <span className={`result-status-${result.status}`}>
+                Последний результат: {formatStatus(result.status)}
+              </span>
+              {isQuarantined ? <span className="muted">Карантин</span> : null}
+            </div>
           </div>
         </div>
-        <div className="tc-detail-reference-highlights" aria-label="Основные данные тест-кейса">
-          {result.duration && result.duration !== "n/a" ? (
-            <span>
-              Длительность: <strong>{formatResultDuration(result.duration)}</strong>
-            </span>
-          ) : null}
-          <span>
-            Слой: <strong>{result.layer}</strong>
-          </span>
-          {result.owner && result.owner !== "Unassigned" ? (
-            <span>
-              Владелец: <strong>{result.owner}</strong>
-            </span>
-          ) : null}
-        </div>
-        {latestAvailablePoint !== undefined && onOpenResult !== undefined ? (
-          <button
-            className="tc-detail-reference-open-latest"
-            type="button"
-            title={`Открыть результат из загруженной истории: ${latestAvailablePoint.launchName}`}
-            onClick={() => openHistoryPoint(latestAvailablePoint, onOpenResult, result.id)}
-          >
-            <span className="tc-detail-reference-open-latest-full">
-              Открыть результат из истории «{latestAvailablePoint.launchName}»
-            </span>
-            <span className="tc-detail-reference-open-latest-compact">
-              Открыть последний результат
-            </span>
-            <ChevronRight aria-hidden="true" size={15} />
-          </button>
-        ) : null}
-        <details className="tc-detail-reference-quick-fields">
-          <summary>
-            Поля и связи <ChevronDown aria-hidden="true" size={15} />
-          </summary>
-          <div className="tc-detail-reference-quick-fields-grid">
-            {result.allureId && result.allureId !== result.id ? (
-              <span className="tc-detail-reference-mobile-allure-id">
-                Allure ID: {result.allureId}
+        <div className="tc-detail-reference-secondary">
+          <div className="tc-detail-reference-highlights" aria-label="Основные данные тест-кейса">
+            {result.duration && result.duration !== "n/a" ? (
+              <span>
+                Длительность: <strong>{formatResultDuration(result.duration)}</strong>
               </span>
             ) : null}
-            <TestCaseMetadataSections
-              compact
-              integrationProviders={integrationProviders}
-              onFilterByTag={onFilterByTag}
-              result={result}
-            />
+            <span>
+              Слой: <strong>{result.layer}</strong>
+            </span>
+            {result.owner && result.owner !== "Unassigned" ? (
+              <span>
+                Владелец: <strong>{result.owner}</strong>
+              </span>
+            ) : null}
           </div>
-        </details>
+          {latestAvailablePoint !== undefined && onOpenResult !== undefined ? (
+            <button
+              className="tc-detail-reference-open-latest"
+              type="button"
+              aria-label={`Открыть результат из истории «${latestAvailablePoint.launchName}»`}
+              title={`Открыть результат из загруженной истории: ${latestAvailablePoint.launchName}`}
+              onClick={() => openHistoryPoint(latestAvailablePoint, onOpenResult, result.id)}
+            >
+              Открыть результат
+              <ChevronRight aria-hidden="true" size={15} />
+            </button>
+          ) : null}
+          <details className="tc-detail-reference-quick-fields">
+            <summary>
+              Поля и связи <ChevronDown aria-hidden="true" size={15} />
+            </summary>
+            <div className="tc-detail-reference-quick-fields-grid">
+              {result.allureId && result.allureId !== result.id ? (
+                <span className="tc-detail-reference-mobile-allure-id">
+                  Allure ID: {result.allureId}
+                </span>
+              ) : null}
+              <TestCaseMetadataSections
+                compact
+                integrationProviders={integrationProviders}
+                onFilterByTag={onFilterByTag}
+                result={result}
+              />
+            </div>
+          </details>
+        </div>
       </header>
 
       <nav ref={tabsRef} className="tc-detail-reference-tabs" aria-label="Вкладки тест-кейса">

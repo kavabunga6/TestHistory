@@ -44,8 +44,9 @@ it("opens a result from the loaded history with its launch and test-case IDs", (
       )
     );
     const open = container.querySelector<HTMLButtonElement>(".tc-detail-reference-open-latest");
-    expect(open?.textContent).toContain("Открыть результат из истории");
-    expect(open?.textContent).toContain("PR-1289 Checkout Regression");
+    expect(open?.textContent).toContain("Открыть результат");
+    expect(open?.getAttribute("aria-label")).toContain("PR-1289 Checkout Regression");
+    expect(open?.title).toContain("PR-1289 Checkout Regression");
     act(() => open?.click());
     expect(onOpenResult).toHaveBeenCalledWith("result-uuid-123", "L-1289", "case-1042");
   } finally {

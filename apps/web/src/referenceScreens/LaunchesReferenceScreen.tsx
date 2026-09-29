@@ -74,6 +74,7 @@ export function LaunchesReferenceScreen({
   launchListPartial,
   loadingScope,
   onOpenLaunch,
+  onOpenLaunchStatus,
   onOpenLaunchList,
   onLaunchPageIndexChange,
   onLaunchPageSizeChange,
@@ -118,6 +119,7 @@ export function LaunchesReferenceScreen({
   loadingScope?: LaunchesReferenceLoadingScope | LaunchesReferenceLoadingScope[] | undefined;
   onDeleteLaunch?: ((id: string) => void) | undefined;
   onOpenLaunch?: ((id: string) => void) | undefined;
+  onOpenLaunchStatus?: ((id: string, status: ResultStatus) => void) | undefined;
   onOpenLaunchList?: (() => void) | undefined;
   onLaunchPageIndexChange?: ((index: number) => void) | undefined;
   onLaunchPageSizeChange?: ((size: number) => void) | undefined;
@@ -347,13 +349,13 @@ export function LaunchesReferenceScreen({
   }, [routeLaunchTab, routeResultId]);
 
   useEffect(() => {
+    setQuery(routeQuery ?? "");
+    setStatusFilter(undefined);
+    setActiveResultFilterId(undefined);
     if (routeQuery !== undefined) {
-      setQuery(routeQuery);
-      setStatusFilter(undefined);
-      setActiveResultFilterId(undefined);
       setActiveTab("results");
     }
-  }, [routeQuery]);
+  }, [routeLaunchId, routeQuery]);
 
   useEffect(() => {
     if (resultQuery !== query) {
@@ -430,7 +432,7 @@ export function LaunchesReferenceScreen({
       return;
     }
     setQuery(nextQuery);
-    if (routeResultId !== undefined) {
+    if (routeResultId !== undefined || routeQuery !== undefined) {
       onOpenTab?.("results");
     }
   };
@@ -562,6 +564,14 @@ export function LaunchesReferenceScreen({
         onLaunchPageSizeChange={onLaunchPageSizeChange}
         onRefresh={onRefresh}
         onSelectLaunch={openLaunchDetail}
+        onSelectLaunchStatus={(launchId, status) => {
+          setSelectedLaunchId(launchId);
+          setQuery(`status = ${JSON.stringify(status)}`);
+          setStatusFilter(undefined);
+          setActiveTab("results");
+          setView("detail");
+          onOpenLaunchStatus?.(launchId, status);
+        }}
         partial={launchListPartial}
         loading={isLaunchListLoading}
         totalCount={
@@ -618,9 +628,7 @@ export function LaunchesReferenceScreen({
               <span className={`launches-reference-state state-${selectedLaunch.state}`}>
                 {launchStateLabels[selectedLaunch.state] ?? selectedLaunch.state}
               </span>
-              <span className="launches-reference-heading-id" title={selectedLaunch.id}>
-                ID {selectedLaunch.id.slice(0, 8)}
-              </span>
+              <span className="launches-reference-heading-id">ID {selectedLaunch.id}</span>
             </div>
           </div>
 
@@ -805,6 +813,7 @@ function LaunchListView({
   onQueryChange,
   onRefresh,
   onSelectLaunch,
+  onSelectLaunchStatus,
   partial,
   projectId,
   query,
@@ -824,6 +833,7 @@ function LaunchListView({
   onQueryChange: (query: string) => void;
   onRefresh?: (() => void) | undefined;
   onSelectLaunch: (launchId: string) => void;
+  onSelectLaunchStatus: (launchId: string, status: ResultStatus) => void;
   partial?: LaunchesReferencePartialState | undefined;
   projectId: string;
   query: string;
@@ -919,59 +929,62 @@ function LaunchListView({
                 : metadata.tags.filter(
                     (value) => value.toLocaleLowerCase() !== metadata.branch.toLocaleLowerCase()
                   );
-            const compactId = launch.id.length > 12 ? `${launch.id.slice(0, 8)}…` : launch.id;
             const total = getLaunchTotal(launch);
 
             return (
-              <button
-                className="launches-reference-list-row"
-                key={launch.id}
-                type="button"
-                onClick={() => onSelectLaunch(launch.id)}
-              >
-                <span className="launches-reference-list-main">
-                  <strong>
-                    <span>{launch.name}</span>
-                    <em className={`state-${launch.state}`}>
-                      {launchStateLabels[launch.state] ?? launch.state}
-                    </em>
-                  </strong>
-                  <small className="launches-reference-list-id" title={launch.id}>
-                    ID {compactId}
-                  </small>
-                </span>
-
-                <LaunchProgressBar counters={launch.counters} total={total} />
-
-                <span className="launches-reference-list-meta">
-                  {launch.build ? (
-                    <span>
-                      <small>Сборка</small>
-                      <em>{launch.build}</em>
-                    </span>
-                  ) : null}
-                  {launch.createdAt ? (
-                    <span>
-                      <small>Создан</small>
-                      <em>{formatHistoryDate(launch.createdAt)}</em>
-                    </span>
-                  ) : null}
-                  {metadataItems.length > 0 ? (
-                    <span>
-                      <small>Метки</small>
-                      <span className="launches-reference-list-tags">
-                        {metadataItems.map((tag) => (
-                          <em key={tag}>{tag}</em>
-                        ))}
-                      </span>
-                    </span>
-                  ) : null}
-                  <span>
-                    <small>Ветка</small>
-                    <em>{metadata.branch}</em>
+              <div className="launches-reference-list-row" key={launch.id}>
+                <button
+                  className="launches-reference-list-open"
+                  type="button"
+                  aria-label={`Открыть запуск ${launch.name}, ID ${launch.id}`}
+                  onClick={() => onSelectLaunch(launch.id)}
+                >
+                  <span className="launches-reference-list-main">
+                    <strong>
+                      <span>{launch.name}</span>
+                      <em className={`state-${launch.state}`}>
+                        {launchStateLabels[launch.state] ?? launch.state}
+                      </em>
+                    </strong>
+                    <small className="launches-reference-list-id">ID {launch.id}</small>
                   </span>
-                </span>
-              </button>
+
+                  <span className="launches-reference-list-meta">
+                    {launch.build ? (
+                      <span>
+                        <small>Сборка</small>
+                        <em>{launch.build}</em>
+                      </span>
+                    ) : null}
+                    {launch.createdAt ? (
+                      <span>
+                        <small>Создан</small>
+                        <em>{formatHistoryDate(launch.createdAt)}</em>
+                      </span>
+                    ) : null}
+                    {metadataItems.length > 0 ? (
+                      <span>
+                        <small>Метки</small>
+                        <span className="launches-reference-list-tags">
+                          {metadataItems.map((tag) => (
+                            <em key={tag}>{tag}</em>
+                          ))}
+                        </span>
+                      </span>
+                    ) : null}
+                    <span>
+                      <small>Ветка</small>
+                      <em>{metadata.branch}</em>
+                    </span>
+                  </span>
+                </button>
+
+                <LaunchProgressBar
+                  counters={launch.counters}
+                  total={total}
+                  onStatusClick={(status) => onSelectLaunchStatus(launch.id, status)}
+                />
+              </div>
             );
           })}
 

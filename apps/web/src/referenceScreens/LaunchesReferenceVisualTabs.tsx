@@ -1,7 +1,7 @@
 import type { LaunchDurationChartReadModel } from "@testhistory/contracts";
 import { useEffect, useState } from "react";
 import type { LaunchListItem, ResultStatus, TestResult } from "../m1Workspace.js";
-import { formatDurationSeconds, formatStatus } from "./LaunchesReferenceFormatters.js";
+import { formatDurationSeconds } from "./LaunchesReferenceFormatters.js";
 import {
   analyticsStatusOrder,
   collectTimelineRows,
@@ -289,10 +289,12 @@ export function TimelineTab({
 
 export function LaunchProgressBar({
   counters,
-  total
+  total,
+  onStatusClick
 }: {
   counters: Record<ResultStatus, number>;
   total: number;
+  onStatusClick?: ((status: ResultStatus) => void) | undefined;
 }) {
   const visibleStatuses = analyticsStatusOrder.filter((status) => counters[status] > 0);
   const legendLabels: Record<ResultStatus, string> = {
@@ -305,36 +307,37 @@ export function LaunchProgressBar({
   };
 
   return (
-    <div className="launches-reference-progress-wrap" aria-label="Распределение статусов">
+    <div className="launches-reference-progress-wrap">
       <div className="launches-reference-progress">
         {visibleStatuses.map((status) => {
           const value = counters[status];
-          const showCount = total > 0 && value / total >= 0.12;
-          const statusLabel = formatStatus(status);
+          const count = value.toLocaleString("ru-RU");
+          const hint = `${legendLabels[status]}: ${count}${onStatusClick ? ". Открыть отфильтрованные результаты" : ""}`;
+          const segmentProps = {
+            className: `is-${status}`,
+            style: { flexBasis: 0, flexGrow: value },
+            title: hint
+          };
 
-          return (
-            <span
-              className={`is-${status}`}
+          return onStatusClick ? (
+            <button
+              {...segmentProps}
               key={status}
-              aria-label={`${statusLabel}: ${value}`}
-              style={{ flexBasis: 0, flexGrow: value }}
-              title={`${statusLabel}: ${value}`}
+              type="button"
+              aria-label={`Показать результаты: ${legendLabels[status]} ${count}`}
+              onClick={() => onStatusClick(status)}
             >
-              {showCount ? value.toLocaleString("ru-RU") : null}
+              <span className="launches-reference-progress-count">{count}</span>
+            </button>
+          ) : (
+            <span {...segmentProps} key={status} aria-label={`${legendLabels[status]}: ${count}`}>
+              <span className="launches-reference-progress-count">{count}</span>
             </span>
           );
         })}
-      </div>
-      <div className="launches-reference-progress-legend" aria-label="Значения цветов статусов">
         {total === 0 ? (
           <span className="launches-reference-progress-empty">Результатов пока нет</span>
         ) : null}
-        {visibleStatuses.map((status) => (
-          <span key={status} title={`${formatStatus(status)}: ${counters[status]}`}>
-            <i className={`is-${status}`} aria-hidden="true" />
-            {legendLabels[status]} {counters[status].toLocaleString("ru-RU")}
-          </span>
-        ))}
       </div>
     </div>
   );

@@ -333,8 +333,9 @@ describe("result and launch surface readiness", () => {
       />
     );
 
-    expect(progressMarkup).toContain('aria-label="Неизвестен: 4"');
-    expect(progressMarkup).toContain("Неизвестны 4");
+    expect(progressMarkup).toContain('aria-label="Неизвестны: 4"');
+    expect(progressMarkup).toContain('title="Неизвестны: 4"');
+    expect(progressMarkup).not.toContain("launches-reference-progress-legend");
     expect(resultsMarkup).toContain('<option value="broken">Сломан · 8</option>');
     expect(resultsMarkup).toContain('<option value="unknown">Неизвестен · 4</option>');
   });

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { LaunchDurationChartReadModel } from "@testhistory/contracts";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -70,5 +72,33 @@ describe("launch chart data scope", () => {
       />
     );
     expect(markup).toContain("Результатов пока нет");
+  });
+
+  it("keeps every nonzero count in the bar and gives each segment a status hint", () => {
+    const host = document.createElement("div");
+    host.innerHTML = renderToStaticMarkup(
+      <LaunchProgressBar
+        counters={{ broken: 10, failed: 20, muted: 0, passed: 50, skipped: 10, unknown: 10 }}
+        total={100}
+        onStatusClick={() => undefined}
+      />
+    );
+
+    expect(host.querySelector(".launches-reference-progress-legend")).toBeNull();
+    const segments = Array.from(
+      host.querySelectorAll<HTMLButtonElement>(".launches-reference-progress button")
+    );
+    expect(segments).toHaveLength(5);
+    expect(segments.map((segment) => segment.textContent?.trim())).toEqual([
+      "20",
+      "10",
+      "10",
+      "50",
+      "10"
+    ]);
+    for (const segment of segments) {
+      expect(segment.title).toMatch(/:\s*\d+/);
+      expect(segment.getAttribute("aria-label")).toContain(segment.textContent?.trim());
+    }
   });
 });

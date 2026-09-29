@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-29T13:16:45.920Z",
+  "generatedAt": "2026-09-29T15:46:30.453Z",
   "viewport": {
     "width": 1440,
     "height": 1000
@@ -44,98 +44,98 @@
     {
       "file": "test-cases.png",
       "hash": "#case?list=1",
-      "bytes": 269059,
+      "bytes": 268160,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launches.png",
       "hash": "#launch",
-      "bytes": 77587,
+      "bytes": 69444,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-detail.png",
       "hash": "#launch/L-1289",
-      "bytes": 222794,
+      "bytes": 222698,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-results.png",
       "hash": "#launch/L-1289/results",
-      "bytes": 257858,
+      "bytes": 256525,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-result-history.png",
       "hash": "#launch/L-1289/result/PAY-1042/history",
-      "bytes": 214667,
+      "bytes": 213352,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-result-defects.png",
       "hash": "#launch/L-1289/result/PAY-1042/defects",
-      "bytes": 208377,
+      "bytes": 207480,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-errors.png",
       "hash": "#launch/L-1289/errors",
-      "bytes": 260033,
+      "bytes": 257112,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-charts.png",
       "hash": "#launch/L-1289/charts",
-      "bytes": 98117,
+      "bytes": 98009,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-comparison.png",
       "hash": "#launch/L-1289/comparison",
-      "bytes": 170154,
+      "bytes": 170289,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-comparison-matrix.png",
       "hash": "#launch/L-1289/comparison",
-      "bytes": 176384,
+      "bytes": 176802,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case.png",
       "hash": "#case/PAY-1042/overview",
-      "bytes": 264604,
+      "bytes": 263714,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-scenario.png",
       "hash": "#case/PAY-1042/overview",
-      "bytes": 273935,
+      "bytes": 271616,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-history.png",
       "hash": "#case/PAY-1042/history",
-      "bytes": 190200,
+      "bytes": 186017,
       "auth": true,
       "dialog": false
     },
     {
       "file": "selected-test-case-defects.png",
       "hash": "#case/PAY-1042/defects",
-      "bytes": 182520,
+      "bytes": 178614,
       "auth": true,
       "dialog": false
     },
@@ -275,14 +275,14 @@
     {
       "file": "quarantine-empty.png",
       "hash": "#launch/L-1289/results?query=muted+%3D+true",
-      "bytes": 107757,
+      "bytes": 108216,
       "auth": true,
       "dialog": false
     },
     {
       "file": "dialog-delete-launch.png",
       "hash": "#launch/L-1289",
-      "bytes": 227289,
+      "bytes": 227361,
       "auth": true,
       "dialog": true
     }

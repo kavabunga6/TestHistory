@@ -93,9 +93,8 @@
 
 .launches-reference-heading {
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  gap: 3px;
 }
 
 .launches-reference-heading h1 {
@@ -117,6 +116,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .launches-reference-state {
@@ -152,7 +152,7 @@
   color: #8a96a8;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .launches-reference-frame {
@@ -407,12 +407,10 @@
 .launches-reference-list-row {
   min-width: 0;
   display: grid;
-  grid-template-areas:
-    "main progress"
-    "meta progress";
+  grid-template-areas: "open progress";
   grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
-  align-items: start;
-  gap: 7px 16px;
+  align-items: center;
+  gap: 16px;
   border: 1px solid #d7e1ee;
   border-radius: 6px;
   padding: 11px 14px;
@@ -421,7 +419,6 @@
   font: inherit;
   text-align: left;
   box-shadow: none;
-  cursor: pointer;
   transition:
     border-color 120ms ease,
     box-shadow 120ms ease,
@@ -429,40 +426,47 @@
 }
 
 .launches-reference-list-row:hover,
-.launches-reference-list-row:focus-visible {
+.launches-reference-list-row:focus-within {
   border-color: #93b4f5;
   background: #f8fbff;
   box-shadow: 0 5px 14px rgb(15 23 42 / 7%);
-  outline: 0;
 }
 
 .launches-reference-list-row:last-child {
   border-bottom-color: #dfe6ef;
 }
 
+.launches-reference-list-open {
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  grid-area: open;
+  grid-template-areas: "main" "meta";
+  gap: 7px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.launches-reference-list-open:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
 .launches-reference-list-row > .launches-reference-progress-wrap {
   grid-area: progress;
-  align-self: start;
+  align-self: center;
   justify-self: end;
   width: min(400px, 100%);
-  gap: 6px;
-}
-
-.launches-reference-list-row > .launches-reference-progress-wrap::before {
-  color: #748094;
-  content: "Результаты";
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1;
-  text-align: left;
-}
-
-.launches-reference-list-row .launches-reference-progress-legend {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .launches-reference-progress-empty {
-  grid-column: 1 / -1;
+  width: 100%;
   color: #64748b;
   font-size: 12px;
 }
@@ -528,6 +532,7 @@
   width: fit-content;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
 .launches-reference-list-meta {
@@ -712,7 +717,7 @@
 
 .launches-reference-progress {
   min-width: 0;
-  height: calc(24px + var(--th-font-meta-delta));
+  height: calc(36px + var(--th-font-meta-delta));
   display: flex;
   overflow: hidden;
   border: 0;
@@ -720,70 +725,46 @@
   background: #eef2f6;
 }
 
-.launches-reference-progress-legend {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px 8px;
-  margin-top: 7px;
-  color: #64748b;
-  font-size: 10px;
-  line-height: 1.2;
-}
-
-.launches-reference-progress-legend > span {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-
-.launches-reference-progress-legend i {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-}
-
-.launches-reference-progress-legend .is-failed {
-  background: #d95752;
-}
-
-.launches-reference-progress-legend .is-broken {
-  background: #d39a43;
-}
-
-.launches-reference-progress-legend .is-unknown {
-  background: #7c75ad;
-}
-
-.launches-reference-progress-legend .is-passed {
-  background: #4eab77;
-}
-
-.launches-reference-progress-legend .is-skipped {
-  background: #97a4b6;
-}
-
-.launches-reference-progress span {
+.launches-reference-progress > :is(span, button) {
   min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-right: 2px solid #ffffff;
+  border: 0;
   color: #394457;
-  padding: 0 4px;
+  padding: 0;
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
   text-overflow: clip;
   white-space: nowrap;
+  container-type: inline-size;
 }
 
-.launches-reference-progress span:last-child {
-  border-right: 0;
+.launches-reference-progress-count {
+  font-variant-numeric: tabular-nums;
+}
+
+@container (max-width: 18px) {
+  .launches-reference-progress-count {
+    visibility: hidden;
+  }
+}
+
+.launches-reference-progress button {
+  cursor: pointer;
+}
+
+.launches-reference-progress button:hover {
+  filter: saturate(1.4) brightness(0.96);
+}
+
+.launches-reference-progress button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
 }
 
 .launches-reference-progress .is-failed {
@@ -4612,7 +4593,7 @@ body.launches-reference-is-resizing * {
   }
 
   .launches-reference-list-row {
-    grid-template-areas: "main" "progress" "meta";
+    grid-template-areas: "open" "progress";
   }
 
   .launches-reference-list-row > .launches-reference-progress-wrap {
@@ -4700,10 +4681,6 @@ body.launches-reference-is-resizing * {
   .launches-reference-list {
     gap: 10px;
     padding: 12px;
-  }
-
-  .launches-reference-list-row .launches-reference-progress-legend {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .launches-reference-list-search,

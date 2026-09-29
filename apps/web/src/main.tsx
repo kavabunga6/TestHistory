@@ -560,6 +560,16 @@ function App() {
             }
           }}
           onOpenLaunch={(id) => setRoute({ launchId: id, launchTab: "overview", mode: "launch" })}
+          onOpenLaunchStatus={(launchId, status) => {
+            setResultPageIndex(0);
+            setResultStatusFilter(undefined);
+            setRoute({
+              launchId,
+              launchQuery: `status = ${JSON.stringify(status)}`,
+              launchTab: "results",
+              mode: "launch"
+            });
+          }}
           onOpenLaunchList={() => setRoute({ mode: "launch" })}
           onRefreshWorkspace={() =>
             void refreshWorkspace({ focusLaunchId: route.launchId, focusResultId: route.resultId })

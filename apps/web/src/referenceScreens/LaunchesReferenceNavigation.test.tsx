@@ -62,6 +62,75 @@ describe("launch results navigation", () => {
     );
   });
 
+  it("shows a status opened from the launch bar in the picker and clears its route query", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const onOpenTab = vi.fn();
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={demoM1Workspace.launchItems}
+          onOpenTab={onOpenTab}
+          projectId="project-sandbox"
+          results={demoM1Workspace.results}
+          routeLaunchId={demoM1Workspace.launchItems[0]!.id}
+          routeLaunchTab="results"
+          routeQuery={'status = "failed"'}
+        />
+      )
+    );
+
+    const statusFilter = container.querySelector<HTMLSelectElement>(
+      'select[aria-label="Фильтр по статусу"]'
+    );
+    const query = container.querySelector<HTMLInputElement>(
+      'input[aria-label="THQL поиск результатов запуска"]'
+    );
+    expect(statusFilter?.value).toBe("failed");
+    expect(query?.value).toBe('status = "failed"');
+
+    await act(async () => {
+      statusFilter!.value = "";
+      statusFilter!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    expect(query?.value).toBe("");
+    expect(statusFilter?.value).toBe("");
+    expect(onOpenTab).toHaveBeenCalledWith("results");
+  });
+
+  it("clears a routed status query when browser navigation returns to unfiltered results", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const props = {
+      launchItems: demoM1Workspace.launchItems,
+      projectId: "project-sandbox",
+      results: demoM1Workspace.results,
+      routeLaunchId: demoM1Workspace.launchItems[0]!.id,
+      routeLaunchTab: "results"
+    };
+
+    await act(async () =>
+      root.render(<LaunchesReferenceScreen {...props} routeQuery={'status = "failed"'} />)
+    );
+    const query = container.querySelector<HTMLInputElement>(
+      'input[aria-label="THQL поиск результатов запуска"]'
+    );
+    const statusFilter = container.querySelector<HTMLSelectElement>(
+      'select[aria-label="Фильтр по статусу"]'
+    );
+    expect(query?.value).toBe('status = "failed"');
+    expect(statusFilter?.value).toBe("failed");
+
+    await act(async () => root.render(<LaunchesReferenceScreen {...props} />));
+    expect(query?.value).toBe("");
+    expect(statusFilter?.value).toBe("");
+  });
+
   it("follows result route changes between mobile list and detail", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -172,7 +241,7 @@ describe("launch results navigation", () => {
     await act(async () => nextPage!.click());
     await act(async () => nextPage!.click());
 
-    const rows = container.querySelectorAll<HTMLButtonElement>(".launches-reference-list-row");
+    const rows = container.querySelectorAll<HTMLElement>(".launches-reference-list-row");
     expect(rows).toHaveLength(13);
     expect(rows[0]!.textContent).toContain("Запуск 51");
     expect(rows[12]!.textContent).toContain("Запуск 63");
@@ -193,6 +262,86 @@ describe("launch results navigation", () => {
       )
     );
     expect(container.querySelector(".launches-reference-list-id")?.textContent).toBe("ID L-1289");
+  });
+
+  it("shows the complete UUID and opens each status filter directly from its segment", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const launchId = "f8e55c2f-ba23-47d5-b356-a7059bd24a08";
+    const onOpenLaunch = vi.fn();
+    const onOpenLaunchStatus = vi.fn();
+    const launch = {
+      ...demoM1Workspace.launchItems[0]!,
+      id: launchId,
+      counters: {
+        broken: 10,
+        failed: 20,
+        muted: 0,
+        passed: 50,
+        skipped: 10,
+        unknown: 10
+      }
+    };
+    const counts = { broken: "10", failed: "20", passed: "50", skipped: "10", unknown: "10" };
+
+    for (const status of ["failed", "broken", "unknown", "passed", "skipped"] as const) {
+      await act(async () =>
+        root.render(
+          <LaunchesReferenceScreen
+            key={status}
+            launchItems={[launch]}
+            onOpenLaunch={onOpenLaunch}
+            onOpenLaunchStatus={onOpenLaunchStatus}
+            projectId="project-sandbox"
+            results={[]}
+          />
+        )
+      );
+
+      const row = container.querySelector<HTMLElement>(".launches-reference-list-row");
+      expect(row?.querySelector(".launches-reference-list-id")?.textContent).toBe(`ID ${launchId}`);
+      expect(row?.querySelector(".launches-reference-progress-legend")).toBeNull();
+      expect(row?.querySelector("button button")).toBeNull();
+
+      const segment = row?.querySelector<HTMLButtonElement>(
+        `.launches-reference-progress button.is-${status}`
+      );
+      expect(segment?.textContent?.trim()).toBe(counts[status]);
+      await act(async () => segment!.click());
+      expect(onOpenLaunchStatus).toHaveBeenCalledExactlyOnceWith(launchId, status);
+      onOpenLaunchStatus.mockClear();
+    }
+    expect(onOpenLaunch).not.toHaveBeenCalled();
+  });
+
+  it("opens the launch overview from its separate title button", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const launchId = "f8e55c2f-ba23-47d5-b356-a7059bd24a08";
+    const onOpenLaunch = vi.fn();
+    const onOpenLaunchStatus = vi.fn();
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={[{ ...demoM1Workspace.launchItems[0]!, id: launchId }]}
+          onOpenLaunch={onOpenLaunch}
+          onOpenLaunchStatus={onOpenLaunchStatus}
+          projectId="project-sandbox"
+          results={[]}
+        />
+      )
+    );
+
+    const row = container.querySelector<HTMLElement>(".launches-reference-list-row");
+    await act(async () =>
+      row!.querySelector<HTMLButtonElement>(".launches-reference-list-open")!.click()
+    );
+    expect(onOpenLaunch).toHaveBeenCalledExactlyOnceWith(launchId);
+    expect(onOpenLaunchStatus).not.toHaveBeenCalled();
   });
 
   it("uses the server page count and requests the next launch page", async () => {

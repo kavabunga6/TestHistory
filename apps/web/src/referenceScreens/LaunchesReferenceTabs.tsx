@@ -296,8 +296,12 @@ export function ResultsTab({
       ? Math.max(launchCounters?.muted ?? 0, pageCount)
       : (launchCounters?.[status] ?? pageCount);
   };
+  const queryStatusFilter = filterStatusOrder.find(
+    (status) => query.trim() === `status = "${status}"`
+  );
+  const selectedStatusFilter = activeStatusFilter ?? queryStatusFilter;
   const availableStatusFilters = filterStatusOrder.filter(
-    (status) => status === "muted" || status === activeStatusFilter || countForStatus(status) > 0
+    (status) => status === "muted" || status === selectedStatusFilter || countForStatus(status) > 0
   );
 
   return (
@@ -320,16 +324,17 @@ export function ResultsTab({
           trailingFilters={
             <label
               className={`launches-reference-results-status-picker ${
-                activeStatusFilter ? "is-filtered" : ""
+                selectedStatusFilter ? "is-filtered" : ""
               }`}
             >
               <span>Статус</span>
               <select
                 aria-label="Фильтр по статусу"
-                value={activeStatusFilter ?? ""}
+                value={selectedStatusFilter ?? ""}
                 onChange={(event) => {
                   const status = filterStatusOrder.find((item) => item === event.target.value);
                   if (status === undefined) {
+                    onQueryChange("");
                     onClearStatusFilter();
                     return;
                   }
