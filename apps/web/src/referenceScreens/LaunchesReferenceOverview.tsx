@@ -13,21 +13,23 @@ import {
 } from "./LaunchesReferenceModel.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
 
-const overviewStatusOrder: ResultStatus[] = ["passed", "failed", "broken", "skipped"];
+const overviewStatusOrder: ResultStatus[] = ["passed", "failed", "broken", "unknown", "skipped"];
 
 const overviewStatusLabels: Record<ResultStatus, string> = {
-  broken: "Сломаны и неизвестны",
+  broken: "Сломаны",
   failed: "Провалены",
   muted: "В карантине",
   passed: "Успешные",
-  skipped: "Пропущены"
+  skipped: "Пропущены",
+  unknown: "Неизвестны"
 };
 const overviewStatusColors: Record<ResultStatus, string> = {
   broken: "#d18b2c",
   failed: "#d95f57",
   muted: "#64748b",
   passed: "#48a568",
-  skipped: "#8793a3"
+  skipped: "#8793a3",
+  unknown: "#7c75ad"
 };
 
 export function OverviewTab({
@@ -48,6 +50,7 @@ export function OverviewTab({
     (result) => result.status === "failed" || result.status === "broken"
   );
   const defectItems = collectDefectItems(results);
+  const hasUnloadedResults = total > results.length;
   const parameters = collectLaunchParameters(launch, results);
   const passRate = total > 0 ? Math.round((launch.counters.passed / total) * 100) : 0;
   const activeStatusCount = overviewStatusOrder.filter(
@@ -166,13 +169,8 @@ export function OverviewTab({
               {chartSegments.map((segment) => (
                 <li key={segment.status}>
                   <button
-                    aria-label={`${overviewStatusLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")}. ${segment.status === "broken" ? "Открыть оба статуса" : "Открыть результаты с этим статусом"}`}
+                    aria-label={`${overviewStatusLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")}. Открыть результаты с этим статусом`}
                     className={`launches-reference-overview-legend-item is-${segment.status}`}
-                    title={
-                      segment.status === "broken"
-                        ? "Показать сломанные результаты и результаты с неопределённым статусом"
-                        : undefined
-                    }
                     type="button"
                     onClick={() => onSelectStatus(segment.status)}
                   >
@@ -194,7 +192,11 @@ export function OverviewTab({
             Неразобранные результаты
           </OverviewCardTitle>
           <PagedResultList
-            emptyText="В запуске пока нет неразобранных результатов."
+            emptyText={
+              hasUnloadedResults
+                ? "Среди загруженных результатов нет неразобранных."
+                : "В запуске пока нет неразобранных результатов."
+            }
             results={unresolved}
             onSelectResult={onSelectResult}
           />
@@ -202,9 +204,18 @@ export function OverviewTab({
 
         <div className="launches-reference-overview-side">
           <section className="launches-reference-card launches-reference-overview-card-defects">
-            <OverviewCardTitle count={defectItems.length}>Дефекты</OverviewCardTitle>
+            <OverviewCardTitle
+              count={defectItems.length}
+              note={hasUnloadedResults ? "на загруженной странице" : ""}
+            >
+              Дефекты
+            </OverviewCardTitle>
             <PagedDefectList
-              emptyText="Нет дефектов в этом запуске"
+              emptyText={
+                hasUnloadedResults
+                  ? "На загруженной странице нет дефектов."
+                  : "Нет дефектов в этом запуске"
+              }
               items={defectItems}
               onSelectResult={onSelectResult}
             />

@@ -88,6 +88,7 @@ export const statusLabels: Record<ResultStatus, string> = {
   passed: "Пройден",
   failed: "Провален",
   broken: "Сломан",
+  unknown: "Неизвестен",
   skipped: "Пропущен",
   muted: "Карантин"
 };
@@ -291,6 +292,6 @@ export function countAnalyticsStatuses(results: TestResult[]): Record<ResultStat
       }
       return counters;
     },
-    { broken: 0, failed: 0, muted: 0, passed: 0, skipped: 0 }
+    { broken: 0, failed: 0, muted: 0, passed: 0, skipped: 0, unknown: 0 }
   );
 }

@@ -5,6 +5,7 @@ import { createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
 const read = (path, search = "") => createUiFixtureApiResponse(path, "GET", null, search);
 const launchId = "L-1289";
 const resultsPath = `/api/v1/launches/${launchId}/results`;
+const automationBase = "/api/v1/projects/project-1";
 
 function maxStepDepth(steps, depth = 1) {
   return Math.max(
@@ -146,4 +147,84 @@ test("UI fixture pagination, analytics and dashboard agree on 100 results", () =
   assert.ok(
     aggregate.widgets[2].tableRows[0].durationMs >= aggregate.widgets[2].tableRows[1].durationMs
   );
+});
+
+test("automation screenshot fixtures retain the empty state and populate all review tabs", () => {
+  const paths = [
+    `${automationBase}/test-plans`,
+    `${automationBase}/automation-jobs`,
+    `${automationBase}/integrations/notifications`,
+    `${automationBase}/integrations/issue-trackers`,
+    `${automationBase}/integration-deliveries`
+  ];
+  for (const path of paths) {
+    const empty = createUiFixtureApiResponse(path, "GET", null, "", "automation");
+    const filled = createUiFixtureApiResponse(path, "GET", null, "", "automation-plans");
+    assert.equal(empty.items.length, 0, `${path} must stay empty in automation.png`);
+    assert.ok(filled.items.length > 0, `${path} must be populated in automation tabs`);
+  }
+
+  const plans = createUiFixtureApiResponse(paths[0], "GET", null, "", "automation-plans");
+  const jobs = createUiFixtureApiResponse(paths[1], "GET", null, "", "automation-jobs");
+  const notifications = createUiFixtureApiResponse(
+    paths[2],
+    "GET",
+    null,
+    "",
+    "automation-integrations"
+  );
+  const trackers = createUiFixtureApiResponse(paths[3], "GET", null, "", "automation-integrations");
+  const deliveries = createUiFixtureApiResponse(
+    paths[4],
+    "GET",
+    null,
+    "",
+    "automation-integrations"
+  );
+
+  assert.deepEqual(
+    plans.items.map((item) => item.status),
+    ["active", "active", "disabled"]
+  );
+  assert.deepEqual(
+    new Set(jobs.items.map((item) => item.status)),
+    new Set(["succeeded", "running", "failed", "queued"])
+  );
+  assert.ok(jobs.items.every((item) => plans.items.some((plan) => plan.id === item.testPlanId)));
+  assert.equal(notifications.items.length, 2);
+  assert.equal(trackers.items.length, 2);
+  assert.deepEqual(
+    new Set(deliveries.items.map((item) => item.status)),
+    new Set(["delivered", "retrying"])
+  );
+});
+
+test("comparison screenshot fixture adds a baseline only to its own launch list", () => {
+  const launchList = `/api/v1/projects/project-1/launches`;
+  assert.equal(read(launchList, "?limit=100").items.length, 1);
+
+  const comparisonList = createUiFixtureApiResponse(
+    launchList,
+    "GET",
+    null,
+    "?limit=100",
+    "launch-comparison"
+  );
+  assert.deepEqual(
+    comparisonList.items.map((item) => item.id),
+    ["L-1289", "L-1288"]
+  );
+
+  const response = createUiFixtureApiResponse(
+    `/api/v1/projects/project-1/launches/compare`,
+    "GET",
+    null,
+    "?baseLaunchId=L-1288&targetLaunchId=L-1289&limit=25&offset=0",
+    "launch-comparison"
+  );
+  assert.equal(response.kind, "launch-comparison");
+  assert.equal(response.page.total, 5);
+  assert.equal(response.summary.regressed, 2);
+  assert.ok(response.rows.some((row) => row.change === "fixed"));
+  assert.ok(response.rows.some((row) => row.change === "regressed"));
 });

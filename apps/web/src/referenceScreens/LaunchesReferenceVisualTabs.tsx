@@ -1,4 +1,4 @@
-import type { ResultStatus, TestResult } from "../m1Workspace.js";
+import type { LaunchResultPage, ResultStatus, TestResult } from "../m1Workspace.js";
 import { formatStatus } from "./LaunchesReferenceFormatters.js";
 import {
   analyticsStatusOrder,
@@ -12,20 +12,34 @@ import { ReferenceRouteState } from "./LaunchesReferenceRouteState.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
 import { StatusIcon } from "./LaunchesStatusIcon.js";
 
-export function ChartsTab({ results }: { results: TestResult[] }) {
+export function ChartsTab({
+  page,
+  results
+}: {
+  page?: LaunchResultPage | undefined;
+  results: TestResult[];
+}) {
   const buckets = buildDurationBuckets(results);
   const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count));
   const axisMaxCount = getDurationAxisMax(maxCount);
   const yAxisTicks = buildDurationAxisTicks(axisMaxCount);
   const averageDuration = formatAverageDuration(results);
+  const total = page?.total ?? results.length;
+  const scope =
+    page !== undefined && (page.offset > 0 || results.length < total)
+      ? `Страница результатов: ${results.length > 0 ? page.offset + 1 : 0}–${page.offset + results.length} из ${total}`
+      : `Результатов на графике: ${results.length}`;
 
   return (
     <div className="launches-reference-chart-page">
       <section className="launches-reference-card launches-reference-chart-card">
         <header className="launches-reference-chart-card-head">
-          <h2>Распределение по продолжительности</h2>
+          <div className="launches-reference-chart-card-title">
+            <h2>Распределение по продолжительности</h2>
+            <p>{scope}</p>
+          </div>
           <span>
-            Средняя продолжительность теста <strong>{averageDuration}</strong>
+            Средняя по показанным <strong>{averageDuration}</strong>
           </span>
         </header>
         {results.length > 0 ? (
@@ -165,11 +179,12 @@ export function LaunchProgressBar({
 }) {
   const visibleStatuses = analyticsStatusOrder.filter((status) => counters[status] > 0);
   const legendLabels: Record<ResultStatus, string> = {
-    broken: "Сломаны/неизв.",
+    broken: "Сломаны",
     failed: "Провалены",
     muted: "В карантине",
     passed: "Успешные",
-    skipped: "Пропущены"
+    skipped: "Пропущены",
+    unknown: "Неизвестны"
   };
 
   return (
@@ -178,7 +193,7 @@ export function LaunchProgressBar({
         {visibleStatuses.map((status) => {
           const value = counters[status];
           const showCount = total > 0 && value / total >= 0.12;
-          const statusLabel = status === "broken" ? "Сломаны и неизвестны" : formatStatus(status);
+          const statusLabel = formatStatus(status);
 
           return (
             <span
@@ -195,10 +210,7 @@ export function LaunchProgressBar({
       </div>
       <div className="launches-reference-progress-legend" aria-label="Значения цветов статусов">
         {visibleStatuses.map((status) => (
-          <span
-            key={status}
-            title={`${status === "broken" ? "Сломаны и неизвестны" : formatStatus(status)}: ${counters[status]}`}
-          >
+          <span key={status} title={`${formatStatus(status)}: ${counters[status]}`}>
             <i className={`is-${status}`} aria-hidden="true" />
             {legendLabels[status]} {counters[status].toLocaleString("ru-RU")}
           </span>

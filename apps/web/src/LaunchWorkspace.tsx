@@ -347,7 +347,7 @@ function LaunchProgressBar({
   total: number;
 }) {
   const safeTotal = Math.max(total, 1);
-  const parts: ResultStatus[] = ["failed", "broken", "passed", "skipped"];
+  const parts: ResultStatus[] = ["failed", "broken", "unknown", "passed", "skipped"];
 
   return (
     <div

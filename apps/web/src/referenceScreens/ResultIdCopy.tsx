@@ -1,6 +1,8 @@
 import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import "./ResultIdCopy.css";
+
 export function ResultIdCopy({
   label = "ID результата",
   resultId
@@ -22,7 +24,7 @@ export function ResultIdCopy({
   };
 
   return (
-    <div className="tc-detail-reference-result-id">
+    <div className="reference-result-id-copy">
       <code title={resultId}>
         {label}: {resultId}
       </code>

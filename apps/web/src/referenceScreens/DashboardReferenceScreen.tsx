@@ -21,15 +21,18 @@ import { widgetUnavailableReason } from "./DashboardReferenceQuery.js";
 import { loadSavedDashboardWidgets, saveDashboardWidgets } from "./DashboardReferenceStorage.js";
 import { DashboardWidgetGrid } from "./DashboardReferenceWidgets.js";
 import { useDashboardAggregate } from "./useDashboardAggregate.js";
+import { useDashboardLaunchCatalog } from "./useDashboardLaunchCatalog.js";
 
 export function DashboardReferenceScreen({
   launchItems = [],
   onOpenResult,
+  projectId,
   storageScope
 }: {
   launchItems?: LaunchListItem[];
   results?: TestResult[];
   onOpenResult?: ((id: string, launchId: string) => void) | undefined;
+  projectId?: string | undefined;
   storageScope?: string | undefined;
 } = {}) {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -40,9 +43,10 @@ export function DashboardReferenceScreen({
   const [savedWidgets, setSavedWidgets] = useState<SavedDashboardWidget[]>(() =>
     loadSavedDashboardWidgets(storageScope)
   );
+  const launchCatalog = useDashboardLaunchCatalog(projectId, launchItems);
   const [selectedLaunchId, setSelectedLaunchId] = useState<string | undefined>();
   const selectedLaunch =
-    launchItems.find((launch) => launch.id === selectedLaunchId) ?? launchItems[0];
+    launchCatalog.items.find((launch) => launch.id === selectedLaunchId) ?? launchCatalog.items[0];
   const { state: dataState, retry: retryDataLoad } = useDashboardAggregate(
     selectedLaunch?.id,
     savedWidgets
@@ -150,25 +154,69 @@ export function DashboardReferenceScreen({
       <section className="dashboard-reference-frame" aria-labelledby="dashboard-reference-title">
         <header className="dashboard-reference-head">
           <div>
-            <h1 id="dashboard-reference-title">Дашборды</h1>
-            <p>Виджеты по результатам выбранного запуска.</p>
+            <div className="dashboard-reference-title-row">
+              <h1 id="dashboard-reference-title">Дашборды</h1>
+              <span className="dashboard-reference-scope">Один запуск</span>
+            </div>
+            <p>Настраиваемые показатели результатов тестов.</p>
           </div>
           <div className="dashboard-reference-head-actions">
-            <label className="dashboard-reference-launch-picker">
-              <span>Запуск</span>
-              <select
-                disabled={launchItems.length === 0}
-                onChange={(event) => setSelectedLaunchId(event.target.value)}
-                value={selectedLaunch?.id ?? ""}
-              >
-                {launchItems.length === 0 ? <option value="">Нет запусков</option> : null}
-                {launchItems.map((launch) => (
-                  <option key={launch.id} value={launch.id}>
-                    {launch.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="dashboard-reference-launch-control">
+              <label className="dashboard-reference-launch-picker">
+                <span>Выбранный запуск</span>
+                <select
+                  disabled={launchCatalog.items.length === 0}
+                  onChange={(event) => setSelectedLaunchId(event.target.value)}
+                  value={selectedLaunch?.id ?? ""}
+                >
+                  {launchCatalog.items.length === 0 ? (
+                    <option value="">
+                      {launchCatalog.status === "loading"
+                        ? "Загружаем запуски…"
+                        : launchCatalog.status === "error"
+                          ? "Список недоступен"
+                          : "Нет запусков"}
+                    </option>
+                  ) : null}
+                  {launchCatalog.items.map((launch) => (
+                    <option key={launch.id} value={launch.id}>
+                      {launch.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {launchCatalog.status !== "ready" || launchCatalog.hasMore ? (
+                <div
+                  className={`dashboard-reference-launch-catalog${launchCatalog.status === "error" ? " is-error" : ""}`}
+                  role={launchCatalog.status === "error" ? "alert" : "status"}
+                >
+                  <span>
+                    {launchCatalog.status === "loading"
+                      ? "Загружаем список запусков…"
+                      : launchCatalog.status === "loading-more"
+                        ? "Загружаем более ранние запуски…"
+                        : launchCatalog.status === "error"
+                          ? launchCatalog.items.length > 0
+                            ? "Остальные запуски не загрузились"
+                            : "Список запусков не загрузился"
+                          : `${Math.min(launchCatalog.items.length, launchCatalog.total ?? launchCatalog.items.length)} из ${launchCatalog.total ?? launchCatalog.items.length} запусков`}
+                  </span>
+                  {launchCatalog.status === "error" ? (
+                    <button onClick={launchCatalog.retry} type="button">
+                      Повторить
+                    </button>
+                  ) : launchCatalog.hasMore ? (
+                    <button
+                      disabled={launchCatalog.status === "loading-more"}
+                      onClick={() => void launchCatalog.loadMore()}
+                      type="button"
+                    >
+                      Показать более ранние
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
             <button
               className="dashboard-reference-primary-button"
               onClick={openComposer}
@@ -182,8 +230,10 @@ export function DashboardReferenceScreen({
 
         {savedWidgets.length > 0 ? (
           <DashboardDataContent
+            catalogStatus={launchCatalog.status}
             dataState={dataState}
             launchName={selectedLaunch?.name}
+            onRetryCatalog={launchCatalog.retry}
             onRetry={retryDataLoad}
             onDelete={deleteWidget}
             onEdit={openEditor}
@@ -234,27 +284,54 @@ export function DashboardReferenceScreen({
 }
 
 function DashboardDataContent({
+  catalogStatus,
   dataState,
   launchName,
   onRetry,
+  onRetryCatalog,
   onDelete,
   onEdit,
   onOpenResult,
   widgets
 }: {
+  catalogStatus: ReturnType<typeof useDashboardLaunchCatalog>["status"];
   dataState: ReturnType<typeof useDashboardAggregate>["state"];
   launchName?: string | undefined;
   onRetry: () => void;
+  onRetryCatalog: () => void;
   onDelete: (widgetId: string) => void;
   onEdit: (widget: SavedDashboardWidget) => void;
   onOpenResult?: ((id: string, launchId: string) => void) | undefined;
   widgets: SavedDashboardWidget[];
 }) {
   if (dataState.status === "empty") {
+    if (catalogStatus === "loading") {
+      return (
+        <div className="dashboard-reference-data-state" role="status">
+          <strong>Загружаем список запусков</strong>
+          <span>Виджеты появятся после выбора доступного запуска.</span>
+        </div>
+      );
+    }
+    if (catalogStatus === "error") {
+      return (
+        <div className="dashboard-reference-data-state is-error" role="alert">
+          <strong>Не удалось загрузить запуски</strong>
+          <span>Повторите загрузку, чтобы выбрать запуск для виджетов.</span>
+          <button
+            className="dashboard-reference-secondary-button"
+            onClick={onRetryCatalog}
+            type="button"
+          >
+            Повторить загрузку
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="dashboard-reference-data-state" role="status">
-        <strong>Пока нет запусков с результатами</strong>
-        <span>После загрузки запуска виджеты покажут его показатели.</span>
+        <strong>Пока нет запусков</strong>
+        <span>После создания запуска здесь можно будет выбрать его и посмотреть показатели.</span>
       </div>
     );
   }
@@ -300,12 +377,20 @@ function DashboardDataContent({
     <>
       <div className="dashboard-reference-data-summary">
         <strong>{formatResultCount(aggregate.totalResults)}</strong>
-        <span title={launchName}> · {launchName ?? "весь запуск"}</span>
+        <span title={launchName}> · {launchName ?? "выбранный запуск"}</span>
         <button aria-label="Обновить данные дашборда" onClick={onRetry} type="button">
           <RefreshCw aria-hidden="true" size={14} />
           Обновить
         </button>
       </div>
+      {aggregate.totalResults === 0 ? (
+        <div className="dashboard-reference-zero-results" role="status">
+          <strong>В этом запуске пока нет результатов</strong>
+          <span>
+            После загрузки результатов виджеты покажут показатели. Их можно настроить уже сейчас.
+          </span>
+        </div>
+      ) : null}
       <DashboardWidgetGrid
         aggregate={aggregate}
         onDelete={onDelete}

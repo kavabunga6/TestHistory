@@ -414,7 +414,7 @@ function workspaceWithLaunchResult(id: string): M1Workspace {
         metadata: [],
         defects: 0,
         members: 0,
-        counters: { passed: 1, failed: 0, broken: 0, skipped: 0, muted: 0 }
+        counters: { passed: 1, failed: 0, broken: 0, skipped: 0, unknown: 0, muted: 0 }
       }
     ]
   };

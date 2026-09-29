@@ -1,4 +1,4 @@
-export type ResultStatus = "passed" | "failed" | "broken" | "skipped" | "muted";
+export type ResultStatus = "passed" | "failed" | "broken" | "skipped" | "unknown" | "muted";
 
 export type ScenarioStep = {
   name: string;
@@ -386,6 +386,7 @@ export type LaunchListItem = {
   name: string;
   state: string;
   branch?: string;
+  build?: string;
   createdAt?: string;
   metadata: string[];
   defects: number;

@@ -97,6 +97,7 @@
 
 .automation-toolbar {
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 18px;
   margin-bottom: 14px;
 }
@@ -281,6 +282,12 @@
   justify-content: center;
 }
 
+.automation-table[aria-label="CI-задачи"] .automation-table-row > span:nth-child(3) {
+  display: block;
+  align-self: center;
+  overflow-wrap: anywhere;
+}
+
 .automation-table-row small {
   color: #718197;
 }
@@ -413,12 +420,19 @@
 
 .automation-toolbar > .automation-toolbar-actions {
   display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
   grid-auto-flow: initial;
   gap: 8px;
 }
 
+.automation-toolbar-actions button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .automation-toolbar-actions button,
-.automation-integration-card > button {
+.automation-integration-actions > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -466,20 +480,37 @@
   min-height: 130px;
 }
 
-.automation-integration-card > a {
+.automation-integration-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.automation-integration-actions > a {
   display: inline-flex;
+  min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
   gap: 5px;
-  max-width: 100%;
-  margin: 10px 0;
   color: #1456d9;
   font-size: 12px;
+}
+
+.automation-integration-actions > a > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.automation-integration-card > button {
+.automation-integration-actions > a > svg,
+.automation-integration-actions > button {
+  flex: 0 0 auto;
+}
+
+.automation-integration-actions > button {
   width: fit-content;
   min-height: 30px;
   padding: 5px 9px;
@@ -606,6 +637,12 @@
     overflow-wrap: anywhere;
   }
 
+  .automation-table[aria-label="CI-задачи"]
+    .automation-table-row:not(.automation-table-head)
+    > span:nth-child(3) {
+    display: grid;
+  }
+
   .automation-table-row:not(.automation-table-head) > span:first-child {
     grid-column: 1 / -1;
   }
@@ -651,13 +688,16 @@
     min-height: 150px;
   }
 
-  .automation-integration-card > a {
-    overflow: visible;
-    overflow-wrap: anywhere;
-    white-space: normal;
+  .automation-integration-actions {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
-  .automation-integration-card > button {
+  .automation-integration-actions > a {
+    flex-basis: 100%;
+  }
+
+  .automation-integration-actions > button {
     min-height: 40px;
   }
 }

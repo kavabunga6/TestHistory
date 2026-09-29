@@ -4,6 +4,27 @@ import type { PersonalApiToken } from "../auth.js";
 import type { ProjectApiToken, ProjectSettingsAccess } from "../projectSettings.js";
 import { Badge, formatSettingsDate, PanelTitle } from "./ProjectSettingsReferenceCommon.js";
 
+export function projectTokenValidity(token: ProjectApiToken, now = Date.now()) {
+  if (token.status !== "active") {
+    return { status: "revoked" as const, label: "Отозван", detail: "" };
+  }
+  const expiresAt = Date.parse(token.expiresAt);
+  if (Number.isFinite(expiresAt) && expiresAt <= now) {
+    return {
+      status: "expired" as const,
+      label: "Истёк",
+      detail: formatSettingsDate(token.expiresAt)
+    };
+  }
+  return {
+    status: "active" as const,
+    label: "Активен",
+    detail: Number.isFinite(expiresAt)
+      ? `до ${formatSettingsDate(token.expiresAt)}`
+      : token.expiresAt
+  };
+}
+
 export function TokensTab({
   access,
   createdSecret,
@@ -158,41 +179,43 @@ export function TokensTab({
                 <span role="cell">Токены проекта ещё не созданы</span>
               </div>
             ) : null}
-            {tokens.map((token) => (
-              <div className="project-settings__table-row" key={token.id} role="row">
-                <span className="project-settings__member" role="cell">
-                  <strong>{token.name}</strong>
-                  <small>{token.prefix}...</small>
-                </span>
-                <span role="cell">{token.owner}</span>
-                <span className="project-settings__scope-list" role="cell">
-                  {token.scopes.slice(0, 3).map((scope) => (
-                    <Badge key={scope}>{scope}</Badge>
-                  ))}
-                  {token.scopes.length > 3 ? <Badge>+{token.scopes.length - 3}</Badge> : null}
-                </span>
-                <span role="cell">{formatSettingsDate(token.lastUsedAt)}</span>
-                <span role="cell">
-                  <Badge tone={token.status === "active" ? "green" : "red"}>
-                    {token.status === "active"
-                      ? formatSettingsDate(token.expiresAt, "без срока")
-                      : "отозван"}
-                  </Badge>
-                </span>
-                <span className="project-settings__actions" role="cell">
-                  <button
-                    aria-label={`Отозвать токен ${token.name}`}
-                    className="project-settings__icon-button danger"
-                    disabled={disabled || token.status !== "active"}
-                    title="Отозвать токен"
-                    type="button"
-                    onClick={() => onRevoke(token.id)}
-                  >
-                    <Trash2 aria-hidden="true" size={15} />
-                  </button>
-                </span>
-              </div>
-            ))}
+            {tokens.map((token) => {
+              const validity = projectTokenValidity(token);
+              return (
+                <div className="project-settings__table-row" key={token.id} role="row">
+                  <span className="project-settings__member" role="cell">
+                    <strong>{token.name}</strong>
+                    <small>{token.prefix}...</small>
+                  </span>
+                  <span role="cell">{token.owner}</span>
+                  <span className="project-settings__scope-list" role="cell">
+                    {token.scopes.slice(0, 3).map((scope) => (
+                      <Badge key={scope}>{scope}</Badge>
+                    ))}
+                    {token.scopes.length > 3 ? <Badge>+{token.scopes.length - 3}</Badge> : null}
+                  </span>
+                  <span role="cell">{formatSettingsDate(token.lastUsedAt)}</span>
+                  <span className="project-settings__token-validity" role="cell">
+                    <Badge tone={validity.status === "active" ? "green" : "red"}>
+                      {validity.label}
+                    </Badge>
+                    {validity.detail ? <small>{validity.detail}</small> : null}
+                  </span>
+                  <span className="project-settings__actions" role="cell">
+                    <button
+                      aria-label={`Отозвать токен ${token.name}`}
+                      className="project-settings__icon-button danger"
+                      disabled={disabled || validity.status !== "active"}
+                      title="Отозвать токен"
+                      type="button"
+                      onClick={() => onRevoke(token.id)}
+                    >
+                      <Trash2 aria-hidden="true" size={15} />
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}

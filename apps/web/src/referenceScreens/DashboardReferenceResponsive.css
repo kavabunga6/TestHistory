@@ -51,6 +51,7 @@
     flex-direction: column;
   }
 
+  .dashboard-reference-launch-control,
   .dashboard-reference-launch-picker,
   .dashboard-reference-launch-picker select,
   .dashboard-reference-head-actions > button {

@@ -199,7 +199,26 @@ export function formatStatus(status: ResultStatus): string {
   if (status === "broken") {
     return "Сломан";
   }
+  if (status === "unknown") {
+    return "Неизвестен";
+  }
   return "Пропущен";
+}
+
+export function getTestCaseState(result: TestResult): { className: string; label: string } {
+  if (result.workflow === "Deprecated") {
+    return { className: "archived", label: "Архивный" };
+  }
+  if (result.deletedAt !== undefined) {
+    return { className: "deleted", label: "Удален" };
+  }
+  if (result.workflow === "Draft") {
+    return { className: "draft", label: "Черновик" };
+  }
+  if (result.workflow === "Review") {
+    return { className: "review", label: "На проверке" };
+  }
+  return { className: "active", label: "Активный" };
 }
 
 export function isResultQuarantined(result: TestResult): boolean {

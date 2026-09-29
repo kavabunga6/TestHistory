@@ -12,7 +12,7 @@ describe("workspace result updates", () => {
       launchItems: [
         {
           ...launch,
-          counters: { broken: 8, failed: 20, muted: 0, passed: 62, skipped: 10 }
+          counters: { broken: 8, failed: 20, muted: 0, passed: 62, skipped: 10, unknown: 0 }
         }
       ],
       resultPage: {

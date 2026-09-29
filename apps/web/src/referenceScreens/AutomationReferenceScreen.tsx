@@ -218,16 +218,23 @@ function IntegrationsPanel({
                 {notificationProviderLabels[item.provider]} · {item.events.length} событий · подпись{" "}
                 {item.signingSecretConfigured ? "настроена" : "не задана"}
               </p>
-              <a href={item.endpointUrl} target="_blank" rel="noreferrer">
-                {item.endpointUrl}
-                <ExternalLink size={13} />
-              </a>
-              <button
-                type="button"
-                onClick={() => void toggle("notifications", item.id, !item.enabled)}
-              >
-                {item.enabled ? "Отключить" : "Включить"}
-              </button>
+              <div className="automation-integration-actions">
+                <a
+                  href={item.endpointUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={item.endpointUrl}
+                >
+                  <span>{item.endpointUrl}</span>
+                  <ExternalLink size={13} />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void toggle("notifications", item.id, !item.enabled)}
+                >
+                  {item.enabled ? "Отключить" : "Включить"}
+                </button>
+              </div>
             </article>
           ))}
           {data.notifications.length === 0 ? (
@@ -252,16 +259,18 @@ function IntegrationsPanel({
                 {item.provider} · {item.projectKey} · токен{" "}
                 {item.credentialConfigured ? "настроен" : "не задан"}
               </p>
-              <a href={item.baseUrl} target="_blank" rel="noreferrer">
-                {item.baseUrl}
-                <ExternalLink size={13} />
-              </a>
-              <button
-                type="button"
-                onClick={() => void toggle("issue-trackers", item.id, !item.enabled)}
-              >
-                {item.enabled ? "Отключить" : "Включить"}
-              </button>
+              <div className="automation-integration-actions">
+                <a href={item.baseUrl} target="_blank" rel="noreferrer" title={item.baseUrl}>
+                  <span>{item.baseUrl}</span>
+                  <ExternalLink size={13} />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void toggle("issue-trackers", item.id, !item.enabled)}
+                >
+                  {item.enabled ? "Отключить" : "Включить"}
+                </button>
+              </div>
             </article>
           ))}
           {data.issueTrackers.length === 0 ? (

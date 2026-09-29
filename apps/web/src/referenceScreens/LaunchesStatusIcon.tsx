@@ -1,4 +1,11 @@
-import { AlertCircle, CheckCircle2, CircleDashed, PauseCircle, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  CircleDashed,
+  CircleHelp,
+  PauseCircle,
+  XCircle
+} from "lucide-react";
 
 import type { ResultStatus } from "../m1Workspace.js";
 
@@ -14,6 +21,9 @@ export function StatusIcon({ size = 16, status }: { size?: number; status: Resul
   }
   if (status === "broken") {
     return <AlertCircle className="status-broken" size={size} />;
+  }
+  if (status === "unknown") {
+    return <CircleHelp className="status-unknown" size={size} />;
   }
   return <CircleDashed className="status-skipped" size={size} />;
 }

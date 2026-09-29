@@ -20,6 +20,14 @@
       "auth": true,
       "dialog": false
     },
+    { "name": "launch-errors", "hash": "#launch/L-1289/errors", "auth": true, "dialog": false },
+    { "name": "launch-charts", "hash": "#launch/L-1289/charts", "auth": true, "dialog": false },
+    {
+      "name": "launch-comparison",
+      "hash": "#launch/L-1289/comparison",
+      "auth": true,
+      "dialog": false
+    },
     {
       "name": "selected-test-case",
       "hash": "#case/PAY-1042/overview",
@@ -40,6 +48,9 @@
     },
     { "name": "defects", "hash": "#defects/PAY-337", "auth": true, "dialog": false },
     { "name": "automation", "hash": "#automation", "auth": true, "dialog": false },
+    { "name": "automation-plans", "hash": "#automation", "auth": true, "dialog": false },
+    { "name": "automation-jobs", "hash": "#automation", "auth": true, "dialog": false },
+    { "name": "automation-integrations", "hash": "#automation", "auth": true, "dialog": false },
     { "name": "analytics", "hash": "#analytics", "auth": true, "dialog": false },
     {
       "name": "dialog-dashboard-widget-delete",

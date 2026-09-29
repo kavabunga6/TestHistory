@@ -410,7 +410,7 @@
 
 .project-settings__table--tokens .project-settings__table-head,
 .project-settings__table--tokens .project-settings__table-row {
-  grid-template-columns: minmax(170px, 1.2fr) 132px minmax(190px, 1fr) 112px 118px 80px;
+  grid-template-columns: minmax(170px, 1.2fr) 132px minmax(190px, 1fr) 112px 136px 80px;
 }
 
 .project-settings__table--personal-tokens .project-settings__table-head,
@@ -1312,6 +1312,26 @@
   min-width: 0;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.project-settings__scope-list .project-settings__badge {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-settings__token-validity {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+}
+
+.project-settings__token-validity small {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .project-settings__secret {

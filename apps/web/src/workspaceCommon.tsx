@@ -1,5 +1,12 @@
 import React from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, Clock3, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  CircleHelp,
+  Clock3,
+  XCircle
+} from "lucide-react";
 
 import type { ResultStatus } from "./m1Workspace.js";
 import { statusLabels } from "./workspaceRouting.js";
@@ -122,6 +129,9 @@ export function StatusIcon({ status }: { status: ResultStatus }) {
   }
   if (status === "broken") {
     return <AlertTriangle className="icon broken" size={17} />;
+  }
+  if (status === "unknown") {
+    return <CircleHelp className="icon unknown" size={17} />;
   }
   return <Clock3 className="icon skipped" size={17} />;
 }

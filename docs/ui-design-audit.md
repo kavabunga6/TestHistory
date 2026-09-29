@@ -1,29 +1,32 @@
 # UI Design Audit
 
-This audit captures the current TestHistory UI review direction. It is based on the committed
-`docs/screenshots/final/*` evidence and the Allure/TestOps-like reference target: dense operational
+This audit captures the current TestHistory UI review direction. It is based on the
+`docs/screenshots/final/*` evidence and the Allure TestOps reference target: dense operational
 screens, clear list/detail hierarchy, restrained cards, and readable tables.
 
 ## Review Update · 2026-09-29
 
-The current pass was reviewed from the 1440×1000 synthetic screenshot set by an ordinary-user
+The current pass was reviewed from 33 synthetic 1440×1000 screenshots by an ordinary-user
 reviewer and a UI/UX reviewer, and checked against the official [TestOps 26.3 release notes](https://docs.qameta.io/reference/release-notes/),
 [launches](https://docs.qameta.io/use-testops/test-plans-and-launches/launches-overview/),
 [test results](https://docs.qameta.io/use-testops/results-and-analytics/test-results/), and
 [dashboards](https://docs.qameta.io/use-testops/results-and-analytics/dashboards/) documentation.
 This is a workflow and hierarchy comparison, not a claim of full feature parity.
 
-Implemented in this pass: consistent 25/50/100 list pagination with server totals for launches,
-test cases, and defects; selected-item context across pages; denser list/detail screens; aligned
-navigation and status cues; a color legend for launch results; a jump from the result diagnostic
-to the failed scenario step; and expanded screenshot coverage for test cases and automation.
-Result durations use the same Russian units across detail surfaces.
+Implemented in this pass: consistent 25/50/100 pagination for launch, result, defect, and
+comparison lists; project launch lookup for comparison beyond the current list page; selected-item
+context across pages; copyable result identifiers and direct data-section navigation; distinct
+unknown and broken statuses, with skipped results shown in gray; a jump from the result diagnostic
+to the failed scenario step; truthful scope labels on dashboards and charts; and visible expiry for
+API tokens. Result durations use the same Russian units across detail surfaces. The screenshot set
+now includes populated automation, launch errors, charts, comparison, result and test-case tabs,
+settings, and dialogs.
 
 Product gaps visible in the comparison: dashboard widgets currently aggregate one selected
 launch, while project-wide analysis lives on a separate Analytics screen; the comparison view
-does not yet provide a TestOps-style multi-launch matrix; automation has a good empty state but
-needs a populated fixture for a meaningful visual review. Those items need product and data-model
-work beyond this visual pass.
+does not yet provide a TestOps-style multi-launch matrix. Launch charts still derive from the
+loaded result page and therefore state that scope explicitly. Full-launch chart aggregation needs
+an API read model rather than silently presenting a page sample as the entire run.
 
 ## Target UI Contract
 
@@ -42,39 +45,30 @@ work beyond this visual pass.
 - Use the same tab contract everywhere: 42-44px height, active underline, optional count badge,
   horizontal overflow, and stable widths.
 
-## P0
+## Current Review Outcomes
 
-- Test case details need Allure-like section rhythm. `Описание`, `Параметры`, `Сценарий`,
-  `История`, `Теги`, `Кастомные поля`, and links should read as selected-entity sections: title
-  text, immediate content, restrained row separators, and no gray title bands in overview copy.
-- Screenshot evidence must include the deep routes and dialogs listed in
-  `docs/screenshots/README.md`, not only the top-level pages.
-- UI text should stay Russian. Regressions to English labels such as `payload`, `digest`,
-  `worker queue`, `Pass rate`, or `Test keys` should be treated as UI readiness issues unless they
-  are raw data identifiers.
+- Test case details use direct section headings and compact metadata instead of gray title bands.
+  Empty rail groups render only a muted heading.
+- The launch overview keeps the result chart framed and presents defects, variables, and unparsed
+  results as dense lists with pagination or an explicit loaded-page scope.
+- Dashboard and analytics expose their different data scopes. Defect details and settings use the
+  same restrained list, table, and dialog rhythm as other entity screens.
+- The screenshot set covers deep result routes and dialogs. UI labels remain Russian unless they
+  represent raw identifiers, project data, or external service names.
 
-## P1
+## Next Priorities
 
-- Launch overview should keep the chart framed, but variables, defects, participants, retries, and
-  unparsed results should use dense list sections with pagination.
-- Dashboard and analytics should use a summary strip plus one or two dense table/list sections;
-  avoid turning operational screens into a wall of decorative cards.
-- Defect details should use the same header, rows, and secondary metadata rhythm as launch result
-  and test case details.
-- Settings should show integrations, fields, tokens, and members primarily as tables/lists; editing
-  belongs behind icon actions and dialogs.
-
-## P2
-
-- Add visual evidence for long URLs, long token names, long scopes, and long custom field mappings.
-- Standardize empty, loading, denied, error, and partial states: compact icon, title, one explanatory
-  line, and a single action when one exists.
+- Add a full-launch chart aggregate to the API so the graph can cover all result pages.
+- Add a multi-launch comparison matrix if cross-launch trend analysis is a product requirement.
+- Add visual fixtures for longer URLs, token names, scopes, and custom field mappings.
+- Continue making empty, loading, denied, error, and partial states consistent across less-used
+  dialogs and project workflows.
 - Keep table headers high-contrast enough for modal and settings tables.
 
-## Evidence To Refresh
+## Evidence Set
 
 Run `npm run screenshots:capture` locally when Playwright Chromium is available, or use the CI
-`ui-screenshot-evidence` artifact. The acceptance set should include:
+`ui-screenshot-evidence` artifact. The acceptance set includes:
 
 - `auth-login`
 - `dashboard`
@@ -83,10 +77,14 @@ Run `npm run screenshots:capture` locally when Playwright Chromium is available,
 - `launch-results`
 - `launch-result-history`
 - `launch-result-defects`
+- `launch-errors`
+- `launch-charts`
+- `launch-comparison`
 - `selected-test-case`
 - `selected-test-case-history`
 - `selected-test-case-defects`
 - `defects`
+- `automation`, `automation-plans`, `automation-jobs`, and `automation-integrations`
 - `analytics`
 - all `settings-*`
 - all `dialog-*`

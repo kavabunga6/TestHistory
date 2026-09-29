@@ -132,8 +132,9 @@ describe("m1 workspace mapping", () => {
     expect(workspace.launchItems[0]?.counters).toEqual({
       passed: 1,
       failed: 0,
-      broken: 1,
+      broken: 0,
       skipped: 0,
+      unknown: 1,
       muted: 0
     });
     expect(workspace.results[0]).toEqual(
@@ -300,7 +301,7 @@ describe("m1 workspace mapping", () => {
       ]
     });
 
-    expect(workspace.results[0]?.history).toEqual(["passed", "broken"]);
+    expect(workspace.results[0]?.history).toEqual(["passed", "unknown"]);
     expect(workspace.results[0]?.historyPoints).toEqual([
       expect.objectContaining({
         launchId: "launch-1",
@@ -314,7 +315,7 @@ describe("m1 workspace mapping", () => {
       expect.objectContaining({
         launchId: "launch-2",
         resultUuid: "result-by-test-case-2",
-        status: "broken",
+        status: "unknown",
         duration: "780ms",
         retry: true,
         flaky: true,

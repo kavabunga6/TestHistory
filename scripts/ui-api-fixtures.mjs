@@ -12,12 +12,18 @@ import {
 } from "./ui-api-fixture-data.mjs";
 import { createResultDetails } from "./ui-api-fixture-evidence.mjs";
 import { createAnalyticsItem, createDashboardWidget } from "./ui-api-fixture-analytics.mjs";
+import { createAutomationFixtureResponse } from "./ui-api-fixture-automation.mjs";
+import {
+  baselineLaunch,
+  createLaunchComparisonFixtureResponse
+} from "./ui-api-fixtures-comparison.mjs";
 
 export function createUiFixtureApiResponse(
   pathname,
   method = "GET",
   requestBody = null,
-  search = ""
+  search = "",
+  screenName = ""
 ) {
   if (method === "POST" && pathname === `/api/v1/launches/${launch.id}/dashboard/aggregate`) {
     const widgets = JSON.parse(requestBody ?? "{}").widgets ?? [];
@@ -31,6 +37,14 @@ export function createUiFixtureApiResponse(
   }
   if (method !== "GET") {
     return undefined;
+  }
+  const automation = createAutomationFixtureResponse(pathname, screenName);
+  if (automation !== undefined) {
+    return automation;
+  }
+  const comparison = createLaunchComparisonFixtureResponse(pathname, search);
+  if (comparison !== undefined) {
+    return comparison;
   }
   if (pathname === "/api/v1/projects") {
     return [project];
@@ -106,7 +120,8 @@ export function createUiFixtureApiResponse(
     };
   }
   if (pathname === `/api/v1/projects/${project.id}/launches`) {
-    return paged("launch-list", [launch], { projectId: project.id }, search);
+    const launchItems = screenName === "launch-comparison" ? [launch, baselineLaunch] : [launch];
+    return paged("launch-list", launchItems, { projectId: project.id }, search);
   }
   if (pathname === `/api/v1/launches/${launch.id}/results/${result.uuid}`) {
     return resultDetails;

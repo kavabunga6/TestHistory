@@ -200,7 +200,7 @@ function getStatusCounts(items: TestResult[]): Record<ResultStatus, number> {
       }
       return counts;
     },
-    { passed: 0, failed: 0, broken: 0, skipped: 0, muted: 0 }
+    { passed: 0, failed: 0, broken: 0, skipped: 0, unknown: 0, muted: 0 }
   );
 }
 

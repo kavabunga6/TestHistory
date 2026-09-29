@@ -55,8 +55,21 @@ export type LaunchesReferencePartialState =
       totalCount?: number | undefined;
     };
 
-export const analyticsStatusOrder: ResultStatus[] = ["failed", "broken", "passed", "skipped"];
-export const filterStatusOrder: ResultStatus[] = ["failed", "broken", "passed", "skipped", "muted"];
+export const analyticsStatusOrder: ResultStatus[] = [
+  "failed",
+  "broken",
+  "unknown",
+  "passed",
+  "skipped"
+];
+export const filterStatusOrder: ResultStatus[] = [
+  "failed",
+  "broken",
+  "unknown",
+  "passed",
+  "skipped",
+  "muted"
+];
 export const overviewListPageSizeOptions = [5, 10, 20, 50] as const;
 export const defaultOverviewListPageSize = 5;
 export const launchTabs: Array<{ id: LaunchTab; label: string }> = [

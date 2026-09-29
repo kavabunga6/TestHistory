@@ -48,6 +48,9 @@ export function mapApiLaunchListItem(launch: ApiLaunchReadModel): LaunchListItem
     name: launch.name,
     state: launch.status,
     ...(launch.branch !== undefined ? { branch: launch.branch } : {}),
+    ...((launch.buildNumber ?? launch.commitSha) !== undefined
+      ? { build: launch.buildNumber ?? launch.commitSha }
+      : {}),
     ...(launch.createdAt !== undefined ? { createdAt: launch.createdAt } : {}),
     metadata: compact([
       launch.branch,
@@ -356,14 +359,15 @@ export function mapCounters(
   return {
     passed: counters.passed ?? 0,
     failed: counters.failed ?? 0,
-    broken: (counters.broken ?? 0) + (counters.unknown ?? 0),
+    broken: counters.broken ?? 0,
     skipped: counters.skipped ?? 0,
+    unknown: counters.unknown ?? 0,
     muted: 0
   };
 }
 
 export function mapResultStatus(status: ApiAllureStatus): ResultStatus {
-  return status === "unknown" ? "broken" : status;
+  return status;
 }
 
 function mapWorkflow(value: string | undefined): TestResult["workflow"] {

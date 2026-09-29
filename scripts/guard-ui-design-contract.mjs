@@ -155,7 +155,7 @@ for (const snippet of [
 for (const file of ["scripts/guard-button-overflow.mjs", "scripts/capture-ui-screenshots.mjs"]) {
   expectSnippet(file, 'from "./ui-api-fixtures.mjs"');
   if (
-    !/createUiFixtureApiResponse\(\s*pathname,\s*method,\s*request\.postData\(\),\s*url\.search\s*\)/.test(
+    !/createUiFixtureApiResponse\(\s*pathname,\s*method,\s*request\.postData\(\),\s*url\.search\s*(?:,\s*screenName\s*)?\)/.test(
       read(file)
     )
   ) {
@@ -367,7 +367,7 @@ for (const snippet of [
   "Keep UI copy Russian",
   "Use the same modal contract everywhere",
   "Use the same tab contract everywhere",
-  "Evidence To Refresh",
+  "Evidence Set",
   "`ui-screenshot-evidence` artifact"
 ]) {
   expectSnippet("docs/ui-design-audit.md", snippet);

@@ -97,6 +97,7 @@ export function DefectsReferenceScreen({
   const [activeFilterId, setActiveFilterId] = useState<string | undefined>();
   const [selectedDefectId, setSelectedDefectId] = useState<string | undefined>();
   const listRef = useRef<HTMLDivElement>(null);
+  const centeredSelectionRef = useRef<string | undefined>(undefined);
   const { listWidth, onSeparatorKeyDown, onSeparatorPointerDown, resizing, screenRef } =
     useResizableListWidth({
       bodyClass: "defects-reference-is-resizing",
@@ -149,14 +150,14 @@ export function DefectsReferenceScreen({
     if (list === null || selectedRow === null || selectedRow === undefined) {
       return;
     }
-
+    const selectionKey = `${page}:${selectedDefect?.id ?? ""}`;
+    if (centeredSelectionRef.current === selectionKey) return;
     const listBounds = list.getBoundingClientRect();
     const rowBounds = selectedRow.getBoundingClientRect();
-    if (rowBounds.top < listBounds.top || rowBounds.bottom > listBounds.bottom) {
-      list.scrollTop +=
-        rowBounds.top - listBounds.top - (list.clientHeight - selectedRow.clientHeight) / 2;
-    }
-  }, [selectedDefect?.id, visibleDefects]);
+    list.scrollTop +=
+      rowBounds.top - listBounds.top - (list.clientHeight - selectedRow.clientHeight) / 2;
+    centeredSelectionRef.current = selectionKey;
+  }, [page, selectedDefect?.id, visibleDefects]);
 
   const screenStyle = {
     "--defects-reference-list-width": `${listWidth}px`
@@ -709,7 +710,8 @@ function formatResultStatus(status: TestResult["status"]): string {
     failed: "Провален",
     muted: "Карантин",
     passed: "Пройден",
-    skipped: "Пропущен"
+    skipped: "Пропущен",
+    unknown: "Неизвестен"
   };
 
   return labels[status];

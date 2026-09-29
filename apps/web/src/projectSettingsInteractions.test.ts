@@ -90,7 +90,7 @@ describe("reference list layout contracts", () => {
     ],
     [
       "test case defects",
-      "./referenceScreens/TestCaseDetailReferenceScreen.tsx",
+      "./referenceScreens/TestCaseDetailRelationsTabs.tsx",
       "./referenceScreens/TestCaseDetailReferenceScreen.css",
       "tc-detail-reference-defect-copy",
       ".tc-detail-reference-defects article span"
@@ -353,6 +353,10 @@ describe("settings table readability contracts", () => {
       new URL("./referenceScreens/TestCaseDetailReferenceScreen.tsx", import.meta.url),
       "utf8"
     );
+    const metadataSource = readFileSync(
+      new URL("./referenceScreens/TestCaseMetadataSections.tsx", import.meta.url),
+      "utf8"
+    );
     const styles = readFileSync(
       new URL("./referenceScreens/TestCaseDetailReferenceScreen.css", import.meta.url),
       "utf8"
@@ -420,7 +424,7 @@ describe("settings table readability contracts", () => {
       "grid-template-columns:"
     );
 
-    expect(source).toContain('title="Ключи теста"');
+    expect(metadataSource).toContain('title="Ключи теста"');
     expect(source).toContain("<h3>Длительность</h3>");
     expect(source).not.toContain('title="Ожидаемая длительность"');
     expect(source).toContain("TEST_CASE_LIST_WIDTH_KEY");
@@ -430,13 +434,15 @@ describe("settings table readability contracts", () => {
     expect(source).toContain("onKeyDown={onSeparatorKeyDown}");
     expect(resizeHook).toContain('event.key !== "ArrowLeft" && event.key !== "ArrowRight"');
     expect(resizeHook).toContain("window.localStorage.setItem(storageKey");
-    expect(source).toContain("result.linkDetails ?? result.links");
+    expect(metadataSource).toContain(
+      "result.linkDetails?.length ? result.linkDetails : result.links"
+    );
     expect(source).toContain("onFilterByTag");
-    expect(source).toContain('aria-label="Теги"');
-    expect(source).toContain('aria-label="Кастомные поля"');
-    expect(source).toContain('aria-label="Ключи теста"');
-    expect(source).toContain('aria-label="Ссылки"');
-    expect(source).toContain('aria-label="Задачи из баг-трекера"');
+    expect(metadataSource).toContain('aria-label="Теги"');
+    expect(metadataSource).toContain('aria-label="Кастомные поля"');
+    expect(metadataSource).toContain('aria-label="Ключи теста"');
+    expect(metadataSource).toContain('aria-label="Ссылки"');
+    expect(metadataSource).toContain('aria-label="Дефекты и задачи"');
     expect(source).toContain("tc-detail-reference-history-item ${point.status}");
     expect(source).not.toContain(
       "<span className={point.status}>{formatStatus(point.status)}</span>"
@@ -487,10 +493,16 @@ describe("settings table readability contracts", () => {
   });
 
   it("keeps analytics and dashboard screens Russian with a clear metric hierarchy", () => {
-    const analyticsSource = readFileSync(
-      new URL("./referenceScreens/AnalyticsReferenceScreen.tsx", import.meta.url),
-      "utf8"
-    );
+    const analyticsSource = [
+      readFileSync(
+        new URL("./referenceScreens/AnalyticsReferenceScreen.tsx", import.meta.url),
+        "utf8"
+      ),
+      readFileSync(
+        new URL("./referenceScreens/AnalyticsReferenceContent.tsx", import.meta.url),
+        "utf8"
+      )
+    ].join("\n");
     const analyticsStyles = readFileSync(
       new URL("./referenceScreens/AnalyticsReferenceScreen.css", import.meta.url),
       "utf8"
@@ -531,6 +543,7 @@ describe("settings table readability contracts", () => {
     );
 
     expect(analyticsSource).toContain('label="Успешность"');
+    expect(analyticsSource).toContain('label="Неуспешные результаты"');
     expect(analyticsSource).toContain("пройдено");
     expect(analyticsSource).toContain("провалено");
     expect(analyticsSource).toContain("сломано");

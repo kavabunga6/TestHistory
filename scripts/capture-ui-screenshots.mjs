@@ -10,7 +10,8 @@ const outputDir = path.join(workspace, "docs/screenshots/final");
 const expectedManifestPath = path.join(workspace, "docs/screenshots/expected-manifest.json");
 const expectedManifest = JSON.parse(readFileSync(expectedManifestPath, "utf8"));
 const port = process.env.WEB_SCREENSHOT_PORT ?? "5174";
-const baseUrl = `http://127.0.0.1:${port}`;
+const existingServerUrl = process.env.WEB_SCREENSHOT_BASE_URL;
+const baseUrl = existingServerUrl ?? `http://127.0.0.1:${port}`;
 
 const screens = [
   { name: "auth-login", hash: "#launch", auth: false },
@@ -34,7 +35,8 @@ const screens = [
       for (const [status, count] of [
         ["passed", "62"],
         ["failed", "18"],
-        ["broken", "12"],
+        ["broken", "8"],
+        ["unknown", "4"],
         ["skipped", "8"]
       ]) {
         const actual = await page
@@ -62,11 +64,75 @@ const screens = [
   },
   { name: "launch-result-history", hash: "#launch/L-1289/result/PAY-1042/history" },
   { name: "launch-result-defects", hash: "#launch/L-1289/result/PAY-1042/defects" },
+  {
+    name: "launch-errors",
+    hash: "#launch/L-1289/errors",
+    verify: async (page) => {
+      await page.locator(".launches-reference-error-group").first().waitFor();
+    }
+  },
+  {
+    name: "launch-charts",
+    hash: "#launch/L-1289/charts",
+    verify: async (page) => {
+      await page.getByLabel("Распределение по продолжительности").waitFor();
+    }
+  },
+  {
+    name: "launch-comparison",
+    hash: "#launch/L-1289/comparison",
+    interact: async (page) => {
+      await page.getByLabel("Сравнить текущий запуск с").selectOption("L-1288");
+      await page.getByRole("button", { name: "Сравнить", exact: true }).click();
+    },
+    verify: async (page) => {
+      await page.getByRole("table", { name: "Отличия тестов между запусками" }).waitFor();
+      await page.getByText("Оплата картой после повторной авторизации").waitFor();
+    }
+  },
   { name: "selected-test-case", hash: "#case/PAY-1042/overview" },
   { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
   { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
   { name: "defects", hash: "#defects/PAY-337" },
   { name: "automation", hash: "#automation" },
+  {
+    name: "automation-plans",
+    hash: "#automation",
+    verify: async (page) => {
+      await page.getByText("Регрессия оформления заказа").waitFor();
+      if ((await page.locator(".automation-grid .automation-card").count()) !== 3) {
+        throw new Error("Automation plans screenshot requires three populated plans");
+      }
+    }
+  },
+  {
+    name: "automation-jobs",
+    hash: "#automation",
+    interact: async (page) => {
+      await page.getByRole("button", { name: /CI-задачи/ }).click();
+    },
+    verify: async (page) => {
+      await page.getByText("Checkout regression #7842").waitFor();
+      if ((await page.locator('[aria-label="CI-задачи"] .automation-table-row').count()) !== 5) {
+        throw new Error("Automation jobs screenshot requires four populated jobs");
+      }
+    }
+  },
+  {
+    name: "automation-integrations",
+    hash: "#automation",
+    interact: async (page) => {
+      await page.getByRole("button", { name: /Интеграции/ }).click();
+    },
+    verify: async (page) => {
+      await page.getByText("QA: результаты прогонов").waitFor();
+      await page
+        .getByRole("table", { name: "Доставки интеграций" })
+        .getByText("automation-job.failed")
+        .first()
+        .waitFor();
+    }
+  },
   { name: "analytics", hash: "#analytics" },
   {
     name: "dialog-dashboard-widget-delete",
@@ -152,13 +218,14 @@ validateExpectedManifest();
 
 mkdirSync(outputDir, { recursive: true });
 
-const server = startPreviewServer({ port, workspace });
+const server =
+  existingServerUrl === undefined ? startPreviewServer({ port, workspace }) : undefined;
 
 let serverOutput = "";
-server.stdout.on("data", (chunk) => {
+server?.stdout.on("data", (chunk) => {
   serverOutput += chunk.toString();
 });
-server.stderr.on("data", (chunk) => {
+server?.stderr.on("data", (chunk) => {
   serverOutput += chunk.toString();
 });
 
@@ -223,7 +290,7 @@ try {
   process.exitCode = 1;
 } finally {
   await browser?.close().catch(() => undefined);
-  stopPreviewServer(server);
+  if (server !== undefined) stopPreviewServer(server);
 }
 
 function writeScreenshotManifest() {
@@ -318,6 +385,8 @@ async function installApiMocks(page) {
     const url = new URL(request.url());
     const method = request.method();
     const pathname = url.pathname;
+    const screenName =
+      new URL(request.headers().referer ?? page.url()).searchParams.get("screen") ?? "";
 
     if (pathname === "/api/v1/auth/me") {
       return route.fulfill({
@@ -401,7 +470,8 @@ async function installApiMocks(page) {
       pathname,
       method,
       request.postData(),
-      url.search
+      url.search,
+      screenName
     );
     return route.fulfill({
       contentType: "application/json",

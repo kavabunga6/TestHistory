@@ -50,6 +50,118 @@ describe("test case navigation", () => {
     expect(markup).not.toContain("Allure ID: case-1042");
   });
 
+  it("distinguishes case lifecycle from the latest result and exposes the result route", () => {
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      id: "case-1042",
+      status: "failed" as const,
+      historyPoints: [
+        {
+          launchId: "L-1289",
+          launchName: "PR-1289 Checkout Regression",
+          resultUuid: "result-uuid-123",
+          testCaseId: "case-1042",
+          startedAt: "2026-09-28T12:00:00Z",
+          status: "failed" as const,
+          duration: "1.24s",
+          retry: false,
+          flaky: false,
+          attempt: 1
+        }
+      ]
+    };
+    const markup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen
+        results={[result]}
+        selectedId={result.id}
+        onOpenResult={() => undefined}
+      />
+    );
+
+    expect(markup).toContain("Состояние кейса: Активный");
+    expect(markup).toContain("Последний результат: Провален");
+    expect(markup).toContain("Открыть результат из истории");
+    expect(markup).toContain("Поля и связи");
+  });
+
+  it("uses the summary status even when loaded history contains only older results", () => {
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      id: "case-many-runs",
+      status: "failed" as const,
+      historyPoints: Array.from({ length: 50 }, (_, index) => ({
+        launchId: `older-launch-${index}`,
+        launchName: `Older launch ${index}`,
+        resultUuid: `older-result-${index}`,
+        startedAt: `2026-01-${String((index % 28) + 1).padStart(2, "0")}T00:00:00Z`,
+        status: "passed" as const,
+        duration: "1s",
+        retry: false,
+        flaky: false,
+        attempt: 1
+      }))
+    };
+    const markup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen
+        results={[result]}
+        selectedId={result.id}
+        onOpenResult={() => undefined}
+      />
+    );
+
+    expect(markup).toContain("Последний результат: Провален");
+    expect(markup).toContain("Открыть результат из истории");
+    expect(markup).not.toContain("Открыть последний результат в запуске");
+  });
+
+  it("shows draft and archived case states separately from result status", () => {
+    const result = { ...demoM1Workspace.results[0]!, workflow: "Draft" as const };
+    const draftMarkup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen results={[result]} selectedId={result.id} />
+    );
+    const archivedMarkup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen
+        results={[{ ...result, workflow: "Deprecated", deletedAt: "2026-09-01T00:00:00Z" }]}
+        selectedId={result.id}
+      />
+    );
+
+    expect(draftMarkup).toContain("Состояние кейса: Черновик");
+    expect(archivedMarkup).toContain("Состояние кейса: Архивный");
+  });
+
+  it("opens an external issue without offering an invalid defect unlink", () => {
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      defect: "PAY-337",
+      issues: ["PAY-337"],
+      linkDetails: [{ label: "PAY-337", url: "https://tracker.example.test/PAY-337" }]
+    };
+    const markup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen
+        results={[result]}
+        selectedId={result.id}
+        routeTab="defects"
+        onUnlinkResultDefect={() => undefined}
+      />
+    );
+
+    expect(markup).toContain('href="https://tracker.example.test/PAY-337"');
+    expect(markup).not.toContain('href="#defects/PAY-337"');
+    expect(markup).not.toContain("Отвязать");
+  });
+
+  it("labels an unknown latest result distinctly from a skipped result", () => {
+    const result = { ...demoM1Workspace.results[0]!, status: "unknown" as const };
+    const markup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen results={[result]} selectedId={result.id} />
+    );
+
+    expect(markup).toContain("Последний результат: Неизвестен");
+    expect(markup).not.toContain("Последний результат: Пропущен");
+    expect(markup).toContain("result-status-unknown");
+  });
+
   it("counts a linked defect once in the tab when issue and defect IDs match", () => {
     const result = {
       ...demoM1Workspace.results[0]!,

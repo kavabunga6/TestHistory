@@ -3272,6 +3272,10 @@ h3 {
   background: #d39132;
 }
 
+.launch-progress .unknown {
+  background: #7c75ad;
+}
+
 .launch-progress .skipped {
   background: #8390a2;
 }
@@ -3515,6 +3519,11 @@ h3 {
   background: #fff0d9;
 }
 
+.status.unknown {
+  color: #60558b;
+  background: #f1eef9;
+}
+
 .status.skipped {
   color: #536072;
   background: #eef2f6;
@@ -3542,6 +3551,10 @@ h3 {
 
 .history-dots .broken {
   background: #b86a04;
+}
+
+.history-dots .unknown {
+  background: #7c75ad;
 }
 
 .history-dots .skipped {
@@ -3852,6 +3865,10 @@ h3 {
 
 .icon.broken {
   color: #b86a04;
+}
+
+.icon.unknown {
+  color: #60558b;
 }
 
 .icon.running {

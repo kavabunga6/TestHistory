@@ -11,7 +11,8 @@ const expectedManifest = JSON.parse(
 );
 const overflowManifestExclusions = new Set(["dialog-dashboard-widget-delete"]);
 const port = process.env.WEB_BUTTON_OVERFLOW_PORT ?? "5178";
-const baseUrl = `http://127.0.0.1:${port}`;
+const existingServerUrl = process.env.WEB_BUTTON_OVERFLOW_BASE_URL;
+const baseUrl = existingServerUrl ?? `http://127.0.0.1:${port}`;
 const tolerancePx = 1;
 const allScreens = [
   { name: "auth-login", hash: "#launch", auth: false },
@@ -23,11 +24,32 @@ const allScreens = [
   { name: "launch-results", hash: "#launch/L-1289/results" },
   { name: "launch-result-history", hash: "#launch/L-1289/result/PAY-1042/history" },
   { name: "launch-result-defects", hash: "#launch/L-1289/result/PAY-1042/defects" },
+  { name: "launch-errors", hash: "#launch/L-1289/errors" },
+  { name: "launch-charts", hash: "#launch/L-1289/charts" },
+  {
+    name: "launch-comparison",
+    hash: "#launch/L-1289/comparison",
+    interact: async (page) => {
+      await page.getByLabel("Сравнить текущий запуск с").selectOption("L-1288");
+      await page.getByRole("button", { name: "Сравнить", exact: true }).click();
+    }
+  },
   { name: "selected-test-case", hash: "#case/PAY-1042/overview" },
   { name: "selected-test-case-history", hash: "#case/PAY-1042/history" },
   { name: "selected-test-case-defects", hash: "#case/PAY-1042/defects" },
   { name: "defects", hash: "#defects/PAY-337" },
   { name: "automation", hash: "#automation" },
+  { name: "automation-plans", hash: "#automation" },
+  {
+    name: "automation-jobs",
+    hash: "#automation",
+    interact: async (page) => page.getByRole("button", { name: /CI-задачи/ }).click()
+  },
+  {
+    name: "automation-integrations",
+    hash: "#automation",
+    interact: async (page) => page.getByRole("button", { name: /Интеграции/ }).click()
+  },
   { name: "analytics", hash: "#analytics" },
   { name: "settings-access", hash: "#settings/access" },
   { name: "settings-tokens", hash: "#settings/tokens" },
@@ -92,13 +114,14 @@ if (screenFilter !== undefined && screens.length === 0) {
 
 validateExpectedManifest();
 
-const server = startPreviewServer({ port, workspace });
+const server =
+  existingServerUrl === undefined ? startPreviewServer({ port, workspace }) : undefined;
 
 let serverOutput = "";
-server.stdout.on("data", (chunk) => {
+server?.stdout.on("data", (chunk) => {
   serverOutput += chunk.toString();
 });
-server.stderr.on("data", (chunk) => {
+server?.stderr.on("data", (chunk) => {
   serverOutput += chunk.toString();
 });
 
@@ -133,10 +156,14 @@ try {
         });
       }
       const navigationKey = encodeURIComponent(`${viewport.name}-${screen.name}`);
-      await page.goto(`${baseUrl}/?guard=${navigationKey}${screen.hash}`, {
+      await page.goto(`${baseUrl}/?guard=${navigationKey}&screen=${screen.name}${screen.hash}`, {
         waitUntil: "domcontentloaded"
       });
       await page.waitForTimeout(750);
+      if (typeof screen.interact === "function") {
+        await screen.interact(page);
+        await page.waitForTimeout(350);
+      }
       if (typeof screen.prepare === "function") {
         await screen.prepare(page);
         await page.waitForTimeout(350);
@@ -293,7 +320,7 @@ try {
   process.exitCode = 1;
 } finally {
   await browser?.close().catch(() => undefined);
-  stopPreviewServer(server);
+  if (server !== undefined) stopPreviewServer(server);
 }
 
 async function launchBrowserForGuard() {
@@ -339,6 +366,8 @@ async function installApiMocks(page) {
     const url = new URL(request.url());
     const method = request.method();
     const pathname = url.pathname;
+    const screenName =
+      new URL(request.headers().referer ?? page.url()).searchParams.get("screen") ?? "";
     if (process.env.WEB_UI_GUARD_DEBUG === "1") {
       console.log(`[ui-guard] ${method} ${pathname}`);
     }
@@ -398,7 +427,8 @@ async function installApiMocks(page) {
       pathname,
       method,
       request.postData(),
-      url.search
+      url.search,
+      screenName
     );
     return route.fulfill({
       contentType: "application/json",

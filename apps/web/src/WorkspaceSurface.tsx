@@ -273,6 +273,7 @@ export function WorkspaceSurface({
               <DashboardReferenceScreen
                 key={`${currentUserId ?? ""}:${projectSelection?.selectedProjectId ?? ""}`}
                 launchItems={workspace.launchItems}
+                projectId={projectSelection?.selectedProjectId ?? workspace.projectId}
                 results={workspace.results}
                 onOpenResult={onOpenLaunchResult}
                 storageScope={

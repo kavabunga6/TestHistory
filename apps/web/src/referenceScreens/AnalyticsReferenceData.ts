@@ -33,7 +33,8 @@ async function fetchAnalyticsResults(
 
 export function useProjectAnalyticsResults(projectId: string | undefined, query: string) {
   const normalizedQuery = query.trim();
-  const key = `${projectId ?? ""}\u0000${normalizedQuery}`;
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const key = `${projectId ?? ""}\u0000${normalizedQuery}\u0000${retryAttempt}`;
   const currentKey = useRef(key);
   const pageAbort = useRef<AbortController | null>(null);
   const [state, setState] = useState<LoadState>(() => ({
@@ -127,5 +128,7 @@ export function useProjectAnalyticsResults(projectId: string | undefined, query:
       });
   }, [activeState, key, normalizedQuery, projectId]);
 
-  return { ...activeState, loadMore };
+  const retry = useCallback(() => setRetryAttempt((attempt) => attempt + 1), []);
+
+  return { ...activeState, loadMore, retry };
 }

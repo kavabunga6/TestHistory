@@ -278,6 +278,11 @@
   background: #8a98aa;
 }
 
+.dashboard-reference-bar-row i.is-unknown,
+.dashboard-reference-donut-legend i.is-unknown {
+  background: #7c75ad;
+}
+
 .dashboard-reference-bar-row i.is-muted,
 .dashboard-reference-donut-legend i.is-muted {
   background: #7c8db5;

@@ -35,7 +35,11 @@ import {
 import { buildDefectSummaries, filterDefects } from "./referenceScreens/DefectsReferenceScreen.js";
 import { LaunchesReferenceScreen } from "./referenceScreens/LaunchesReferenceScreen.js";
 import { LaunchComparisonScreen } from "./referenceScreens/LaunchComparisonCard.js";
-import { OverviewTab, ResultsTab } from "./referenceScreens/LaunchesReferenceTabs.js";
+import {
+  LaunchProgressBar,
+  OverviewTab,
+  ResultsTab
+} from "./referenceScreens/LaunchesReferenceTabs.js";
 import {
   apiStates,
   archiveFixtureReadyApiState,
@@ -289,7 +293,7 @@ describe("result and launch surface readiness", () => {
         activeStatusFilter={undefined}
         actorId="admin"
         filteredResults={[result]}
-        launchCounters={{ broken: 0, failed: 0, muted: 0, passed: 1, skipped: 0 }}
+        launchCounters={{ broken: 0, failed: 0, muted: 0, passed: 1, skipped: 0, unknown: 0 }}
         loading={false}
         query=""
         results={[result]}
@@ -303,6 +307,36 @@ describe("result and launch surface readiness", () => {
     );
 
     expect(markup).toContain('<option value="muted">Карантин</option>');
+  });
+
+  it("exposes unknown as its own launch segment and result filter", () => {
+    const result = { ...demoM1Workspace.results[0]!, status: "passed" as const };
+    const counters = { broken: 8, failed: 18, muted: 0, passed: 62, skipped: 8, unknown: 4 };
+    const progressMarkup = renderToStaticMarkup(
+      <LaunchProgressBar counters={counters} total={100} />
+    );
+    const resultsMarkup = renderToStaticMarkup(
+      <ResultsTab
+        activeStatusFilter={undefined}
+        actorId="admin"
+        filteredResults={[result]}
+        launchCounters={counters}
+        loading={false}
+        query=""
+        results={[result]}
+        selectedResult={result}
+        onActiveFilterChange={() => undefined}
+        onClearStatusFilter={() => undefined}
+        onQueryChange={() => undefined}
+        onSelectResult={() => undefined}
+        onStatusFilterChange={() => undefined}
+      />
+    );
+
+    expect(progressMarkup).toContain('aria-label="Неизвестен: 4"');
+    expect(progressMarkup).toContain("Неизвестны 4");
+    expect(resultsMarkup).toContain('<option value="broken">Сломан · 8</option>');
+    expect(resultsMarkup).toContain('<option value="unknown">Неизвестен · 4</option>');
   });
 
   it("keeps launch overview cards fixed with paged overflowing lists", () => {
@@ -344,17 +378,17 @@ describe("result and launch surface readiness", () => {
     expect(markup).toContain('role="button"');
     expect(markup).toContain('tabindex="0"');
     expect(markup).toContain('aria-label="Фильтры по статусу"');
-    for (const status of ["passed", "failed", "broken", "skipped"] as const) {
+    for (const status of ["passed", "failed", "broken", "unknown", "skipped"] as const) {
       expect(markup).toContain(`launches-reference-overview-legend-item is-${status}`);
     }
     expect(markup).toContain("Открыть результаты с этим статусом");
   });
 
-  it("labels the combined broken and unknown overview group explicitly", () => {
+  it("shows broken and unknown as separate overview groups", () => {
     const launch = demoM1Workspace.launchItems[0]!;
     const markup = renderToStaticMarkup(
       <OverviewTab
-        launch={{ ...launch, counters: { ...launch.counters, broken: 12 } }}
+        launch={{ ...launch, counters: { ...launch.counters, broken: 8, unknown: 4 } }}
         results={demoM1Workspace.results}
         onSelectAll={() => undefined}
         onSelectResult={() => undefined}
@@ -362,8 +396,9 @@ describe("result and launch surface readiness", () => {
       />
     );
 
-    expect(markup).toContain("Сломаны и неизвестны");
-    expect(markup).toContain("Сломаны и неизвестны: 12. Открыть оба статуса");
+    expect(markup).toContain("Сломаны: 8. Открыть результаты с этим статусом");
+    expect(markup).toContain("Неизвестны: 4. Открыть результаты с этим статусом");
+    expect(markup).not.toContain("Сломаны и неизвестны");
   });
 
   it("keeps launch comparison on a separate explicit-request screen", () => {

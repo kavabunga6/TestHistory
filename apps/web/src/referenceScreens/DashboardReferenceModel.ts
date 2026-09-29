@@ -33,7 +33,8 @@ export const statusLabels: Record<ResultStatus, string> = {
   failed: "Провален",
   muted: "Карантин",
   passed: "Успешный",
-  skipped: "Пропущен"
+  skipped: "Пропущен",
+  unknown: "Неизвестен"
 };
 
 export const widgetTypes: WidgetTypeOption[] = [

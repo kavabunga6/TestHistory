@@ -11,7 +11,7 @@ export type ApiProjectReadModel = {
   createdAt?: string;
 };
 
-export type ApiAllureStatus = Exclude<ResultStatus, "muted"> | "unknown";
+export type ApiAllureStatus = Exclude<ResultStatus, "muted">;
 
 export type ApiLaunchReadModel = {
   id: string;

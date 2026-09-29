@@ -1,0 +1,40 @@
+.reference-result-id-copy {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  color: #526174;
+  font-size: 12px;
+}
+
+.reference-result-id-copy code {
+  overflow-wrap: anywhere;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.reference-result-id-copy button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d7e1ee;
+  border-radius: 6px;
+  padding: 0 7px;
+  background: #f8fafc;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reference-result-id-copy button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.reference-result-id-copy [role="status"] {
+  color: #257943;
+  font-weight: 700;
+}

@@ -10,7 +10,7 @@ import type {
 } from "../m1Workspace.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
 import { isLikelyThqlQuery } from "../thqlQueryDetection.js";
-import { formatLaunchId } from "./LaunchesReferenceFormatters.js";
+import { formatHistoryDate, formatLaunchId } from "./LaunchesReferenceFormatters.js";
 import {
   filterLaunchItems,
   filterResults,
@@ -122,7 +122,7 @@ export function LaunchesReferenceScreen({
   onLaunchPageIndexChange?: ((index: number) => void) | undefined;
   onLaunchPageSizeChange?: ((size: number) => void) | undefined;
   onLaunchQueryChange?: ((query: string) => void) | undefined;
-  onOpenResult?: ((id: string) => void) | undefined;
+  onOpenResult?: ((id: string, launchId?: string) => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
   onOpenTab?: ((tab: string) => void) | undefined;
   onRefresh?: (() => void) | undefined;
@@ -694,13 +694,19 @@ export function LaunchesReferenceScreen({
               onUnlinkResultDefect={onUnlinkResultDefect}
             />
           ) : null}
-          {activeTab === "charts" ? <ChartsTab results={launchResults} /> : null}
+          {activeTab === "charts" ? <ChartsTab page={resultPage} results={launchResults} /> : null}
           {activeTab === "comparison" ? (
             <LaunchComparisonScreen
               initialSession={comparisonSessions[selectedLaunch.id]}
               launch={selectedLaunch}
               launchItems={launchItems}
-              onSelectResult={(id) => openResultReport(id)}
+              onSelectResult={(id, launchId) => {
+                if (launchId !== undefined) {
+                  onOpenResult?.(id, launchId);
+                } else {
+                  openResultReport(id);
+                }
+              }}
               onSessionChange={(session) =>
                 setComparisonSessions((current) => ({
                   ...current,
@@ -838,9 +844,12 @@ function LaunchListView({
 
           {visibleLaunchItems.map((launch) => {
             const metadata = parseLaunchMetadata(launch);
-            const metadataItems = metadata.tags.filter(
-              (value) => value.toLocaleLowerCase() !== metadata.branch.toLocaleLowerCase()
-            );
+            const metadataItems =
+              launch.build || launch.createdAt
+                ? []
+                : metadata.tags.filter(
+                    (value) => value.toLocaleLowerCase() !== metadata.branch.toLocaleLowerCase()
+                  );
             const compactId =
               launch.id.length > 12 ? `${launch.id.slice(0, 8)}…` : formatLaunchId(launch.id);
             const total = getLaunchTotal(launch);
@@ -867,15 +876,28 @@ function LaunchListView({
                 <LaunchProgressBar counters={launch.counters} total={total} />
 
                 <span className="launches-reference-list-meta">
-                  <span>
-                    <small>Метаданные</small>
-                    <span className="launches-reference-list-tags">
-                      {metadataItems.map((tag) => (
-                        <em key={tag}>{tag}</em>
-                      ))}
-                      {metadataItems.length === 0 ? <em>Нет дополнительных данных</em> : null}
+                  {launch.build ? (
+                    <span>
+                      <small>Сборка</small>
+                      <em>{launch.build}</em>
                     </span>
-                  </span>
+                  ) : null}
+                  {launch.createdAt ? (
+                    <span>
+                      <small>Создан</small>
+                      <em>{formatHistoryDate(launch.createdAt)}</em>
+                    </span>
+                  ) : null}
+                  {metadataItems.length > 0 ? (
+                    <span>
+                      <small>Метки</small>
+                      <span className="launches-reference-list-tags">
+                        {metadataItems.map((tag) => (
+                          <em key={tag}>{tag}</em>
+                        ))}
+                      </span>
+                    </span>
+                  ) : null}
                   <span>
                     <small>Ветка</small>
                     <em>{metadata.branch}</em>

@@ -107,6 +107,88 @@ describe("dashboard aggregate states", () => {
     );
   });
 
+  it("loads another catalog page and opens a launch beyond the initial 25", async () => {
+    window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
+    const firstPage = Array.from({ length: 100 }, (_, index) =>
+      apiLaunch(`launch-${index + 1}`, `Run ${index + 1}`)
+    );
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const path = String(url);
+      if (path.includes("/projects/project-1/launches?")) {
+        return path.includes("cursor=100")
+          ? jsonResponse({
+              items: [apiLaunch("old-launch", "Old run")],
+              page: { nextCursor: null, hasMore: false, total: 101 }
+            })
+          : jsonResponse({
+              items: firstPage,
+              page: { nextCursor: "100", hasMore: true, total: 101 }
+            });
+      }
+      const launchId = path.includes("old-launch") ? "old-launch" : "launch-1";
+      return jsonResponse({ ...aggregate(launchId === "old-launch" ? 12 : 1), launchId });
+    });
+    mount();
+
+    await act(async () =>
+      root.render(
+        <DashboardReferenceScreen
+          launchItems={firstPage.slice(0, 25).map((item) => launch(item.id, item.name))}
+          projectId="project-1"
+        />
+      )
+    );
+    expect(container.textContent).toContain("100 из 101 запусков");
+    const loadMore = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Показать более ранние")
+    );
+    await act(async () => loadMore?.click());
+
+    const select = container.querySelector<HTMLSelectElement>(
+      ".dashboard-reference-launch-picker select"
+    )!;
+    expect(Array.from(select.options).some((option) => option.value === "old-launch")).toBe(true);
+    await act(async () => {
+      select.value = "old-launch";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("12 результатов · Old run");
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toContain(
+      "/api/v1/launches/old-launch/dashboard/aggregate"
+    );
+  });
+
+  it("does not claim there are no launches while the catalog is loading or failed", async () => {
+    window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
+    let rejectList: ((reason: Error) => void) | undefined;
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      () =>
+        new Promise<Response>((_resolve, reject) => {
+          rejectList = reject;
+        })
+    );
+    mount();
+    await act(async () => root.render(<DashboardReferenceScreen projectId="project-1" />));
+
+    expect(container.textContent).toContain("Загружаем список запусков");
+    expect(container.textContent).not.toContain("Пока нет запусков");
+    await act(async () => rejectList?.(new Error("network")));
+    expect(container.textContent).toContain("Не удалось загрузить запуски");
+    expect(container.textContent).not.toContain("Пока нет запусков");
+  });
+
+  it("explains an empty launch while keeping widgets available to configure", async () => {
+    window.localStorage.setItem(dashboardWidgetStorageKey, JSON.stringify(defaultDashboardWidgets));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(aggregate(0)));
+    mount();
+    await act(async () => root.render(screen()));
+
+    expect(container.textContent).toContain("Один запуск");
+    expect(container.textContent).toContain("Выбранный запуск");
+    expect(container.textContent).toContain("В этом запуске пока нет результатов");
+    expect(container.querySelector(".dashboard-reference-widget-grid")).not.toBeNull();
+  });
+
   function mount() {
     container = document.createElement("div");
     document.body.append(container);
@@ -131,7 +213,17 @@ function launch(id: string, name: string) {
     metadata: [],
     defects: 0,
     members: 0,
-    counters: { failed: 0, broken: 0, passed: 0, skipped: 0, muted: 0 }
+    counters: { failed: 0, broken: 0, passed: 0, skipped: 0, muted: 0, unknown: 0 }
+  };
+}
+
+function apiLaunch(id: string, name: string) {
+  return {
+    id,
+    projectId: "project-1",
+    name,
+    status: "closed",
+    counters: { failed: 0, broken: 0, passed: 1, skipped: 0, unknown: 0 }
   };
 }
 

@@ -342,7 +342,7 @@ function countStatuses(results: TestResult[]): Record<ResultStatus, number> {
       counters[result.status] += 1;
       return counters;
     },
-    { broken: 0, failed: 0, muted: 0, passed: 0, skipped: 0 }
+    { broken: 0, failed: 0, muted: 0, passed: 0, skipped: 0, unknown: 0 }
   );
 }
 
@@ -455,7 +455,8 @@ function formatStatus(status: ResultStatus): string {
     failed: "Провален",
     muted: "Карантин",
     passed: "Успешный",
-    skipped: "Пропущен"
+    skipped: "Пропущен",
+    unknown: "Неизвестен"
   };
   return labels[status];
 }

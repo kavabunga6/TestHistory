@@ -461,8 +461,7 @@ async function fetchLaunchResultPage(
 
   const cursorQuery = cursor === undefined ? "" : `&cursor=${encodeURIComponent(cursor)}`;
   const searchQuery = query?.trim() ? `&q=${encodeURIComponent(query.trim())}` : "";
-  const apiStatus = status === "broken" ? "broken,unknown" : status;
-  const statusQuery = apiStatus === undefined ? "" : `&status=${encodeURIComponent(apiStatus)}`;
+  const statusQuery = status === undefined ? "" : `&status=${encodeURIComponent(status)}`;
   return getJson<ApiLaunchResultListReadModel>(
     `/api/v1/launches/${encodeURIComponent(launchId)}/results?limit=${limit}${cursorQuery}${searchQuery}${statusQuery}`
   );

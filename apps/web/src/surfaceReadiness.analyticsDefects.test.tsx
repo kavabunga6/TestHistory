@@ -108,9 +108,9 @@ describe("analytics and defects surface readiness", () => {
 
     expect(markup).toContain("analytics-reference-screen");
     expect(text).toContain("Аналитика");
-    expect(text).toContain("Загруженные данные");
+    expect(text).toContain("Частичные данные");
     expect(text).toContain("Успешность");
-    expect(text).toContain("Открытые риски");
+    expect(text).toContain("Неуспешные результаты");
     expect(text).toContain("Средняя длительность");
     expect(text).toContain("Нестабильные кандидаты");
     expect(text).toContain("Статусы");
@@ -170,8 +170,8 @@ describe("analytics and defects surface readiness", () => {
     expect(defectsText).toContain("Результаты");
     expect(defectsText).not.toContain("Выберите дефект для отображения");
     expect(analyticsText).toContain("Аналитика");
-    expect(analyticsText).toContain("Загруженные данные");
-    expect(analyticsText).toContain("Открытые риски");
+    expect(analyticsText).toContain("Частичные данные");
+    expect(analyticsText).toContain("Неуспешные результаты");
     expect(analyticsText).toContain("Приоритетные сигналы");
     expect(analyticsText).not.toContain("Карантины гейта");
     expect(analyticsText).not.toContain("quality-gate.evaluate");
@@ -625,8 +625,8 @@ describe("analytics and defects surface readiness", () => {
     expect(visibleText(blockedDefectsMarkup)).not.toContain("Контракт чтения недоступен");
     expect(visibleText(blockedDefectsMarkup)).not.toContain("Capabilities не объявляет defects");
     expect(visibleText(blockedAnalyticsMarkup)).toContain("Аналитика");
-    expect(visibleText(blockedAnalyticsMarkup)).toContain("Загруженные данные");
-    expect(visibleText(blockedAnalyticsMarkup)).toContain("Открытые риски");
+    expect(visibleText(blockedAnalyticsMarkup)).toContain("Частичные данные");
+    expect(visibleText(blockedAnalyticsMarkup)).toContain("Неуспешные результаты");
     expect(visibleText(combinedBlockedMarkup)).not.toContain("Capabilities не объявляет");
 
     expect(buttonsContainingText(blockedAnalyticsMarkup, "Карантин")).toHaveLength(0);
@@ -650,9 +650,9 @@ describe("analytics and defects surface readiness", () => {
     const text = visibleText(renderWorkspaceSurface("analytics", onlineApiState, cleanWorkspace));
 
     expect(text).toContain("Аналитика");
-    expect(text).toContain("Загруженные данные");
+    expect(text).toContain("Частичные данные");
     expect(text).toContain("Успешность 100%");
-    expect(text).toContain("Открытые риски 0");
+    expect(text).toContain("Неуспешные результаты 0");
     expect(text).toContain("Нет медленных тестов в текущем фильтре");
     expect(text).not.toContain("quality_gate.");
     expect(text).not.toContain("Нет нестабильных кандидатов");
@@ -746,7 +746,7 @@ describe("analytics and defects surface readiness", () => {
     expect(text).toContain("Аналитика");
     expect(text).toContain("Показано 10 000 из 10 000 загруженных результатов");
     expect(text).toContain("Успешность 25%");
-    expect(text).toContain("Открытые риски 5 000");
+    expect(text).toContain("Неуспешные результаты 5 000");
     expect(text).toContain("Показано 50 из 10 000");
     expect(countMatches(markup, /class="analytics-reference-signal-row/g)).toBeLessThanOrEqual(50);
     expect(countMatches(markup, /Synthetic readiness case /g)).toBeLessThanOrEqual(64);

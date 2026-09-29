@@ -100,7 +100,7 @@ describe("m1 workspace mapping", () => {
     ).rejects.toThrow("outside the selected project");
   });
 
-  it("includes unknown results when filtering the normalized broken status", async () => {
+  it("keeps broken and unknown result filters separate", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const url = String(input);
       if (url === `/api/v1/projects/project-heavy/launches?limit=${workspaceInitialLaunchLimit}`) {
@@ -116,7 +116,10 @@ describe("m1 workspace mapping", () => {
           ]
         });
       }
-      if (url === "/api/v1/launches/launch-heavy/results?limit=25&status=broken%2Cunknown") {
+      if (
+        url === "/api/v1/launches/launch-heavy/results?limit=25&status=broken" ||
+        url === "/api/v1/launches/launch-heavy/results?limit=25&status=unknown"
+      ) {
         return jsonResponse({ items: [] });
       }
       return notFoundResponse();
@@ -126,12 +129,27 @@ describe("m1 workspace mapping", () => {
       projectId: "project-heavy",
       preferredLaunchId: "launch-heavy",
       resultPageSize: 25,
-      resultStatusFilter: "broken",
+      resultStatusFilter: "unknown",
       routeScope: "launch-detail"
     });
 
-    expect(workspace.launchItems[0]?.counters.broken).toBe(1);
+    expect(workspace.launchItems[0]?.counters.broken).toBe(0);
+    expect(workspace.launchItems[0]?.counters.unknown).toBe(1);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain(
+      "/api/v1/launches/launch-heavy/results?limit=25&status=unknown"
+    );
+
+    await fetchM1Workspace({
+      projectId: "project-heavy",
+      preferredLaunchId: "launch-heavy",
+      resultPageSize: 25,
+      resultStatusFilter: "broken",
+      routeScope: "launch-detail"
+    });
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain(
+      "/api/v1/launches/launch-heavy/results?limit=25&status=broken"
+    );
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain(
       "/api/v1/launches/launch-heavy/results?limit=25&status=broken%2Cunknown"
     );
   });

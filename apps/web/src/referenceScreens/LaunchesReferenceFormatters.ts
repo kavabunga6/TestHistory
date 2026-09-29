@@ -17,6 +17,9 @@ export function statusColor(status: ResultStatus): string {
   if (status === "broken") {
     return "#e7a24a";
   }
+  if (status === "unknown") {
+    return "#7c75ad";
+  }
   return "#8c98a8";
 }
 
@@ -32,6 +35,9 @@ export function formatStatus(status: ResultStatus): string {
   }
   if (status === "broken") {
     return "Сломан";
+  }
+  if (status === "unknown") {
+    return "Неизвестен";
   }
   return "Пропущен";
 }

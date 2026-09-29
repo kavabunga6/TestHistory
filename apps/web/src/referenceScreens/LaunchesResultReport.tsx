@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowDown, LockKeyhole } from "lucide-react";
+import { AlertCircle, ArrowDown, ChevronRight, LockKeyhole } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ScenarioStep, TestResult } from "../m1Workspace.js";
@@ -11,8 +11,6 @@ import {
   isExternalUrl
 } from "./LaunchesReferenceFormatters.js";
 import {
-  getActiveDefectValues,
-  getDefectCreator,
   getDefectValues,
   getQuarantineSummary,
   isResultQuarantined,
@@ -20,6 +18,8 @@ import {
   type ResultReportTab
 } from "./LaunchesReferenceModel.js";
 import { ResultDiagnostics } from "./LaunchesResultDiagnostics.js";
+import { getResultDefectReferences } from "./ResultDefectReferences.js";
+import { ResultIdCopy } from "./ResultIdCopy.js";
 import { ResultAttachmentsTab } from "./LaunchesResultAttachments.js";
 import { ResultFieldsTab, ResultQuarantineTab } from "./LaunchesResultDetailsTabs.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
@@ -102,6 +102,25 @@ export function ResultReport({
               {formatResultDuration(result.duration)}
             </span>
           </div>
+          <div className="launches-reference-result-identifiers">
+            <ResultIdCopy resultId={result.id} />
+            {result.allureId && result.allureId !== result.id ? (
+              <span className="launches-reference-result-allure-id" title={result.allureId}>
+                Allure ID: {result.allureId}
+              </span>
+            ) : null}
+            <button
+              className="launches-reference-result-fields-link"
+              type="button"
+              aria-current={activeResultTab === "fields" ? "page" : undefined}
+              onClick={() => {
+                setActiveResultTab("fields");
+                onOpenTab?.("fields");
+              }}
+            >
+              Данные и связи <ChevronRight aria-hidden="true" size={14} />
+            </button>
+          </div>
           <div
             className="launches-reference-result-context"
             aria-label="Ключевые данные результата"
@@ -115,18 +134,6 @@ export function ResultReport({
             ))}
             {result.tags.length > 2 ? (
               <span title={result.tags.slice(2).join(", ")}>+{result.tags.length - 2} тега</span>
-            ) : null}
-            {activeResultTab !== "fields" ? (
-              <button
-                className="launches-reference-result-fields-link"
-                type="button"
-                onClick={() => {
-                  setActiveResultTab("fields");
-                  onOpenTab?.("fields");
-                }}
-              >
-                Все поля и связи
-              </button>
             ) : null}
           </div>
         </div>
@@ -158,9 +165,15 @@ export function ResultReport({
       {activeResultTab === "attachments" ? <ResultAttachmentsTab result={result} /> : null}
       {activeResultTab === "quarantine" ? <ResultQuarantineTab result={result} /> : null}
       {activeResultTab === "defects" ? (
-        <ResultDefectsTab result={result} onUnlinkResultDefect={onUnlinkResultDefect} />
+        <ResultDefectsTab
+          integrationProviders={integrationProviders}
+          result={result}
+          onUnlinkResultDefect={onUnlinkResultDefect}
+        />
       ) : null}
-      {activeResultTab === "fields" ? <ResultFieldsTab result={result} /> : null}
+      {activeResultTab === "fields" ? (
+        <ResultFieldsTab integrationProviders={integrationProviders} result={result} />
+      ) : null}
     </section>
   );
 }
@@ -295,37 +308,55 @@ function RailSection({
 }
 
 export function ResultDefectsTab({
+  integrationProviders = [],
   onUnlinkResultDefect,
   result
 }: {
+  integrationProviders?: IntegrationLinkProvider[] | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
   result: TestResult;
 }) {
-  const activeDefects = getActiveDefectValues(result);
+  const activeDefects = getResultDefectReferences(result, integrationProviders);
   const archivedDefects = result.defectHistory ?? [];
 
   return (
     <div className="launches-reference-result-tab-panel">
       <section>
-        <h4>Дефекты</h4>
+        <h4>Дефекты и задачи из баг-трекера</h4>
         {activeDefects.length === 0 ? (
           <p className="launches-reference-muted">Дефекты не связаны с этим результатом.</p>
         ) : (
           <div className="launches-reference-defects">
             {activeDefects.map((defect) => (
-              <article key={defect}>
+              <article
+                className={
+                  defect.kind === "internal" && onUnlinkResultDefect ? "has-action" : undefined
+                }
+                key={defect.id}
+              >
                 <AlertCircle size={16} />
                 <div className="launches-reference-defect-copy">
-                  <strong>{defect}</strong>
-                  <span>Создатель: {getDefectCreator(result, defect)}</span>
-                  <span>Связано с текущим результатом запуска</span>
+                  {defect.href !== undefined ? (
+                    <a
+                      href={defect.href}
+                      rel={defect.kind === "issue" ? "noreferrer" : undefined}
+                      target={defect.kind === "issue" ? "_blank" : undefined}
+                    >
+                      {defect.id}
+                    </a>
+                  ) : (
+                    <strong>{defect.id}</strong>
+                  )}
+                  <span>
+                    {defect.kind === "internal" ? "Внутренний дефект" : "Задача из баг-трекера"}
+                  </span>
                 </div>
-                {onUnlinkResultDefect !== undefined ? (
+                {defect.kind === "internal" && onUnlinkResultDefect !== undefined ? (
                   <button
                     className="launches-reference-defect-unlink"
                     type="button"
-                    title="Отвязать дефект от этого тест-кейса"
-                    onClick={() => onUnlinkResultDefect(result.id, defect)}
+                    title="Отвязать внутренний дефект от этого результата"
+                    onClick={() => onUnlinkResultDefect(result.id, defect.id)}
                   >
                     Отвязать
                   </button>

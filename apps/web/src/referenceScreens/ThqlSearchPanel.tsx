@@ -161,6 +161,9 @@ export function ThqlSearchPanel({
       </div>
 
       <div className="thql-search__filters" aria-label="Доступные фильтры">
+        {visibleFilters.length > 0 ? (
+          <span className="thql-search__filters-caption">Быстрые фильтры</span>
+        ) : null}
         {pinnedFilters.map((filter) => (
           <button
             aria-label={`${filter.name}. ${thqlScopeLabels[filter.scope]}`}

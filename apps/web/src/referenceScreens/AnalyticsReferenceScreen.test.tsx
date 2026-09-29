@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from "react";
+import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { AnalyticsResultListReadModel } from "@testhistory/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -51,7 +51,8 @@ describe("project analytics screen", () => {
     });
     await act(async () => vi.runAllTimersAsync());
 
-    expect(container.textContent).toContain("Найдено 120 из 120 результатов проекта");
+    expect(container.textContent).toContain("Показано 120 из 120 результатов проекта");
+    expect(container.textContent).toContain("Весь проект · за всё время");
     expect(container.querySelectorAll(".analytics-reference-signal-row")).toHaveLength(1);
     const loadMore = Array.from(container.querySelectorAll("button")).find((button) =>
       button.textContent?.includes("Показать ещё")
@@ -68,11 +69,78 @@ describe("project analytics screen", () => {
     act(() => secondResult?.click());
     expect(onOpenResult).toHaveBeenCalledWith("second", "launch-b");
   });
+
+  it("shows an explicit empty project instead of zero-valued metrics", async () => {
+    vi.useFakeTimers();
+    getJsonMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.startsWith("/api/v1/analytics/results?")
+          ? read([], null, 0)
+          : { result: { metrics: {}, series: [] } }
+      )
+    );
+    mount(<AnalyticsReferenceScreen projectId="project-one" results={[]} />);
+    await act(async () => vi.runAllTimersAsync());
+
+    expect(container?.textContent).toContain("В проекте пока нет результатов");
+    expect(container?.textContent).toContain("Весь проект · за всё время");
+    expect(container?.querySelector(".analytics-reference-summary")).toBeNull();
+  });
+
+  it("marks fallback figures as partial and retries the project request", async () => {
+    vi.useFakeTimers();
+    let requestCount = 0;
+    getJsonMock.mockImplementation((url: string) => {
+      if (!url.startsWith("/api/v1/analytics/results?")) {
+        return Promise.resolve({
+          result: {
+            metrics: {},
+            series: [
+              {
+                id: "launch-a",
+                name: "Nightly",
+                createdAt: "2026-01-01",
+                metrics: { count: 1, passRate: 1, averageDurationMs: 1000 }
+              }
+            ]
+          }
+        });
+      }
+      requestCount += 1;
+      return requestCount === 1
+        ? Promise.reject(new Error("Server unavailable"))
+        : Promise.resolve(read([summary("first", "launch-a")], null));
+    });
+    mount(<AnalyticsReferenceScreen projectId="project-one" results={[]} />);
+    await act(async () => vi.runAllTimersAsync());
+
+    expect(container?.textContent).toContain("Частичные данные");
+    expect(container?.textContent).toContain("Не удалось загрузить аналитику проекта");
+    expect(container?.querySelector(".analytics-reference-trend")).toBeNull();
+    const retry = Array.from(container?.querySelectorAll("button") ?? []).find((button) =>
+      button.textContent?.includes("Повторить")
+    );
+    expect(retry).toBeDefined();
+    await act(async () => retry?.click());
+    await act(async () => vi.runAllTimersAsync());
+
+    expect(requestCount).toBe(2);
+    expect(container?.textContent).toContain("Весь проект · за всё время");
+    expect(container?.querySelector(".analytics-reference-availability")).toBeNull();
+  });
 });
+
+function mount(screen: ReactElement) {
+  container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  act(() => root?.render(screen));
+}
 
 function read(
   items: AnalyticsResultListReadModel["items"],
-  nextCursor: string | null
+  nextCursor: string | null,
+  total = 120
 ): AnalyticsResultListReadModel {
   return {
     kind: "analytics-result-list",
@@ -80,21 +148,28 @@ function read(
     page: {
       limit: 1,
       cursor: nextCursor === "1" ? null : "1",
-      offset: nextCursor === "1" ? 0 : 1,
-      returned: 1,
-      total: 120,
+      offset: items.length === 0 || nextCursor === "1" ? 0 : 1,
+      returned: items.length,
+      total,
       nextCursor,
       hasMore: nextCursor !== null
     },
     metrics: {
-      total: 120,
-      matched: 120,
-      statusCounters: { failed: 1, broken: 0, passed: 119, skipped: 0, unknown: 0, muted: 0 },
+      total,
+      matched: total,
+      statusCounters: {
+        failed: total > 0 ? 1 : 0,
+        broken: 0,
+        passed: Math.max(total - 1, 0),
+        skipped: 0,
+        unknown: 0,
+        muted: 0
+      },
       averageDurationMs: 1200,
       flakyCount: 0,
       flakyDataComplete: true,
       slowCount: 0,
-      openRisks: 1
+      openRisks: total > 0 ? 1 : 0
     },
     prioritySignals: [],
     slowSignals: [],

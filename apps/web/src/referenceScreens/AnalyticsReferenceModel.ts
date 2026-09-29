@@ -178,6 +178,8 @@ function statusRiskScore(status: ResultStatus): number {
       return 2;
     case "skipped":
       return 1;
+    case "unknown":
+      return 3;
     case "passed":
       return 0;
   }

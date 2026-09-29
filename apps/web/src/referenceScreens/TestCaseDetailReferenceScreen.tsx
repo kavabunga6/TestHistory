@@ -3,6 +3,7 @@
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   CircleDashed,
   FileText,
   PauseCircle,
@@ -19,7 +20,6 @@ import {
   AttachmentViewerButton
 } from "../AttachmentViewer.js";
 import type { ResultAttachment, ResultStatus, ScenarioStep, TestResult } from "../m1Workspace.js";
-import { resolveIssueTrackerLink } from "../projectSettings.js";
 import type { IntegrationLinkProvider } from "../projectSettingsTypes.js";
 import {
   collapseHistoryToFinalRunResults,
@@ -36,12 +36,13 @@ import {
   formatHistoryDate,
   formatHistoryRailLabel,
   formatStatus,
-  getDefectCreator,
-  isExternalUrl,
+  getTestCaseState,
   isResultQuarantined,
   uniqueStrings
 } from "./TestCaseDetailReferenceUtils.js";
 import { ResultIdCopy } from "./ResultIdCopy.js";
+import { TestCaseMetadataSections } from "./TestCaseMetadataSections.js";
+import { TestCaseDefectsTab, TestCaseQuarantineTab } from "./TestCaseDetailRelationsTabs.js";
 import {
   ReferenceListPagination,
   referenceListPageSize,
@@ -99,7 +100,6 @@ export function TestCaseDetailReferenceScreen({
   onOpenTab,
   onSelect,
   onToggleMuteResult,
-  onUnlinkResultDefect,
   page: serverPage,
   pageIndex: serverPageIndex,
   pageSize: serverPageSize,
@@ -339,7 +339,7 @@ export function TestCaseDetailReferenceScreen({
           result={selectedResult}
           routeTab={routeTab}
           onDeleteTestCase={onDeleteTestCase}
-          onOpenResult={onOpenResult ?? onSelect}
+          onOpenResult={onOpenResult}
           onOpenTab={onOpenTab}
           onFilterByTag={(tag) =>
             onOpenLaunchResultsByTag !== undefined
@@ -347,7 +347,6 @@ export function TestCaseDetailReferenceScreen({
               : setQuery(`tag = ${JSON.stringify(tag)}`)
           }
           onToggleMuteResult={onToggleMuteResult}
-          onUnlinkResultDefect={onUnlinkResultDefect}
         />
       )}
     </section>
@@ -361,7 +360,6 @@ function TestCaseDetails({
   onOpenResult,
   onOpenTab,
   onToggleMuteResult,
-  onUnlinkResultDefect,
   routeTab,
   result
 }: {
@@ -371,12 +369,15 @@ function TestCaseDetails({
   onOpenResult: OpenTestResult | undefined;
   onOpenTab?: ((tab: string) => void) | undefined;
   onToggleMuteResult?: ((id: string) => void) | undefined;
-  onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
   routeTab?: string | undefined;
   result: TestResult;
 }) {
   const [activeTab, setActiveTab] = useState<DetailTab>(parseDetailTab(routeTab));
   const isQuarantined = isResultQuarantined(result);
+  const latestAvailablePoint = collapseHistoryToFinalRunResults(result.historyPoints ?? [])
+    .filter((point) => point.launchId.trim() !== "" && point.resultUuid.trim() !== "")
+    .sort((left, right) => Date.parse(right.startedAt) - Date.parse(left.startedAt))[0];
+  const caseState = getTestCaseState(result);
 
   useEffect(() => {
     setActiveTab(parseDetailTab(routeTab));
@@ -436,8 +437,9 @@ function TestCaseDetails({
         <div className="tc-detail-reference-heading-line">
           <h2>{result.name}</h2>
           <div className="tc-detail-reference-badges">
-            <span className={result.deletedAt !== undefined ? "deleted" : "active"}>
-              {result.deletedAt !== undefined ? "Удален" : "Активный"}
+            <span className={caseState.className}>Состояние кейса: {caseState.label}</span>
+            <span className={`result-status-${result.status}`}>
+              Последний результат: {formatStatus(result.status)}
             </span>
             {isQuarantined ? <span className="muted">Карантин</span> : null}
           </div>
@@ -457,6 +459,30 @@ function TestCaseDetails({
             </span>
           ) : null}
         </div>
+        {latestAvailablePoint !== undefined && onOpenResult !== undefined ? (
+          <button
+            className="tc-detail-reference-open-latest"
+            type="button"
+            title={`Открыть результат из загруженной истории: ${latestAvailablePoint.launchName}`}
+            onClick={() => openHistoryPoint(latestAvailablePoint, onOpenResult, result.id)}
+          >
+            Открыть результат из истории «{latestAvailablePoint.launchName}»
+            <ChevronRight aria-hidden="true" size={15} />
+          </button>
+        ) : null}
+        <details className="tc-detail-reference-quick-fields">
+          <summary>
+            Поля и связи <ChevronDown aria-hidden="true" size={15} />
+          </summary>
+          <div className="tc-detail-reference-quick-fields-grid">
+            <TestCaseMetadataSections
+              compact
+              integrationProviders={integrationProviders}
+              onFilterByTag={onFilterByTag}
+              result={result}
+            />
+          </div>
+        </details>
       </header>
 
       <nav className="tc-detail-reference-tabs" aria-label="Вкладки тест-кейса">
@@ -499,9 +525,9 @@ function TestCaseDetails({
       {activeTab === "history" ? <HistoryTab result={result} onOpenResult={onOpenResult} /> : null}
       {activeTab === "retries" ? <RetriesTab result={result} /> : null}
       {activeTab === "attachments" ? <AttachmentsTab result={result} /> : null}
-      {activeTab === "quarantine" ? <QuarantineTab result={result} /> : null}
+      {activeTab === "quarantine" ? <TestCaseQuarantineTab result={result} /> : null}
       {activeTab === "defects" ? (
-        <DefectsTab result={result} onUnlinkResultDefect={onUnlinkResultDefect} />
+        <TestCaseDefectsTab integrationProviders={integrationProviders} result={result} />
       ) : null}
     </section>
   );
@@ -564,46 +590,11 @@ function OverviewTab({
           <strong>{formatResultDuration(result.duration)}</strong>
         </section>
 
-        <div className="tc-detail-reference-rail-card" role="group" aria-label="Теги">
-          <RailSection
-            title="Теги"
-            values={result.tags}
-            variant="chips"
-            onSelectValue={onFilterByTag}
-          />
-        </div>
-
-        <div className="tc-detail-reference-rail-card" role="group" aria-label="Кастомные поля">
-          <CustomFieldsRail fields={result.customFields} />
-        </div>
-
-        <div className="tc-detail-reference-rail-card" role="group" aria-label="Ключи теста">
-          <RailSection title="Ключи теста" values={result.testKeys} variant="chips" />
-        </div>
-
-        <div className="tc-detail-reference-rail-card" role="group" aria-label="Ссылки">
-          <RailSection title="Ссылки" values={result.linkDetails ?? result.links} />
-        </div>
-
-        <div
-          className="tc-detail-reference-rail-card"
-          role="group"
-          aria-label="Задачи из баг-трекера"
-        >
-          <RailSection
-            title="Задачи из баг-трекера"
-            values={uniqueStrings([
-              ...(result.defect ? [result.defect] : []),
-              ...result.issues
-            ]).map((value) => {
-              const url = result.issues.includes(value)
-                ? resolveIssueTrackerLink(integrationProviders, value)
-                : undefined;
-              return url === undefined ? value : { label: value, url };
-            })}
-            variant="chips"
-          />
-        </div>
+        <TestCaseMetadataSections
+          integrationProviders={integrationProviders}
+          onFilterByTag={onFilterByTag}
+          result={result}
+        />
       </aside>
     </div>
   );
@@ -816,81 +807,6 @@ function AttachmentsTab({ result }: { result: TestResult }) {
   );
 }
 
-function QuarantineTab({ result }: { result: TestResult }) {
-  return (
-    <div className="tc-detail-reference-tab-panel">
-      <section>
-        <h3>Карантин</h3>
-        {result.muted || result.defectMute ? (
-          <div className="tc-detail-reference-quarantine">
-            <strong>Тест помечен как приглушенный</strong>
-            <span>
-              {result.defectMute?.reason ?? "Причина будет загружена из политики карантина."}
-            </span>
-          </div>
-        ) : (
-          <p className="muted">Карантинные правила не применяются.</p>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function DefectsTab({
-  onUnlinkResultDefect,
-  result
-}: {
-  onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
-  result: TestResult;
-}) {
-  const defects = uniqueStrings([result.defect ?? "", ...result.issues]);
-  const archivedDefects = result.defectHistory ?? [];
-
-  return (
-    <div className="tc-detail-reference-tab-panel">
-      <section>
-        <h3>Дефекты</h3>
-        {defects.length === 0 ? (
-          <p className="muted">Дефекты не связаны с тест-кейсом.</p>
-        ) : (
-          <div className="tc-detail-reference-defects">
-            {defects.map((defect) => (
-              <article key={defect}>
-                <AlertCircle size={16} />
-                <div className="tc-detail-reference-defect-copy">
-                  <strong>{defect}</strong>
-                  <span>Создатель: {getDefectCreator(result, defect)}</span>
-                  <span>Связано с текущим результатом</span>
-                </div>
-                {onUnlinkResultDefect !== undefined ? (
-                  <button
-                    className="tc-detail-reference-defect-unlink"
-                    type="button"
-                    title="Отвязать дефект от этого тест-кейса"
-                    onClick={() => onUnlinkResultDefect(result.id, defect)}
-                  >
-                    Отвязать
-                  </button>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        )}
-        {archivedDefects.length > 0 ? (
-          <div className="tc-detail-reference-defect-history">
-            <h4>История дефектов</h4>
-            {archivedDefects.map((defect) => (
-              <span key={`${defect.id}-${defect.removedAt}`}>
-                {defect.id} · удален из активных связей {formatHistoryDate(defect.removedAt)}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </section>
-    </div>
-  );
-}
-
 function StepTreeItem({
   depth = 0,
   index: _index,
@@ -1017,76 +933,6 @@ function AttachmentRow({
   );
 }
 
-function RailSection({
-  onSelectValue,
-  title,
-  values,
-  variant = "rows"
-}: {
-  title: string;
-  values: Array<string | { label: string; url: string }>;
-  onSelectValue?: ((value: string) => void) | undefined;
-  variant?: "chips" | "rows";
-}) {
-  const hasValues = values.length > 0;
-
-  return (
-    <section
-      className={`tc-detail-reference-rail-section rail-section--${variant} ${hasValues ? "" : "is-empty"}`}
-    >
-      <h3>{title}</h3>
-      {hasValues ? (
-        <div className="tc-detail-reference-value-list">
-          {values.map((value) => {
-            const label = typeof value === "string" ? value : value.label;
-            const url = typeof value === "string" ? value : value.url;
-
-            if (isExternalUrl(url)) {
-              return (
-                <a href={url} key={`${label}-${url}`} rel="noreferrer" target="_blank">
-                  {label}
-                </a>
-              );
-            }
-
-            if (onSelectValue !== undefined) {
-              return (
-                <button key={label} type="button" onClick={() => onSelectValue(label)}>
-                  {label}
-                </button>
-              );
-            }
-
-            return <span key={label}>{label}</span>;
-          })}
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-function CustomFieldsRail({ fields }: { fields: TestResult["customFields"] }) {
-  const hasFields = fields.length > 0;
-
-  return (
-    <section
-      className={`tc-detail-reference-rail-section rail-section--fields ${hasFields ? "" : "is-empty"}`}
-    >
-      <h3>Кастомные поля</h3>
-      {hasFields ? (
-        <dl className="tc-detail-reference-field-list">
-          {fields.map((field) => (
-            <div key={`${field.label}-${field.value}`}>
-              <dt>{field.label}</dt>
-              <dd>{field.value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-    </section>
-  );
-}
-
 function StatusIcon({ status }: { status: ResultStatus }) {
   if (status === "muted") {
     return <PauseCircle size={15} />;
@@ -1099,6 +945,9 @@ function StatusIcon({ status }: { status: ResultStatus }) {
   }
   if (status === "broken") {
     return <AlertCircle size={15} />;
+  }
+  if (status === "unknown") {
+    return <CircleHelp size={15} />;
   }
   return <CircleDashed size={15} />;
 }
