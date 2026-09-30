@@ -1005,6 +1005,20 @@
   text-transform: uppercase;
 }
 
+.project-settings__retention-note {
+  margin: 0;
+  border-bottom: 1px solid #e5eaf2;
+  padding: 11px 18px;
+  color: #526174;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.project-settings__retention-note--inactive {
+  background: #fff8eb;
+  color: #754e18;
+}
+
 .project-settings__settings-list {
   display: grid;
   border-bottom: 1px solid #e5eaf2;
@@ -1029,6 +1043,14 @@
   color: #33445c;
   font-size: 13px;
   font-weight: 700;
+}
+
+.project-settings__inactive-setting {
+  min-width: 0;
+  color: #526174;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .project-settings__settings-list-row > input {
@@ -1206,6 +1228,10 @@
 .project-settings__integrations-table-row code {
   color: #26364d;
   font-size: 12px;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .project-settings__provider-row-actions {
@@ -1228,14 +1254,14 @@
 
 .project-settings__integration-example code {
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
+  overflow-wrap: anywhere;
   border-radius: 6px;
   padding: 5px 8px;
   background: #eef4ff;
   color: #1f4ba8;
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .project-settings__provider-card {
@@ -1569,33 +1595,53 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  padding: 0 20px;
 }
 
-.project-settings__scope-grid label {
+.project-settings__scope-group {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 7px 8px 8px;
+}
+
+.project-settings__scope-group legend {
+  padding: 0 4px;
+  color: #33445c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.project-settings__scope-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.project-settings__scope-actions label {
   display: flex;
   min-width: 0;
   min-height: 38px;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 1px solid #e2e8f0;
   border-radius: 7px;
-  padding: 0 10px;
+  padding: 0 7px;
   font-size: 12px;
   font-weight: 700;
 }
 
-.project-settings__scope-grid input {
+.project-settings__scope-actions input {
   width: 16px;
   min-height: 16px;
   flex: 0 0 16px;
 }
 
-.project-settings__scope-grid span {
+.project-settings__scope-actions span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 1180px) {

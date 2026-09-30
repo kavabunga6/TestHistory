@@ -390,8 +390,17 @@ function TestCaseDetails({
   result: TestResult;
 }) {
   const [activeTab, setActiveTab] = useState<DetailTab>(parseDetailTab(routeTab));
+  const [failureJump, setFailureJump] = useState(0);
   const tabsRef = useRef<HTMLElement>(null);
   const isQuarantined = isResultQuarantined(result);
+  const failedStep = findFirstFailedStep(result.steps);
+  const failureTrace = failedStep?.step.trace ?? result.trace;
+  const failureReason =
+    firstTraceLine(failureTrace?.message) ??
+    failureTrace?.stack.map(firstTraceLine).find((line) => line !== undefined) ??
+    (failedStep
+      ? `Шаг ${failedStep.path}: ${failedStep.step.name}`
+      : "Причина не передана вместе с результатом");
   const latestAvailablePoint = collapseHistoryToFinalRunResults(result.historyPoints ?? [])
     .filter((point) => point.launchId.trim() !== "" && point.resultUuid.trim() !== "")
     .sort((left, right) => Date.parse(right.startedAt) - Date.parse(left.startedAt))[0];
@@ -479,6 +488,27 @@ function TestCaseDetails({
             </div>
           </div>
         </div>
+        {result.status === "failed" || result.status === "broken" ? (
+          <div className={`tc-detail-reference-failure-summary ${result.status}`}>
+            <div>
+              <strong>{result.status === "broken" ? "Причина сбоя" : "Причина падения"}</strong>
+              <p>{failureReason}</p>
+            </div>
+            {failedStep ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("overview");
+                  onOpenTab?.("overview");
+                  setFailureJump((value) => value + 1);
+                }}
+              >
+                К шагу {failedStep.path}
+                <ChevronRight aria-hidden="true" size={15} />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="tc-detail-reference-secondary">
           <div className="tc-detail-reference-highlights" aria-label="Основные данные тест-кейса">
             {result.duration && result.duration !== "n/a" ? (
@@ -563,6 +593,8 @@ function TestCaseDetails({
           result={result}
           onFilterByTag={onFilterByTag}
           onOpenResult={onOpenResult}
+          failureJump={failureJump}
+          failurePath={failedStep?.path}
         />
       ) : null}
       {activeTab === "history" ? <HistoryTab result={result} onOpenResult={onOpenResult} /> : null}
@@ -577,16 +609,23 @@ function TestCaseDetails({
 }
 
 function OverviewTab({
+  failureJump,
+  failurePath,
   integrationProviders,
   onFilterByTag,
   onOpenResult,
   result
 }: {
+  failureJump: number;
+  failurePath: string | undefined;
   integrationProviders: IntegrationLinkProvider[];
   onFilterByTag: (tag: string) => void;
   onOpenResult: OpenTestResult | undefined;
   result: TestResult;
 }) {
+  const [railCollapsed, setRailCollapsed] = useState(false);
+  const stackedRail = useMobileWidth(1360);
+  const scenarioRef = useRef<HTMLDivElement>(null);
   const hasHistory = collapseHistoryToFinalRunResults(result.historyPoints ?? []).length > 0;
   const terminalFailurePaths = collectTerminalFailurePaths(result.steps);
   const fallbackPath =
@@ -594,8 +633,18 @@ function OverviewTab({
       ? terminalFailurePaths[0]
       : undefined;
 
+  useLayoutEffect(() => {
+    if (failureJump === 0 || failurePath === undefined) return;
+    const step = scenarioRef.current?.querySelector<HTMLElement>(
+      `[data-failure-step-path="${failurePath}"]`
+    );
+    if (!step) return;
+    step.focus({ preventScroll: true });
+    step.querySelector(".tc-detail-reference-step-line")?.scrollIntoView?.({ block: "center" });
+  }, [failureJump, failurePath]);
+
   return (
-    <div className="tc-detail-reference-overview">
+    <div className={`tc-detail-reference-overview ${railCollapsed ? "is-wide" : ""}`}>
       <div className="tc-detail-reference-overview-main">
         <section>
           <h3>Описание</h3>
@@ -607,11 +656,30 @@ function OverviewTab({
         <ParametersSection result={result} />
 
         <section>
-          <h3>Сценарий из тестового результата</h3>
+          <div className="tc-detail-reference-scenario-heading">
+            <h3>Сценарий из тестового результата</h3>
+            <button
+              type="button"
+              aria-controls="tc-detail-reference-side-rail"
+              aria-expanded={!railCollapsed}
+              onClick={() => setRailCollapsed((value) => !value)}
+            >
+              {railCollapsed
+                ? "Показать свойства"
+                : stackedRail
+                  ? "Скрыть свойства"
+                  : "Развернуть сценарий"}
+            </button>
+          </div>
           {result.steps.length === 0 ? (
             <p className="muted">Шаги не переданы в результате.</p>
           ) : (
-            <div className="tc-detail-reference-steps" role="tree">
+            <div
+              className="tc-detail-reference-steps"
+              key={`${result.id}-${failureJump}`}
+              ref={scenarioRef}
+              role="tree"
+            >
               {result.steps.map((step, index) => (
                 <StepTreeItem
                   fallbackPath={fallbackPath}
@@ -627,7 +695,12 @@ function OverviewTab({
         </section>
       </div>
 
-      <aside className="tc-detail-reference-side-rail" aria-label="Свойства тест-кейса">
+      <aside
+        className="tc-detail-reference-side-rail"
+        id="tc-detail-reference-side-rail"
+        aria-label="Свойства тест-кейса"
+        hidden={railCollapsed}
+      >
         <section
           className={`tc-detail-reference-rail-card tc-detail-reference-history-card ${hasHistory ? "" : "is-empty"}`}
         >
@@ -883,6 +956,8 @@ function StepTreeItem({
       className="tc-detail-reference-step-node"
       role="treeitem"
       aria-expanded={hasChildren ? expanded : undefined}
+      data-failure-step-path={path}
+      tabIndex={-1}
     >
       <div className={`tc-detail-reference-step-line ${step.status}`}>
         {hasChildren ? (
@@ -950,6 +1025,26 @@ function StepTreeItem({
       {!hasChildren ? failure : null}
     </div>
   );
+}
+
+function findFirstFailedStep(
+  steps: ScenarioStep[],
+  parentPath = ""
+): { path: string; step: ScenarioStep } | undefined {
+  for (const [index, step] of steps.entries()) {
+    const path = parentPath ? `${parentPath}.${index + 1}` : `${index + 1}`;
+    const childFailure = findFirstFailedStep(step.steps ?? [], path);
+    if (childFailure) return childFailure;
+    if (step.status === "failed" || step.status === "broken") return { path, step };
+  }
+  return undefined;
+}
+
+function firstTraceLine(value: string | undefined): string | undefined {
+  return value
+    ?.split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean);
 }
 
 function StepFailure({

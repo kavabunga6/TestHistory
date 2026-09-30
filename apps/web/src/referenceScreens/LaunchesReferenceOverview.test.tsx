@@ -14,13 +14,19 @@ describe("launch overview data scope", () => {
         launch={launch}
         results={[]}
         onSelectAll={() => undefined}
+        onSelectProblemResults={() => undefined}
         onSelectResult={() => undefined}
         onSelectStatus={() => undefined}
       />
     );
 
+    expect(markup).toContain("Проблемные результаты");
+    expect(markup).toContain(
+      `из ${launch.counters.failed + launch.counters.broken} во всём запуске`
+    );
+    expect(markup).toContain("Все проблемные");
     expect(markup).toContain("на загруженной странице");
     expect(markup).toContain("На загруженной странице нет дефектов.");
-    expect(markup).toContain("Среди загруженных результатов нет неразобранных.");
+    expect(markup).toContain("Среди загруженных результатов нет проваленных или сломанных.");
   });
 });

@@ -38,18 +38,6 @@ export function RetentionTab({
   };
   const hasChanges = JSON.stringify(retention) !== JSON.stringify(savedRetention);
 
-  const updateRetentionPolicy = (
-    id: string,
-    patch: Partial<ProjectSettings["retentionPolicies"][number]>
-  ) => {
-    setRetention((current) => ({
-      ...current,
-      retentionPolicies: current.retentionPolicies.map((policy) =>
-        policy.id === id ? { ...policy, ...patch } : policy
-      )
-    }));
-  };
-
   return (
     <section className="project-settings__panel">
       <div className="project-settings__panel-row">
@@ -66,6 +54,10 @@ export function RetentionTab({
         ) : null}
       </div>
       <div className="project-settings__section-title">Общие правила очистки</div>
+      <p className="project-settings__retention-note">
+        Срок и отсрочка ниже записываются для новых вложений. Уже загруженные вложения сохраняют
+        сроки, заданные при загрузке.
+      </p>
       <div className="project-settings__settings-list" role="list">
         <div className="project-settings__settings-list-row" role="listitem">
           <label htmlFor="artifact-retention-days">Хранить вложения, дней</label>
@@ -107,48 +99,34 @@ export function RetentionTab({
             <strong>{retention.cleanupGraceDays}</strong>
           )}
         </div>
+      </div>
+      <div className="project-settings__section-title">Дополнительные параметры</div>
+      <p className="project-settings__retention-note project-settings__retention-note--inactive">
+        Сервер пока не применяет сохранённые значения сжатия и удаления бинарных артефактов.
+      </p>
+      <div className="project-settings__settings-list" role="list">
         <div className="project-settings__settings-list-row" role="listitem">
-          <label className="project-settings__checkbox-line" htmlFor="artifact-compress-text">
-            <input
-              id="artifact-compress-text"
-              checked={retention.compressRetainedTextArtifacts}
-              disabled={!canEdit}
-              type="checkbox"
-              onChange={(event) =>
-                setRetention((current) => ({
-                  ...current,
-                  compressRetainedTextArtifacts: event.target.checked
-                }))
-              }
-            />
-            <span>Сжимать сохраненные текстовые артефакты</span>
-          </label>
-          <Badge tone={retention.compressRetainedTextArtifacts ? "green" : "gray"}>
-            {retention.compressRetainedTextArtifacts ? "Включено" : "Выключено"}
+          <span className="project-settings__inactive-setting">
+            Сжимать сохранённые текстовые артефакты
+          </span>
+          <Badge tone="gray">
+            Сохранено: {retention.compressRetainedTextArtifacts ? "да" : "нет"}
           </Badge>
         </div>
         <div className="project-settings__settings-list-row" role="listitem">
-          <label className="project-settings__checkbox-line" htmlFor="artifact-delete-binary">
-            <input
-              id="artifact-delete-binary"
-              checked={retention.deleteBinaryArtifactsAfterRetention}
-              disabled={!canEdit}
-              type="checkbox"
-              onChange={(event) =>
-                setRetention((current) => ({
-                  ...current,
-                  deleteBinaryArtifactsAfterRetention: event.target.checked
-                }))
-              }
-            />
-            <span>Удалять бинарные артефакты после срока хранения</span>
-          </label>
-          <Badge tone={retention.deleteBinaryArtifactsAfterRetention ? "green" : "gray"}>
-            {retention.deleteBinaryArtifactsAfterRetention ? "Включено" : "Выключено"}
+          <span className="project-settings__inactive-setting">
+            Удалять бинарные артефакты после срока хранения
+          </span>
+          <Badge tone="gray">
+            Сохранено: {retention.deleteBinaryArtifactsAfterRetention ? "да" : "нет"}
           </Badge>
         </div>
       </div>
       <div className="project-settings__section-title">Сроки по типам артефактов</div>
+      <p className="project-settings__retention-note project-settings__retention-note--inactive">
+        Сроки по типам и статусам и лимиты размера пока не применяются. Для новых вложений действует
+        общий срок выше.
+      </p>
       <div
         className="project-settings__table project-settings__table--retention"
         role="table"
@@ -169,72 +147,10 @@ export function RetentionTab({
         {retention.retentionPolicies.map((policy) => (
           <div className="project-settings__table-row" key={policy.id} role="row">
             <strong role="cell">{policy.artifact}</strong>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: пройден, дней`}
-                  min={0}
-                  max={3650}
-                  type="number"
-                  value={policy.passedDays}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, { passedDays: Number(event.target.value) })
-                  }
-                />
-              ) : (
-                `${policy.passedDays} дней`
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: провален, дней`}
-                  min={0}
-                  max={3650}
-                  type="number"
-                  value={policy.failedDays}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, { failedDays: Number(event.target.value) })
-                  }
-                />
-              ) : (
-                `${policy.failedDays} дней`
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: карантин, дней`}
-                  min={0}
-                  max={3650}
-                  type="number"
-                  value={policy.quarantinedDays}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, {
-                      quarantinedDays: Number(event.target.value)
-                    })
-                  }
-                />
-              ) : (
-                `${policy.quarantinedDays} дней`
-              )}
-            </span>
-            <span role="cell">
-              {canEdit ? (
-                <input
-                  aria-label={`${policy.artifact}: лимит, MB`}
-                  min={1}
-                  max={102400}
-                  type="number"
-                  value={policy.maxSizeMb}
-                  onChange={(event) =>
-                    updateRetentionPolicy(policy.id, { maxSizeMb: Number(event.target.value) })
-                  }
-                />
-              ) : (
-                `${policy.maxSizeMb} MB`
-              )}
-            </span>
+            <span role="cell">{policy.passedDays} дней</span>
+            <span role="cell">{policy.failedDays} дней</span>
+            <span role="cell">{policy.quarantinedDays} дней</span>
+            <span role="cell">{policy.maxSizeMb} MB</span>
           </div>
         ))}
       </div>

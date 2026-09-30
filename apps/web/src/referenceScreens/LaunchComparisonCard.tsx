@@ -381,8 +381,17 @@ export function LaunchComparisonScreen({
                   />
                   <ComparisonMetric
                     label="Успешность"
-                    tone="neutral"
+                    tone={
+                      comparison.metricDeltas.passRate !== null &&
+                      comparison.metricDeltas.passRate < 0
+                        ? "regressed"
+                        : comparison.metricDeltas.passRate !== null &&
+                            comparison.metricDeltas.passRate > 0
+                          ? "fixed"
+                          : "neutral"
+                    }
                     value={formatPercentDelta(comparison.metricDeltas.passRate)}
+                    description="Изменение успешности относительно базового запуска"
                   />
                 </div>
                 <div className="launches-reference-comparison-table-toolbar">
@@ -505,16 +514,22 @@ export function LaunchComparisonScreen({
 }
 
 function ComparisonMetric({
+  description,
   label,
   tone,
   value
 }: {
+  description?: string;
   label: string;
   tone: string;
   value: number | string;
 }) {
   return (
-    <article className={`launches-reference-comparison-metric is-${tone}`}>
+    <article
+      aria-label={description ? `${label}: ${value}. ${description}` : undefined}
+      className={`launches-reference-comparison-metric is-${tone}`}
+      title={description}
+    >
       <strong>{value}</strong>
       <span>{label}</span>
     </article>

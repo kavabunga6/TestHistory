@@ -330,7 +330,9 @@ export type TestCaseHistoryComparePage = {
 export type TestResult = {
   id: string;
   launchId?: string;
+  testCaseId?: string;
   allureId: string;
+  allureIdSource?: "testCaseId" | "historyId" | "resultUuid";
   name: string;
   suite: string;
   status: ResultStatus;

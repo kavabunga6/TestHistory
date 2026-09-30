@@ -341,6 +341,22 @@
   text-decoration: none;
 }
 
+.automation-table-row a.automation-job-pipeline-link {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.automation-table-row a.automation-job-pipeline-link:hover {
+  text-decoration: underline;
+}
+
+.automation-table-row small.automation-job-error {
+  color: #b42318;
+  line-height: 1.35;
+}
+
 .automation-table-head {
   min-height: 38px;
   color: #718197;

@@ -82,10 +82,19 @@ export function mapApiResult(
     permissionAuditInvariantRead
   );
   const historyPoints = mapHistoryPoints(result, historyRead, status, result.uuid);
+  // Match the case route identity used by buildTestCaseSummaries in the domain.
+  const testCaseId = result.testCaseId ?? result.fullName ?? result.historyId ?? result.name;
 
   return {
     id: result.uuid,
+    testCaseId,
     allureId: result.testCaseId ?? result.historyId ?? result.uuid,
+    allureIdSource:
+      result.testCaseId !== undefined
+        ? "testCaseId"
+        : result.historyId !== undefined
+          ? "historyId"
+          : "resultUuid",
     name: details?.name ?? result.name,
     suite: result.fullName ?? result.historyId ?? "Imported result",
     status,
@@ -154,6 +163,7 @@ export function mapApiTestCaseSummary(
 
   return {
     id: summary.id,
+    testCaseId: summary.id,
     allureId: metadata?.allureId ?? summary.id,
     name: metadata?.name ?? summary.name,
     suite: metadata?.fullName ?? summary.fullName ?? summary.historyIds?.[0] ?? "Test case",

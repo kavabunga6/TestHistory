@@ -381,13 +381,11 @@
 
 .defects-reference-detail-title-copy > small {
   min-width: 0;
-  overflow: hidden;
   color: #748094;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .defects-reference-detail-title h2 {
@@ -405,6 +403,56 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.defects-reference-detail-actions > a {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #bcd0f0;
+  border-radius: 6px;
+  padding: 0 11px;
+  color: #1456d9;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.defects-reference-detail-actions > a:hover {
+  background: #f2f6ff;
+}
+
+.defects-reference-triage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  border-bottom: 1px solid #e8edf3;
+  padding: 12px 0;
+}
+
+.defects-reference-triage > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  overflow-wrap: anywhere;
+}
+
+.defects-reference-triage small {
+  color: #748094;
+  font-size: 12px;
+}
+
+.defects-reference-triage strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .defects-reference-detail-actions .danger {

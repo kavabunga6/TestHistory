@@ -4,7 +4,7 @@ import {
   assertM1SurfaceContract,
   mapLaunchDetailsToWorkspace
 } from "./m1Workspace.js";
-import { mapApiSteps } from "./m1WorkspaceMappers.js";
+import { mapApiResult, mapApiSteps } from "./m1WorkspaceMappers.js";
 
 describe("m1 workspace mapping", () => {
   it("keeps an exception on the nested step where it occurred", () => {
@@ -140,6 +140,7 @@ describe("m1 workspace mapping", () => {
     expect(workspace.results[0]).toEqual(
       expect.objectContaining({
         id: "result-1",
+        testCaseId: "TC-1",
         allureId: "TC-1",
         status: "failed",
         duration: "1.25s",
@@ -168,6 +169,40 @@ describe("m1 workspace mapping", () => {
         ]
       })
     );
+  });
+
+  it("maps the case route identity in domain priority order without using the result UUID", () => {
+    const baseResult = {
+      uuid: "result-uuid-1",
+      name: "Checkout",
+      status: "passed" as const
+    };
+    const mapCaseId = (
+      result: typeof baseResult & {
+        testCaseId?: string;
+        fullName?: string;
+        historyId?: string;
+      }
+    ) => mapApiResult(result, undefined, undefined, undefined, undefined).testCaseId;
+
+    expect(mapCaseId({ ...baseResult, testCaseId: "case-1", fullName: "suite.test" })).toBe(
+      "case-1"
+    );
+    expect(mapCaseId({ ...baseResult, fullName: "suite.test", historyId: "history-1" })).toBe(
+      "suite.test"
+    );
+    expect(mapCaseId({ ...baseResult, historyId: "history-1" })).toBe("history-1");
+    expect(mapCaseId(baseResult)).toBe("Checkout");
+    expect(mapCaseId({ ...baseResult, testCaseId: "", fullName: "suite.test" })).toBe("");
+    expect(
+      mapApiResult(
+        { ...baseResult, historyId: "history-1" },
+        undefined,
+        undefined,
+        undefined,
+        undefined
+      ).allureIdSource
+    ).toBe("historyId");
   });
 
   it("maps API history reads into result history by testCaseId and historyId", () => {

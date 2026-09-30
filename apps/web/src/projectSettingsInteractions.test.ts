@@ -47,6 +47,9 @@ describe("project settings interaction contracts", () => {
     );
 
     expect(html).toContain("Провайдеры ссылок");
+    expect(html.match(/<nav class="project-settings__tabs"[\s\S]*?<\/nav>/)?.[0]).toContain(
+      "Провайдеры ссылок"
+    );
     expect(html).toContain('role="switch"');
     expect(html).toContain("Активна");
     expect(html).not.toContain("Проверить");
@@ -853,11 +856,16 @@ describe("settings table readability contracts", () => {
 
     expect(html).toContain("Общие правила очистки");
     expect(html).toContain("Сроки по типам артефактов");
+    expect(html).toContain("Срок и отсрочка ниже записываются для новых вложений");
+    expect(html).toContain("Сервер пока не применяет сохранённые значения сжатия");
+    expect(html).toContain("Сроки по типам и статусам и лимиты размера пока не применяются");
     expect(html).toContain("project-settings__settings-list");
-    expect(html).toContain("Скриншоты: пройден, дней");
-    expect(html).toContain("Скриншоты: провален, дней");
-    expect(html).toContain("Скриншоты: карантин, дней");
-    expect(html).toContain("Скриншоты: лимит, MB");
+    expect(html).toContain("Скриншоты");
+    expect(html).toContain("90 дней");
+    expect(html).toContain('id="artifact-retention-days"');
+    expect(html).not.toContain('id="artifact-compress-text"');
+    expect(html).not.toContain('id="artifact-delete-binary"');
+    expect(html).not.toContain('aria-label="Скриншоты: пройден, дней"');
     expect(source).not.toContain('<div className="project-settings__settings-form">');
   });
 });

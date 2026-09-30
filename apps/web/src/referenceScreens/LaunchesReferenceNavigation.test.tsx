@@ -101,6 +101,72 @@ describe("launch results navigation", () => {
     expect(onOpenTab).toHaveBeenCalledWith("results");
   });
 
+  it("opens a test case from a selected launch result with the exact case ID", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const onOpenTestCase = vi.fn();
+    const result = { ...demoM1Workspace.results[0]!, testCaseId: "case-payment-1042" };
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={demoM1Workspace.launchItems}
+          onOpenTestCase={onOpenTestCase}
+          projectId="project-sandbox"
+          results={[result]}
+          routeLaunchId={demoM1Workspace.launchItems[0]!.id}
+          routeResultId={result.id}
+          routeLaunchTab="results"
+        />
+      )
+    );
+
+    const caseLink = container.querySelector<HTMLButtonElement>(
+      ".launches-reference-result-case-link"
+    );
+    expect(caseLink?.textContent).toContain("case-payment-1042");
+    await act(async () => caseLink?.click());
+    expect(onOpenTestCase).toHaveBeenCalledExactlyOnceWith("case-payment-1042");
+  });
+
+  it("opens all failed and broken results from the overview scope action", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const onOpenTab = vi.fn();
+    const onResultQueryChange = vi.fn();
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={demoM1Workspace.launchItems}
+          onOpenTab={onOpenTab}
+          onResultQueryChange={onResultQueryChange}
+          projectId="project-sandbox"
+          results={demoM1Workspace.results}
+          routeLaunchId={demoM1Workspace.launchItems[0]!.id}
+          routeLaunchTab="overview"
+        />
+      )
+    );
+
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>(".launches-reference-overview-scope > button")!
+        .click()
+    );
+    expect(onOpenTab).toHaveBeenCalledWith("results");
+    expect(onResultQueryChange).toHaveBeenCalledWith('status in ["failed", "broken"]');
+    expect(
+      container.querySelector<HTMLInputElement>(
+        'input[aria-label="THQL поиск результатов запуска"]'
+      )?.value
+    ).toBe('status in ["failed", "broken"]');
+  });
+
   it("clears a routed status query when browser navigation returns to unfiltered results", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,

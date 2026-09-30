@@ -5026,6 +5026,16 @@ body.launches-reference-is-resizing * {
   }
 }
 
+@media (max-width: 480px) {
+  .launches-reference-comparison-test strong {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
 @media (max-width: 350px) {
   .launches-reference-result-table > button {
     min-height: calc(64px + var(--th-font-body-delta));

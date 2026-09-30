@@ -397,9 +397,9 @@ describe("result and launch surface readiness", () => {
       />
     );
 
-    expect(markup).toContain("Сломаны: 8. Открыть результаты с этим статусом");
-    expect(markup).toContain("Неизвестны: 4. Открыть результаты с этим статусом");
-    expect(markup).not.toContain("Сломаны и неизвестны");
+    expect(markup).toContain("Сломанные: 8. Открыть результаты с этим статусом");
+    expect(markup).toContain("Неизвестные: 4. Открыть результаты с этим статусом");
+    expect(markup).not.toContain("Сломанные и неизвестные");
   });
 
   it("keeps launch comparison on a separate explicit-request screen", () => {

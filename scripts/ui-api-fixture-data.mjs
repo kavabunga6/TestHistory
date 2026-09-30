@@ -119,6 +119,7 @@ const scenarioKinds = [
   {
     code: "UI",
     name: "Поиск товара в каталоге",
+    failure: "Товар отсутствует в результатах поиска",
     suite: "web.catalog.SearchTest",
     layer: "UI",
     owner: "Web QA"
@@ -126,6 +127,7 @@ const scenarioKinds = [
   {
     code: "API",
     name: "Создание заказа через API",
+    failure: "API заказов вернул неполные данные",
     suite: "api.orders.CreateOrderTest",
     layer: "API",
     owner: "API QA"
@@ -133,6 +135,7 @@ const scenarioKinds = [
   {
     code: "MOB",
     name: "Оплата в мобильном приложении",
+    failure: "Платёж не перешёл в подтверждённое состояние",
     suite: "mobile.checkout.PaymentTest",
     layer: "E2E",
     owner: "Mobile QA"
@@ -140,6 +143,7 @@ const scenarioKinds = [
   {
     code: "INT",
     name: "Синхронизация каталога",
+    failure: "Каталог не обновился после синхронизации",
     suite: "integration.catalog.SyncTest",
     layer: "API",
     owner: "Integration QA"
@@ -147,6 +151,7 @@ const scenarioKinds = [
   {
     code: "PERF",
     name: "Время ответа поиска",
+    failure: "Время ответа поиска превысило порог",
     suite: "performance.search.LatencyTest",
     layer: "API",
     owner: "Performance QA"
@@ -154,6 +159,7 @@ const scenarioKinds = [
   {
     code: "SEC",
     name: "Проверка прав доступа",
+    failure: "Доступ разрешён без требуемой роли",
     suite: "security.access.PermissionsTest",
     layer: "API",
     owner: "Security QA"
@@ -161,6 +167,7 @@ const scenarioKinds = [
   {
     code: "A11Y",
     name: "Навигация с клавиатуры",
+    failure: "Фокус пропал после перехода по Tab",
     suite: "web.accessibility.KeyboardTest",
     layer: "UI",
     owner: "Accessibility QA"
@@ -168,6 +175,7 @@ const scenarioKinds = [
   {
     code: "E2E",
     name: "Возврат заказа",
+    failure: "Возврат заказа не получил подтверждение",
     suite: "web.orders.RefundTest",
     layer: "E2E",
     owner: "Platform QA"
@@ -191,7 +199,7 @@ const statusOrder = ["failed", "broken", "passed", "skipped", "unknown"];
 function createGeneratedResult(index) {
   const kind = scenarioKinds[(index - 1) % scenarioKinds.length];
   const id = `${kind.code}-${String(index).padStart(4, "0")}`;
-  const status = generatedStatuses[(index * 37) % generatedStatuses.length];
+  const status = generatedStatuses[(index * 71) % generatedStatuses.length];
   const durationMs = index % 11 === 0 ? 10_000 + index * 37 : 380 + ((index * 173) % 4_800);
   const issue =
     status === "failed" || status === "broken"
@@ -201,7 +209,13 @@ function createGeneratedResult(index) {
   const statusDetails =
     status === "failed" || status === "broken" || status === "unknown"
       ? {
-          message: `Проверка ${id} завершилась со статусом ${status}`,
+          message: `${
+            status === "failed"
+              ? kind.failure
+              : status === "broken"
+                ? `Не удалось выполнить «${kind.name.toLowerCase()}»: ошибка окружения`
+                : `Не получен итоговый статус для «${kind.name.toLowerCase()}»`
+          } (${id})`,
           trace: `AssertionError: ${id} (${status})`
         }
       : undefined;

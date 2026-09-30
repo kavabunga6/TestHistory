@@ -1,6 +1,7 @@
 ﻿import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { loadApiState, type ApiState } from "./api.js";
+import { toApiErrorState } from "./apiErrorState.js";
 import {
   ConfirmDeleteDialog,
   QuarantineDialog,
@@ -206,17 +207,14 @@ function App() {
       await deleteLaunchFromApi(launchId);
       removeLaunchFromWorkspace(launchId);
     } catch (error) {
-      setApiState({
-        loading: false,
-        error: error instanceof Error ? error.message : String(error)
-      });
+      setApiState(toApiErrorState(error));
     }
   };
   const deleteLaunch = (launchId: string) => {
     requireCurrentUser(() => {
       const launch = workspace.launchItems.find((item) => item.id === launchId);
       setConfirmDeleteRequest({
-        body: `Будет удалён запуск${launch?.name ? ` "${launch.name}"` : ""}, его результаты и вложения из текущего представления.`,
+        body: `Запуск${launch?.name ? ` «${launch.name}»` : ""} и связанные с ним результаты, вложения, загрузки и записи истории будут удалены из проекта. Отменить это действие нельзя.`,
         confirmLabel: "Удалить",
         title: "Удалить запуск?",
         onConfirm: () => void performDeleteLaunch(launchId)
@@ -239,10 +237,7 @@ function App() {
         )
       );
     } catch (error) {
-      setApiState({
-        loading: false,
-        error: error instanceof Error ? error.message : String(error)
-      });
+      setApiState(toApiErrorState(error));
     }
   };
   const deleteTestCase = (resultId: string) => {
@@ -284,10 +279,7 @@ function App() {
         })
       );
     } catch (error) {
-      setApiState({
-        loading: false,
-        error: error instanceof Error ? error.message : String(error)
-      });
+      setApiState(toApiErrorState(error));
     }
   };
   const toggleMuteResult = (resultId: string) => {
@@ -363,10 +355,7 @@ function App() {
       );
       setQuarantineRequest(undefined);
     } catch (error) {
-      setApiState({
-        loading: false,
-        error: error instanceof Error ? error.message : String(error)
-      });
+      setApiState(toApiErrorState(error));
     }
   };
   const performDeleteDefect = async (defectId: string) => {
@@ -400,10 +389,7 @@ function App() {
         })
       );
     } catch (error) {
-      setApiState({
-        loading: false,
-        error: error instanceof Error ? error.message : String(error)
-      });
+      setApiState(toApiErrorState(error));
     }
   };
   const deleteDefect = (defectId: string) => {
@@ -462,10 +448,7 @@ function App() {
         })
       );
     } catch (error) {
-      setApiState({
-        loading: false,
-        error: error instanceof Error ? error.message : String(error)
-      });
+      setApiState(toApiErrorState(error));
     }
   };
   const unlinkResultDefect = (resultId: string, defectId: string) => {
@@ -643,6 +626,9 @@ function App() {
           }}
           onOpenTestCaseTab={(tab) =>
             setRoute({ mode: "case", testCaseId: route.testCaseId ?? selectedId, testCaseTab: tab })
+          }
+          onOpenTestCase={(id) =>
+            setRoute({ mode: "case", testCaseId: id, testCaseTab: "overview" })
           }
           onDeleteDefect={canDeleteEntities ? deleteDefect : undefined}
           onDeleteLaunch={canDeleteEntities ? deleteLaunch : undefined}

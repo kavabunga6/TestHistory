@@ -98,6 +98,11 @@ it("pages comparison rows on the server and filters by change", async () => {
   await act(async () =>
     container.querySelector<HTMLButtonElement>(".launches-reference-comparison-submit")?.click()
   );
+  expect(
+    Array.from(container.querySelectorAll(".launches-reference-comparison-metric"))
+      .find((item) => item.textContent?.includes("Успешность"))
+      ?.classList.contains("is-regressed")
+  ).toBe(true);
   expect(String(vi.mocked(getJson).mock.lastCall?.[0])).toContain("limit=25&offset=0");
   expect(container.textContent).toContain("1–25 из 60");
   expect(container.textContent).toContain("Тест 1");
@@ -250,6 +255,10 @@ it("builds a multi-launch matrix and opens the result from its own launch", asyn
   expect(String(vi.mocked(getJson).mock.lastCall?.[0])).toContain("/compare/matrix?");
   expect(String(vi.mocked(getJson).mock.lastCall?.[0])).toContain("launchIds=");
   expect(container.textContent).toContain("Вход пользователя");
+  expect(container.textContent).toContain("уникальных кейсов");
+  expect(container.textContent).toContain(
+    "Повторные результаты этого кейса не увеличивают число строк"
+  );
   expect(container.querySelectorAll(".launches-reference-matrix-table tr")).toHaveLength(2);
   await act(async () =>
     container

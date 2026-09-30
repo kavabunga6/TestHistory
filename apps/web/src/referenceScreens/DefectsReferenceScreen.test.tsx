@@ -92,6 +92,41 @@ describe("defect navigation", () => {
     expect(markup).toContain("defects-reference-result-tags");
   });
 
+  it("shows the owner, highest severity, and a direct result action", () => {
+    const result = demoM1Workspace.results[0]!;
+    const markup = renderToStaticMarkup(
+      <DefectsReferenceScreen
+        results={[
+          {
+            ...result,
+            defect: "BUG-OWNER",
+            owner: "Payment team",
+            severity: "critical",
+            historyPoints: [
+              {
+                launchId: "launch-1",
+                launchName: "Release checks",
+                resultUuid: "result-1",
+                startedAt: "2026-09-29T00:00:00.000Z",
+                status: "failed",
+                duration: "530ms",
+                retry: false,
+                flaky: false,
+                attempt: 1
+              }
+            ]
+          }
+        ]}
+      />
+    );
+
+    expect(markup).toContain("Payment team");
+    expect(markup).toContain("Макс. серьёзность тестов");
+    expect(markup).toContain("Критичная");
+    expect(markup).toContain("Открыть результат");
+    expect(markup).toContain("#BUG-OWNER");
+  });
+
   it("shows a cluster description when the API provides one", () => {
     const result = demoM1Workspace.results[0]!;
     const markup = renderToStaticMarkup(
@@ -132,6 +167,7 @@ describe("defect navigation", () => {
     expect(markup).toContain("Database connection timeout");
     expect(markup).toContain("TC-123, TC-456 +1");
     expect(markup).toContain("ЗАКРЫТ");
+    expect(markup).not.toContain("Макс. серьёзность тестов");
   });
 
   it("keeps a selected defect outside the loaded page without changing the server range", () => {

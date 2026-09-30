@@ -245,6 +245,7 @@ export function ResultsTab({
   onResultPageSizeChange,
   onCloseResult,
   onOpenResultTab,
+  onOpenTestCase,
   onSelectResult,
   onStatusFilterChange,
   onToggleMuteResult,
@@ -274,6 +275,7 @@ export function ResultsTab({
   onResultPageSizeChange?: ((size: number) => void) | undefined;
   onCloseResult?: (() => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
+  onOpenTestCase?: ((testCaseId: string) => void) | undefined;
   onSelectResult: (id: string) => void;
   onStatusFilterChange: (status: ResultStatus | undefined) => void;
   onToggleMuteResult?: ((id: string) => void) | undefined;
@@ -501,6 +503,7 @@ export function ResultsTab({
             result={selectedResult}
             results={results}
             onOpenTab={onOpenResultTab}
+            onOpenTestCase={onOpenTestCase}
             onFilterByTag={onFilterByTag}
             onSelectResult={onSelectResult}
             onToggleMuteResult={onToggleMuteResult}
@@ -519,6 +522,7 @@ export function ErrorsTab({
   onFilterByTag,
   onCloseResult,
   onOpenResultTab,
+  onOpenTestCase,
   onSelectResult,
   onShowProblemResults,
   onToggleMuteResult,
@@ -534,6 +538,7 @@ export function ErrorsTab({
   onFilterByTag?: ((tag: string) => void) | undefined;
   onCloseResult?: (() => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
+  onOpenTestCase?: ((testCaseId: string) => void) | undefined;
   onSelectResult: (id: string) => void;
   onShowProblemResults?: (() => void) | undefined;
   onToggleMuteResult?: ((id: string) => void) | undefined;
@@ -829,6 +834,7 @@ export function ErrorsTab({
             result={selectedErrorResult}
             results={results}
             onOpenTab={onOpenResultTab}
+            onOpenTestCase={onOpenTestCase}
             onFilterByTag={onFilterByTag}
             onSelectResult={onSelectResult}
             onToggleMuteResult={onToggleMuteResult}

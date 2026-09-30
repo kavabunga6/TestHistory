@@ -99,12 +99,53 @@
 
 .launches-reference-result-allure-id {
   min-width: 0;
-  overflow: hidden;
   color: #64748b;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.launches-reference-result-case-id,
+.launches-reference-result-case-link {
+  min-width: 0;
+  max-width: 100%;
+  color: #526176;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.launches-reference-result-case-link {
+  min-height: 26px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 5px;
+  border: 1px solid #cfddf0;
+  border-radius: 5px;
+  padding: 3px 7px;
+  background: #f5f8ff;
+  color: #2255a4;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+}
+
+.launches-reference-result-case-link strong {
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.launches-reference-result-case-link:hover,
+.launches-reference-result-case-link:focus-visible {
+  border-color: #8aade8;
+  background: #e7efff;
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .launches-reference-result-report .launches-reference-result-state-row {
@@ -219,6 +260,8 @@
   min-height: 46px;
   display: flex;
   align-items: stretch;
+  position: relative;
+  z-index: 3;
   border-bottom: 1px solid #e0e6ee;
   background: #ffffff;
 }
@@ -317,6 +360,114 @@
 
 .launches-reference-result-report .launches-reference-result-tabs button[data-clipped="true"] {
   visibility: hidden;
+}
+
+.launches-reference-result-tab-picker {
+  flex: 0 0 auto;
+  align-self: center;
+  position: relative;
+  margin-right: 8px;
+}
+
+.launches-reference-result-tab-picker > summary {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #c9d8ee;
+  border-radius: 5px;
+  padding: 0 8px;
+  background: #f5f8ff;
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.launches-reference-result-tab-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+.launches-reference-result-tab-picker > summary:hover,
+.launches-reference-result-tab-picker > summary:focus-visible,
+.launches-reference-result-tab-picker[open] > summary {
+  border-color: #8aade8;
+  background: #e7efff;
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.launches-reference-result-tab-picker[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.launches-reference-result-tab-picker > div {
+  width: min(280px, calc(100vw - 24px));
+  max-height: min(360px, 60vh);
+  display: grid;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  overflow-y: auto;
+  border: 1px solid #c9d8ee;
+  border-radius: 8px;
+  padding: 5px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgb(23 42 75 / 18%);
+}
+
+.launches-reference-result-tab-picker:not([open]) > div {
+  display: none;
+}
+
+.launches-reference-result-tab-picker > div button {
+  min-width: 0;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  border-radius: 5px;
+  padding: 5px 8px;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.launches-reference-result-tab-picker > div button span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.launches-reference-result-tab-picker > div button em {
+  min-width: 20px;
+  border-radius: 999px;
+  padding: 2px 5px;
+  background: #e8eef6;
+  color: #536074;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: center;
+}
+
+.launches-reference-result-tab-picker > div button:hover,
+.launches-reference-result-tab-picker > div button:focus-visible,
+.launches-reference-result-tab-picker > div button[aria-current="page"] {
+  background: #edf3ff;
+  color: #1d4ed8;
+  outline: 0;
+}
+
+.launches-reference-result-tab-picker > div button:disabled {
+  color: #a4acb8;
+  cursor: not-allowed;
 }
 
 .launches-reference-result-report .launches-reference-result-overview {
@@ -578,6 +729,16 @@
 }
 
 @container launches-result-report (max-width: 520px) {
+  .launches-reference-result-tab-picker > div {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
+
+  .launches-reference-result-tab-picker > summary {
+    padding-inline: 6px;
+    font-size: 11px;
+  }
+
   .launches-reference-result-tabs-track {
     gap: 12px;
   }

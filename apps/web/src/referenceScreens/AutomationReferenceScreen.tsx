@@ -846,15 +846,29 @@ function JobsPanel({ data, creating, setCreating, onChanged }: PanelProps) {
             <span>
               <strong>{job.name}</strong>
               <small>{job.branch ?? job.trigger}</small>
+              {job.status === "failed" && job.error ? (
+                <small className="automation-job-error">{job.error}</small>
+              ) : null}
+              {job.status === "failed" && job.external?.pipelineUrl ? (
+                <a
+                  className="automation-job-pipeline-link"
+                  href={job.external.pipelineUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Открыть упавший пайплайн
+                  <ExternalLink aria-hidden="true" size={13} />
+                </a>
+              ) : null}
             </span>
             <span>
-              {job.external?.pipelineUrl ? (
+              {job.external?.pipelineUrl && job.status !== "failed" ? (
                 <a href={job.external.pipelineUrl} target="_blank" rel="noreferrer">
-                  {job.external.provider}
+                  {formatJobProvider(job.external)}
                   <ExternalLink size={13} />
                 </a>
               ) : (
-                (job.external?.provider ?? "API")
+                formatJobProvider(job.external)
               )}
             </span>
             <span>
@@ -889,6 +903,11 @@ function JobsPanel({ data, creating, setCreating, onChanged }: PanelProps) {
       </div>
     </div>
   );
+}
+
+function formatJobProvider(external: AutomationJobReadModel["external"]): string {
+  if (!external) return "API";
+  return external.pipelineId ? `${external.provider} · #${external.pipelineId}` : external.provider;
 }
 
 function JobForm({

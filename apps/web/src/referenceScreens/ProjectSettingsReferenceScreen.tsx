@@ -510,7 +510,22 @@ function isSettingsTabVisible(tab: SettingsTab, access: ProjectSettingsAccess): 
   return false;
 }
 
-function TokenDialog({
+export const tokenScopeGroups: ReadonlyArray<{
+  title: string;
+  scopes: ReadonlyArray<ApiTokenScope>;
+}> = [
+  { title: "Запуски", scopes: ["launches:read", "launches:write"] },
+  { title: "Результаты", scopes: ["results:read", "results:write"] },
+  { title: "Загрузки", scopes: ["uploads:read", "uploads:write"] },
+  { title: "Дефекты", scopes: ["defects:read", "defects:write"] },
+  { title: "Настройки", scopes: ["settings:read", "settings:write"] },
+  { title: "Артефакты", scopes: ["artifacts:read"] },
+  { title: "Карантин", scopes: ["quarantine:write"] },
+  { title: "Экспорт", scopes: ["exports:read"] },
+  { title: "Аудит", scopes: ["security:audit:read"] }
+];
+
+export function TokenDialog({
   draft,
   members,
   onChange,
@@ -523,7 +538,6 @@ function TokenDialog({
   onClose: () => void;
   onCreate: () => void;
 }) {
-  const scopeEntries = Object.entries(tokenScopeLabels) as Array<[ApiTokenScope, string]>;
   const dialogRef = useModalDialog<HTMLElement>(onClose);
 
   return (
@@ -579,21 +593,29 @@ function TokenDialog({
             </select>
           </label>
 
-          <div className="project-settings__scope-grid">
-            {scopeEntries.map(([scope, label]) => (
-              <label key={scope}>
-                <input
-                  checked={draft.scopes.includes(scope)}
-                  type="checkbox"
-                  onChange={(event) => {
-                    const scopes = event.target.checked
-                      ? [...draft.scopes, scope]
-                      : draft.scopes.filter((item) => item !== scope);
-                    onChange({ ...draft, scopes });
-                  }}
-                />
-                <span>{label}</span>
-              </label>
+          <div className="project-settings__scope-grid" role="group" aria-label="Права доступа">
+            {tokenScopeGroups.map((group) => (
+              <fieldset className="project-settings__scope-group" key={group.title}>
+                <legend>{group.title}</legend>
+                <div className="project-settings__scope-actions">
+                  {group.scopes.map((scope) => (
+                    <label key={scope}>
+                      <input
+                        aria-label={tokenScopeLabels[scope]}
+                        checked={draft.scopes.includes(scope)}
+                        type="checkbox"
+                        onChange={(event) => {
+                          const scopes = event.target.checked
+                            ? [...draft.scopes, scope]
+                            : draft.scopes.filter((item) => item !== scope);
+                          onChange({ ...draft, scopes });
+                        }}
+                      />
+                      <span>{scope.endsWith(":read") ? "Чтение" : "Запись"}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             ))}
           </div>
         </div>

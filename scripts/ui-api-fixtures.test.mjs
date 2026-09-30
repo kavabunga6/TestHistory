@@ -59,6 +59,14 @@ test("UI fixture exposes 100 varied results with navigable details and evidence"
     new Set(page.items.map((item) => item.labels.layer[0])),
     new Set(["UI", "API", "E2E"])
   );
+  for (const code of new Set(page.items.map((item) => item.uuid.split("-")[0]))) {
+    assert.ok(
+      page.items.some(
+        (item) => item.uuid.startsWith(`${code}-`) && ["failed", "broken"].includes(item.status)
+      ),
+      `No problematic result for ${code}`
+    );
+  }
 
   for (const item of page.items) {
     const details = read(`${resultsPath}/${item.uuid}`);

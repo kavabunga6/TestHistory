@@ -3,17 +3,13 @@ import { ArrowUpRight, RefreshCw } from "lucide-react";
 
 import type { LaunchListItem, ResultStatus } from "../m1Workspace.js";
 import { formatLaunchState, getHashFromRoute } from "../workspaceRouting.js";
+import { resultStatusGroupLabels, resultStatusOrder } from "./resultStatusPresentation.js";
 
 import "./DashboardLaunchSummary.css";
 
-const summaryStatuses: Array<{ status: ResultStatus; label: string }> = [
-  { status: "passed", label: "Успешные" },
-  { status: "failed", label: "Проваленные" },
-  { status: "broken", label: "Сломанные" },
-  { status: "skipped", label: "Пропущенные" },
-  { status: "unknown", label: "Неизвестные" },
-  { status: "muted", label: "Карантин" }
-];
+const summaryStatuses: Array<{ status: ResultStatus; label: string }> = resultStatusOrder.map(
+  (status) => ({ status, label: resultStatusGroupLabels[status] })
+);
 
 export function DashboardLaunchSummary({
   aggregate,

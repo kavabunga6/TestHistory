@@ -81,6 +81,7 @@ export function LaunchesReferenceScreen({
   onLaunchQueryChange,
   onOpenResult,
   onOpenResultTab,
+  onOpenTestCase,
   onOpenTab,
   onRefresh,
   onResultPageIndexChange,
@@ -126,6 +127,7 @@ export function LaunchesReferenceScreen({
   onLaunchQueryChange?: ((query: string) => void) | undefined;
   onOpenResult?: ((id: string, launchId?: string) => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
+  onOpenTestCase?: ((testCaseId: string) => void) | undefined;
   onOpenTab?: ((tab: string) => void) | undefined;
   onRefresh?: (() => void) | undefined;
   onResultPageIndexChange?: ((index: number) => void) | undefined;
@@ -716,6 +718,7 @@ export function LaunchesReferenceScreen({
               launch={selectedLaunch}
               results={launchResults}
               onSelectAll={openAllResults}
+              onSelectProblemResults={openAllProblemResults}
               onSelectResult={(id) => openResultReport(id)}
               onSelectStatus={openResultsByStatus}
             />
@@ -748,6 +751,7 @@ export function LaunchesReferenceScreen({
               routeResultTab={routeResultTab}
               selectedResult={selectedResult}
               onOpenResultTab={onOpenResultTab}
+              onOpenTestCase={onOpenTestCase}
               onToggleMuteResult={onToggleMuteResult}
               onUnlinkResultDefect={onUnlinkResultDefect}
             />
@@ -764,6 +768,7 @@ export function LaunchesReferenceScreen({
               routeResultTab={routeResultTab}
               selectedResult={selectedResult}
               onOpenResultTab={onOpenResultTab}
+              onOpenTestCase={onOpenTestCase}
               onFilterByTag={openResultsByTag}
               onSelectResult={(id) => openResultReport(id, "errors")}
               onShowProblemResults={openAllProblemResults}

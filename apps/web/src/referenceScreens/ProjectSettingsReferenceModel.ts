@@ -31,7 +31,7 @@ export const tabs: Array<{ id: SettingsTab; label: string; icon: typeof ShieldCh
   { id: "access", label: "Доступ", icon: Users },
   { id: "tokens", label: "API токены", icon: KeyRound },
   { id: "visibility", label: "Видимость", icon: Eye },
-  { id: "integrations", label: "Интеграции", icon: Link2 },
+  { id: "integrations", label: "Провайдеры ссылок", icon: Link2 },
   { id: "retention", label: "Хранение", icon: Database },
   { id: "fields", label: "Поля", icon: SlidersHorizontal }
 ];

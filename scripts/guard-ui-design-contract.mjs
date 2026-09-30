@@ -50,6 +50,10 @@ const sources = new Map([
     read("apps/web/src/referenceScreens/LaunchesReferenceOverview.tsx")
   ],
   [
+    "apps/web/src/referenceScreens/resultStatusPresentation.ts",
+    read("apps/web/src/referenceScreens/resultStatusPresentation.ts")
+  ],
+  [
     "apps/web/src/referenceScreens/ProjectSettingsReferenceScreen.css",
     read("apps/web/src/referenceScreens/ProjectSettingsReferenceScreen.css")
   ],
@@ -280,10 +284,11 @@ for (const snippet of [
   "launches-reference-overview-legend-item",
   "Переменные окружения",
   "overviewStatusOrder",
-  "overviewStatusLabels"
+  "resultStatusGroupLabels"
 ]) {
   expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceOverview.tsx", snippet);
 }
+expectSnippet("apps/web/src/referenceScreens/resultStatusPresentation.ts", "resultStatusOrder");
 
 for (const snippet of [
   "launches-reference-section-bar",

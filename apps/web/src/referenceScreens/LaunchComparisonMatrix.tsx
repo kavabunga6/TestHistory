@@ -279,7 +279,7 @@ export function LaunchComparisonMatrix({
         <div className="launches-reference-matrix-result">
           <div className="launches-reference-matrix-summary" aria-label="Сводка матрицы">
             <span>
-              <strong>{matrix.summary.testCases}</strong> тестов
+              <strong>{matrix.summary.testCases}</strong> уникальных кейсов
             </span>
             <span className="is-problem">
               <strong>{matrix.summary.currentProblems}</strong> проблемных сейчас
@@ -288,6 +288,11 @@ export function LaunchComparisonMatrix({
               <strong>{matrix.summary.changed}</strong> менялись
             </span>
           </div>
+          <p className="launches-reference-matrix-scope">
+            Для каждого кейса в выбранном запуске показывается одна строка. Повторные результаты
+            этого кейса не увеличивают число строк, поэтому число кейсов может отличаться от числа
+            результатов запуска.
+          </p>
           <div className="launches-reference-matrix-toolbar">
             <strong>Статусы по запускам</strong>
             <label>
@@ -313,7 +318,7 @@ export function LaunchComparisonMatrix({
               aria-label="Матрица статусов тестов по запускам"
               className="launches-reference-matrix-table"
               style={{
-                minWidth: `calc(var(--matrix-name-column-width) + ${matrix.launches.length * 190}px)`
+                minWidth: `calc(var(--matrix-name-column-width) + ${matrix.launches.length * 220}px)`
               }}
             >
               <colgroup>

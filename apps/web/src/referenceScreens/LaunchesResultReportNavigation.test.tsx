@@ -17,6 +17,7 @@ describe("result report navigation", () => {
     const result = {
       ...demoM1Workspace.results[0]!,
       id: "result-uuid-123",
+      testCaseId: "   ",
       allureId: "A-1042",
       defect: "PAY-337",
       issues: ["PAY-337"],
@@ -30,6 +31,7 @@ describe("result report navigation", () => {
             result={result}
             results={[result]}
             onSelectResult={undefined}
+            onOpenTestCase={vi.fn()}
             onUnlinkResultDefect={() => undefined}
             routeTab="defects"
           />
@@ -37,6 +39,7 @@ describe("result report navigation", () => {
       );
       expect(container.textContent).toContain("ID результата: result-uuid-123");
       expect(container.textContent).toContain("Allure ID: A-1042");
+      expect(container.querySelector(".launches-reference-result-case-link")).toBeNull();
       expect(
         container.querySelector<HTMLButtonElement>(
           '[aria-label="Скопировать ID результата result-uuid-123"]'
@@ -51,6 +54,156 @@ describe("result report navigation", () => {
     } finally {
       act(() => root.unmount());
       container.remove();
+    }
+  });
+
+  it("shows a separate test-case ID and opens the case using the API testCaseId", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const onOpenTestCase = vi.fn();
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      id: "result-uuid-123",
+      testCaseId: "case-checkout-1042",
+      allureId: "case-checkout-1042"
+    };
+
+    try {
+      act(() =>
+        root.render(
+          <ResultReport
+            result={result}
+            results={[result]}
+            onSelectResult={undefined}
+            onOpenTestCase={onOpenTestCase}
+          />
+        )
+      );
+
+      expect(container.textContent).toContain("ID результата: result-uuid-123");
+      const caseLink = container.querySelector<HTMLButtonElement>(
+        ".launches-reference-result-case-link"
+      );
+      expect(caseLink?.textContent).toContain("Тест-кейс: case-checkout-1042");
+      expect(container.textContent).not.toContain("Allure ID: case-checkout-1042");
+      act(() => caseLink?.click());
+      expect(onOpenTestCase).toHaveBeenCalledExactlyOnceWith("case-checkout-1042");
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it("labels a fallback history identifier without calling it an Allure ID", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      id: "result-uuid-123",
+      testCaseId: "suite.checkout",
+      allureId: "history-checkout-1",
+      allureIdSource: "historyId" as const
+    };
+
+    try {
+      act(() =>
+        root.render(<ResultReport result={result} results={[result]} onSelectResult={undefined} />)
+      );
+      expect(container.textContent).toContain("Тест-кейс: suite.checkout");
+      expect(container.textContent).toContain("History ID: history-checkout-1");
+      expect(container.textContent).not.toContain("Allure ID: history-checkout-1");
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it("offers every result tab through the visible sections picker", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const onOpenTab = vi.fn();
+    const result = demoM1Workspace.results[0]!;
+
+    try {
+      act(() =>
+        root.render(
+          <ResultReport
+            result={result}
+            results={[result]}
+            onSelectResult={undefined}
+            onOpenTab={onOpenTab}
+          />
+        )
+      );
+      const picker = container.querySelector<HTMLDetailsElement>(
+        ".launches-reference-result-tab-picker"
+      );
+      expect(picker?.querySelector("summary")?.textContent).toContain("Разделы");
+      act(() => {
+        picker!.open = true;
+      });
+      const fields = Array.from(picker!.querySelectorAll<HTMLButtonElement>("button")).find(
+        (button) => button.textContent?.includes("Поля и связи")
+      );
+      expect(fields).toBeDefined();
+      act(() => fields?.click());
+      expect(onOpenTab).toHaveBeenCalledWith("fields");
+      expect(picker?.open).toBe(false);
+      expect(document.activeElement).toBe(picker?.querySelector("summary"));
+      expect(container.querySelector(".launches-reference-result-tab-panel")).not.toBeNull();
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it("closes the sections picker on Escape or an outside pointer without losing focus", () => {
+    const container = document.createElement("div");
+    const outside = document.createElement("button");
+    document.body.append(container, outside);
+    const root = createRoot(container);
+    const result = demoM1Workspace.results[0]!;
+
+    try {
+      act(() =>
+        root.render(<ResultReport result={result} results={[result]} onSelectResult={undefined} />)
+      );
+      const picker = container.querySelector<HTMLDetailsElement>(
+        ".launches-reference-result-tab-picker"
+      )!;
+      const summary = picker.querySelector<HTMLElement>("summary")!;
+      const menuButton = picker.querySelector<HTMLButtonElement>("div button")!;
+
+      act(() => {
+        picker.open = true;
+        menuButton.focus();
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      });
+      expect(picker.open).toBe(false);
+      expect(document.activeElement).toBe(summary);
+
+      act(() => {
+        picker.open = true;
+        menuButton.focus();
+        document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+      });
+      expect(picker.open).toBe(false);
+      expect(document.activeElement).toBe(summary);
+
+      act(() => {
+        picker.open = true;
+        outside.focus();
+        outside.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+      });
+      expect(picker.open).toBe(false);
+      expect(document.activeElement).toBe(outside);
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+      outside.remove();
     }
   });
 

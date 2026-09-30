@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowDown, ChevronRight, LockKeyhole } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUpRight, ChevronRight, LockKeyhole } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ScenarioStep, TestResult } from "../m1Workspace.js";
@@ -36,6 +36,7 @@ export function ResultReport({
   onFilterByTag,
   onSelectResult,
   onOpenTab,
+  onOpenTestCase,
   onToggleMuteResult,
   onUnlinkResultDefect,
   routeTab,
@@ -46,6 +47,7 @@ export function ResultReport({
   onFilterByTag?: ((tag: string) => void) | undefined;
   onSelectResult: ((id: string) => void) | undefined;
   onOpenTab?: ((tab: string) => void) | undefined;
+  onOpenTestCase?: ((testCaseId: string) => void) | undefined;
   onToggleMuteResult?: ((id: string) => void) | undefined;
   onUnlinkResultDefect?: ((resultId: string, defectId: string) => void) | undefined;
   routeTab?: string | undefined;
@@ -55,6 +57,7 @@ export function ResultReport({
   const [activeResultTab, setActiveResultTab] = useState<ResultReportTab>(
     parseResultReportTab(routeTab)
   );
+  const testCaseId = result.testCaseId?.trim();
   const isQuarantined = isResultQuarantined(result);
   const quarantineActionHint = isQuarantined
     ? "Вернуть только этот результат из карантина. Он снова будет учитываться в аналитике."
@@ -104,9 +107,27 @@ export function ResultReport({
           </div>
           <div className="launches-reference-result-identifiers">
             <ResultIdCopy resultId={result.id} />
-            {result.allureId && result.allureId !== result.id ? (
+            {testCaseId ? (
+              onOpenTestCase !== undefined ? (
+                <button
+                  className="launches-reference-result-case-link"
+                  type="button"
+                  title={`Открыть тест-кейс ${testCaseId}`}
+                  onClick={() => onOpenTestCase(testCaseId)}
+                >
+                  Тест-кейс: <strong>{testCaseId}</strong>
+                  <ArrowUpRight aria-hidden="true" size={14} />
+                </button>
+              ) : (
+                <span className="launches-reference-result-case-id" title={testCaseId}>
+                  Тест-кейс: {testCaseId}
+                </span>
+              )
+            ) : null}
+            {result.allureId && result.allureId !== result.id && result.allureId !== testCaseId ? (
               <span className="launches-reference-result-allure-id" title={result.allureId}>
-                Allure ID: {result.allureId}
+                {result.allureIdSource === "historyId" ? "History ID" : "Allure ID"}:{" "}
+                {result.allureId}
               </span>
             ) : null}
             <button

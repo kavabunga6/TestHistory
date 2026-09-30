@@ -182,8 +182,41 @@ describe("test case navigation", () => {
     expect(markup).toContain('aria-label="Диагностика шага 2"');
     expect(markup).toContain("AssertionError: expected 200");
     expect(markup).toContain("Ожидался код 200");
+    expect(markup).toContain("Причина падения");
+    expect(markup).toContain("К шагу 2");
     expect(markup).toContain("<summary>Стек вызовов</summary>");
     expect(markup).not.toContain('aria-label="Диагностика шага 1"');
+  });
+
+  it("uses a nested step trace for the visible failure reason", () => {
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      status: "broken" as const,
+      steps: [
+        {
+          name: "Подготовка окружения",
+          status: "broken" as const,
+          duration: "15ms",
+          steps: [
+            {
+              name: "Запуск контейнера",
+              status: "broken" as const,
+              duration: "12ms",
+              trace: { message: "Контейнер не запустился\nДополнительные сведения", stack: [] }
+            }
+          ]
+        }
+      ],
+      trace: { message: "Общая ошибка", stack: [] }
+    };
+    const markup = renderToStaticMarkup(
+      <TestCaseDetailReferenceScreen results={[result]} selectedId={result.id} />
+    );
+
+    expect(markup).toContain("Причина сбоя");
+    expect(markup).toContain("К шагу 1.1");
+    expect(markup).toContain("Контейнер не запустился");
+    expect(markup).toContain('aria-label="Диагностика шага 1.1"');
   });
 
   it("counts a linked defect once in the tab when issue and defect IDs match", () => {

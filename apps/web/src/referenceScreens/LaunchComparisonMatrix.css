@@ -231,6 +231,14 @@
   font-size: 14px;
 }
 
+.launches-reference-matrix-scope {
+  margin: -7px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .launches-reference-matrix-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -294,8 +302,8 @@
 }
 
 .launches-reference-matrix-table th {
-  height: 60px;
-  min-height: 60px;
+  height: 76px;
+  min-height: 76px;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -344,6 +352,11 @@
 
 .launches-reference-matrix-table th strong {
   font-size: 12px;
+  line-height: 1.25;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .launches-reference-matrix-table small {

@@ -1,6 +1,7 @@
 import type { ResultStatus, TestResult } from "../m1Workspace.js";
 import type { AnalyticsResultSummary, AnalyticsResultsRead } from "./AnalyticsReferenceData.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
+import { resultStatusOrder } from "./resultStatusPresentation.js";
 
 export type AnalyticsStatus = ResultStatus | "unknown";
 
@@ -29,7 +30,7 @@ type StatusMetric = {
   percent: string;
 };
 
-const statusOrder: AnalyticsStatus[] = ["failed", "broken", "passed", "skipped", "muted"];
+const statusOrder: AnalyticsStatus[] = [...resultStatusOrder];
 const signalLimit = 50;
 
 export function buildAnalyticsModel(results: TestResult[], query: string) {
@@ -128,7 +129,7 @@ function localizeSignalDuration(result: TestResult): TestResult {
 
 function countStatusesFromServer(statusCounters: Record<string, number>) {
   const counts = Object.fromEntries(
-    [...statusOrder, "unknown"].map((status) => [status, statusCounters[status] ?? 0])
+    statusOrder.map((status) => [status, statusCounters[status] ?? 0])
   ) as Record<AnalyticsStatus, number>;
   return counts;
 }
@@ -137,7 +138,9 @@ function buildStatusMetrics(
   counts: Record<AnalyticsStatus, number>,
   total: number
 ): StatusMetric[] {
-  const visibleStatuses = counts.unknown > 0 ? [...statusOrder, "unknown" as const] : statusOrder;
+  const visibleStatuses = statusOrder.filter(
+    (status) => status !== "unknown" || counts.unknown > 0
+  );
   return visibleStatuses.map((status) => ({
     count: counts[status],
     percent: total > 0 ? `${Math.round((counts[status] / total) * 100)}%` : "0%",
@@ -166,7 +169,7 @@ function matchesResult(result: TestResult, query: string): boolean {
 }
 
 function countStatuses(results: TestResult[]): Record<AnalyticsStatus, number> {
-  const counts = [...statusOrder, "unknown" as const].reduce(
+  const counts = statusOrder.reduce(
     (accumulator, status) => {
       accumulator[status] = 0;
       return accumulator;

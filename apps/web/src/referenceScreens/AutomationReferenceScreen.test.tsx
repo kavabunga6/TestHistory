@@ -44,6 +44,46 @@ afterEach(async () => {
   vi.mocked(updateTestPlan).mockReset();
 });
 
+it("puts the failed CI pipeline link next to the job name", async () => {
+  vi.mocked(loadAutomationWorkspace).mockResolvedValue({
+    projectId: "project-1",
+    plans: [],
+    jobs: [
+      {
+        id: "job-1",
+        projectId: "project-1",
+        name: "Android smoke",
+        status: "failed",
+        trigger: "ci",
+        external: { provider: "GitLab", pipelineUrl: "https://gitlab.example.test/pipelines/1" },
+        updatedAt: "2026-09-29T00:00:00Z"
+      },
+      {
+        id: "job-2",
+        projectId: "project-1",
+        name: "Android regression",
+        status: "failed",
+        trigger: "ci",
+        external: { provider: "GitLab", pipelineId: "7844" },
+        error: "18 тестов завершились с ошибкой",
+        updatedAt: "2026-09-29T00:00:00Z"
+      }
+    ],
+    notifications: [],
+    issueTrackers: [],
+    deliveries: []
+  });
+
+  await act(async () => root.render(<AutomationReferenceScreen projectId="project-1" />));
+  await act(async () => container.querySelector<HTMLButtonElement>('[data-tab="jobs"]')?.click());
+
+  const link = container.querySelector<HTMLAnchorElement>(".automation-job-pipeline-link");
+  expect(link?.textContent).toContain("Открыть упавший пайплайн");
+  expect(link?.href).toBe("https://gitlab.example.test/pipelines/1");
+  expect(container.textContent).toContain("GitLab · #7844");
+  expect(container.textContent).toContain("18 тестов завершились с ошибкой");
+});
+
 it("subscribes a new notification only to selected events", async () => {
   const workspace: AutomationWorkspaceData = {
     projectId: "project-1",

@@ -117,6 +117,7 @@ export function WorkspaceSurface({
   onOpenDefect,
   onOpenSettingsTab,
   onOpenTypographySettings,
+  onOpenTestCase,
   onOpenTestCaseTab,
   onRefreshWorkspace,
   onListPageIndexChange,
@@ -169,6 +170,7 @@ export function WorkspaceSurface({
   onOpenDefect?: ((id: string) => void) | undefined;
   onOpenSettingsTab?: ((tab: string) => void) | undefined;
   onOpenTypographySettings?: (() => void) | undefined;
+  onOpenTestCase?: ((testCaseId: string) => void) | undefined;
   onOpenTestCaseTab?: ((tab: string) => void) | undefined;
   onRefreshWorkspace?: (() => void) | undefined;
   onListPageIndexChange?: ((index: number) => void) | undefined;
@@ -372,6 +374,7 @@ export function WorkspaceSurface({
                 onLaunchQueryChange={onListQueryChange}
                 onOpenLaunchList={onOpenLaunchList}
                 onOpenResult={onOpenLaunchResult}
+                onOpenTestCase={onOpenTestCase}
                 onOpenResultTab={onOpenLaunchResultTab}
                 onOpenTab={onOpenLaunchTab}
                 onRefresh={onRefreshWorkspace}

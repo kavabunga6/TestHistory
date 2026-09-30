@@ -9,6 +9,7 @@ import {
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowUpRight,
   Bug,
   CheckCircle2,
   CircleDashed,
@@ -393,6 +394,15 @@ function DefectDetails({
   onDeleteDefect?: ((id: string) => void) | undefined;
 }) {
   const description = defect.results.find((result) => result.id === defect.id)?.description?.trim();
+  const firstResult = collectResultLinks(defect)[0];
+  const linkedTestResults = defect.results.filter((result) => result.defectStatus === undefined);
+  const owners = uniqueValues(linkedTestResults.map((result) => result.owner)).filter(
+    (owner) => owner !== "Unassigned"
+  );
+  const severityOrder = { critical: 0, normal: 1, minor: 2 } as const;
+  const highestSeverity = [...linkedTestResults].sort(
+    (left, right) => severityOrder[left.severity] - severityOrder[right.severity]
+  )[0]?.severity;
   const diagnostic = defect.results
     .find(
       (result) =>
@@ -415,24 +425,51 @@ function DefectDetails({
             {formatDefectStatus(defect.status)}
           </span>
           <span className="defects-reference-detail-title-copy">
-            <small title={defect.id}>#{formatDefectId(defect.id)}</small>
+            <small>#{defect.id.replace(/^defect:/i, "")}</small>
             <h2>{defect.title}</h2>
           </span>
         </div>
-        {onDeleteDefect !== undefined ? (
+        {firstResult !== undefined || onDeleteDefect !== undefined ? (
           <div className="defects-reference-detail-actions">
-            <button
-              className="danger"
-              title="Удалить дефект из активных связей, сохранив его в истории тестов"
-              type="button"
-              onClick={() => onDeleteDefect(defect.id)}
-            >
-              <Trash2 aria-hidden="true" focusable="false" size={16} strokeWidth={2.2} />
-              Удалить
-            </button>
+            {firstResult !== undefined ? (
+              <a href={firstResult.href}>
+                Открыть результат
+                <ArrowUpRight aria-hidden="true" size={16} />
+              </a>
+            ) : null}
+            {onDeleteDefect !== undefined ? (
+              <button
+                className="danger"
+                title="Удалить дефект из активных связей, сохранив его в истории тестов"
+                type="button"
+                onClick={() => onDeleteDefect(defect.id)}
+              >
+                <Trash2 aria-hidden="true" focusable="false" size={16} strokeWidth={2.2} />
+                Удалить
+              </button>
+            ) : null}
           </div>
         ) : null}
       </header>
+
+      {linkedTestResults.length > 0 ? (
+        <div className="defects-reference-triage" aria-label="Данные связанных тестов">
+          {owners.length > 0 ? (
+            <span>
+              <small>Владельцы тестов</small>
+              <strong>{owners.join(", ")}</strong>
+            </span>
+          ) : null}
+          {highestSeverity !== undefined ? (
+            <span>
+              <small>Макс. серьёзность тестов</small>
+              <strong>
+                {{ critical: "Критичная", normal: "Обычная", minor: "Низкая" }[highestSeverity]}
+              </strong>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       <dl className="defects-reference-detail-meta">
         <div>

@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import type { TestResult } from "../m1Workspace.js";
 import { resultReportTabs, type ResultReportTab } from "./LaunchesReferenceModel.js";
@@ -29,12 +29,37 @@ export function ResultTabs({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const allTabsRef = useRef<HTMLDetailsElement>(null);
   const [scrollState, setScrollState] = useState<ScrollState>({
     overflowing: false,
     atStart: true,
     atEnd: true,
     clippedTabs: []
   });
+
+  useEffect(() => {
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const picker = allTabsRef.current;
+      if (picker?.open && event.target instanceof Node && !picker.contains(event.target)) {
+        const focusWasInside = picker.contains(document.activeElement);
+        picker.open = false;
+        if (focusWasInside) picker.querySelector<HTMLElement>("summary")?.focus();
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      const picker = allTabsRef.current;
+      if (!picker?.open || event.key !== "Escape") return;
+      event.preventDefault();
+      picker.open = false;
+      picker.querySelector<HTMLElement>("summary")?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
 
   const alignSelectedTab = useCallback(() => {
     const tabs = tabsRef.current;
@@ -43,22 +68,25 @@ export function ResultTabs({
 
     const viewport = tabs.getBoundingClientRect();
     const selectedBounds = selected.getBoundingClientRect();
-    const selectedLeft = tabs.scrollLeft + selectedBounds.left - viewport.left;
-    tabs.scrollLeft = selectedLeft - (tabs.clientWidth - selectedBounds.width) / 2;
+    const edgePadding = 4;
+    if (selectedBounds.left < viewport.left + edgePadding) {
+      tabs.scrollLeft += selectedBounds.left - viewport.left - edgePadding;
+    } else if (selectedBounds.right > viewport.right - edgePadding) {
+      tabs.scrollLeft += selectedBounds.right - viewport.right + edgePadding;
+    }
   }, []);
 
   const updateScrollState = useCallback(() => {
-    const wrapper = wrapperRef.current;
     const tabs = tabsRef.current;
     const track = trackRef.current;
-    if (wrapper === null || tabs === null || track === null) {
+    if (tabs === null || track === null) {
       return;
     }
 
     const styles = getComputedStyle(tabs);
     const horizontalPadding =
       (parseFloat(styles.paddingLeft) || 0) + (parseFloat(styles.paddingRight) || 0);
-    const overflowing = track.scrollWidth + horizontalPadding > wrapper.clientWidth + 1;
+    const overflowing = track.scrollWidth + horizontalPadding > tabs.clientWidth + 1;
     const viewport = tabs.getBoundingClientRect();
     const clippedTabs = Array.from(track.querySelectorAll<HTMLButtonElement>("button"))
       .filter((button) => {
@@ -216,6 +244,34 @@ export function ResultTabs({
           <ChevronRight size={17} aria-hidden="true" />
         </button>
       ) : null}
+      <details className="launches-reference-result-tab-picker" ref={allTabsRef}>
+        <summary tabIndex={0} title="Открыть список всех вкладок результата">
+          Разделы <ChevronDown size={15} aria-hidden="true" />
+        </summary>
+        <div role="group" aria-label="Все вкладки результата">
+          {resultReportTabs.map((tab) => {
+            const count = tab.count?.(result);
+            const disabled = tab.id === "quarantine" && !isQuarantined;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                disabled={disabled}
+                aria-current={activeTab === tab.id && !disabled ? "page" : undefined}
+                title={disabled ? "Результат не в карантине" : tab.label}
+                onClick={() => {
+                  allTabsRef.current?.removeAttribute("open");
+                  allTabsRef.current?.querySelector<HTMLElement>("summary")?.focus();
+                  onSelectTab(tab.id);
+                }}
+              >
+                <span>{tab.label}</span>
+                {count !== undefined && count > 0 ? <em>{count.toLocaleString("ru-RU")}</em> : null}
+              </button>
+            );
+          })}
+        </div>
+      </details>
     </div>
   );
 }

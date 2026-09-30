@@ -19,6 +19,7 @@ import {
 import { useProjectAnalyticsResults } from "./AnalyticsReferenceData.js";
 import { ProjectLaunchTrend } from "./ProjectLaunchTrend.js";
 import { useProjectLaunchTrend } from "./useProjectLaunchTrend.js";
+import { resultStatusGroupLabels } from "./resultStatusPresentation.js";
 
 export function AnalyticsReferenceContent({
   hasQuery,
@@ -93,9 +94,9 @@ export function AnalyticsReferenceContent({
                 className={`analytics-reference-status-row analytics-reference-status-row--${metric.status}`}
                 key={metric.status}
               >
-                <span>{formatStatus(metric.status)}</span>
+                <span>{resultStatusGroupLabels[metric.status]}</span>
                 <div
-                  aria-label={`${formatStatus(metric.status)}: ${formatCount(metric.count)}, ${metric.percent}`}
+                  aria-label={`${resultStatusGroupLabels[metric.status]}: ${formatCount(metric.count)}, ${metric.percent}`}
                   aria-valuemax={100}
                   aria-valuemin={0}
                   aria-valuenow={Number.parseInt(metric.percent, 10)}

@@ -18,6 +18,7 @@ import {
   formatStatus,
   uniqueStrings
 } from "./LaunchesReferenceFormatters.js";
+import { resultStatusOrder } from "./resultStatusPresentation.js";
 
 export type LaunchTab = "overview" | "results" | "errors" | "charts" | "comparison";
 export type ParsedLaunchMetadata = {
@@ -53,21 +54,10 @@ export type LaunchesReferencePartialState =
       totalCount?: number | undefined;
     };
 
-export const analyticsStatusOrder: ResultStatus[] = [
-  "failed",
-  "broken",
-  "unknown",
-  "passed",
-  "skipped"
-];
-export const filterStatusOrder: ResultStatus[] = [
-  "failed",
-  "broken",
-  "unknown",
-  "passed",
-  "skipped",
-  "muted"
-];
+export const analyticsStatusOrder: ResultStatus[] = resultStatusOrder.filter(
+  (status) => status !== "muted"
+);
+export const filterStatusOrder: ResultStatus[] = [...resultStatusOrder];
 export const overviewListPageSizeOptions = [5, 10, 20, 50] as const;
 export const defaultOverviewListPageSize = 5;
 export const launchTabs: Array<{ id: LaunchTab; label: string }> = [

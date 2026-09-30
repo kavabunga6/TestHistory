@@ -47,10 +47,10 @@ describe("project analytics display model", () => {
     expect(model.statusMetrics.map(({ status, count }) => [status, count])).toEqual([
       ["failed", 1],
       ["broken", 0],
+      ["unknown", 1],
       ["passed", 1],
       ["skipped", 0],
-      ["muted", 1],
-      ["unknown", 1]
+      ["muted", 1]
     ]);
     expect(model.visibleSignals[1]?.status).toBe("muted");
     expect(model.slowCount).toBe(2);
