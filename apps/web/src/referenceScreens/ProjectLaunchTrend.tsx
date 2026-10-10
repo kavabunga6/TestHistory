@@ -153,6 +153,9 @@ export function ProjectLaunchTrend({
                 {change} п.п. к предыдущему
               </span>
             ) : null}
+            {compact && points.length > 3 ? (
+              <span className="project-launch-trend__scroll-hint">Прокрутите график →</span>
+            ) : null}
             {!compact && trend.read ? (
               <span className="project-launch-trend__durations">
                 Медиана {formatDurationMilliseconds(trend.read.metrics.p50DurationMs)} · 95-й

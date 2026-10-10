@@ -100,6 +100,14 @@ html[data-testhistory-typography="enabled"] body .dashboard-reference-metric-wid
   font-size: clamp(28px, calc(var(--th-font-body) + var(--th-font-body) + 12px), 48px) !important;
 }
 
+html[data-testhistory-typography="enabled"] body .dashboard-launch-summary__metric > strong {
+  font-size: clamp(22px, calc(var(--th-font-body) + 10px), 32px) !important;
+}
+
+html[data-testhistory-typography="enabled"] body .dashboard-reference-widget-card header strong {
+  font-size: var(--th-font-heading) !important;
+}
+
 html[data-testhistory-typography="enabled"] body .analytics-reference-metric strong {
   font-size: calc(var(--th-font-body) + 8px) !important;
 }

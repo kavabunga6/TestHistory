@@ -87,8 +87,8 @@
 }
 
 .dashboard-reference-widget-actions button {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -390,7 +390,11 @@
 .dashboard-reference-table-widget table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.dashboard-reference-table-widget:not(.is-grouped) table {
+  table-layout: fixed;
 }
 
 .dashboard-reference-table-widget th,
@@ -409,8 +413,18 @@
   font-weight: 700;
 }
 
+.dashboard-reference-table-widget:not(.is-grouped) :is(th, td):first-child {
+  width: 138px;
+}
+
+.dashboard-reference-table-widget:not(.is-grouped) :is(th, td):last-child {
+  width: 104px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .dashboard-reference-table-widget:not(.is-grouped) td:nth-child(2) {
-  max-width: 220px;
+  max-width: none;
   overflow: hidden;
   color: #172033;
   font-weight: 700;
@@ -419,17 +433,27 @@
 }
 
 .dashboard-reference-result-link {
+  display: inline-block;
   max-width: 100%;
+  overflow: hidden;
   border: 0;
   padding: 0;
   background: none;
-  color: #1d4ed8;
+  color: #213b61;
   cursor: pointer;
   font: inherit;
   font-weight: inherit;
   text-align: left;
   text-decoration: underline;
+  text-decoration-color: #b6c9e9;
+  text-overflow: ellipsis;
   text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.dashboard-reference-result-link:hover {
+  color: #1d4ed8;
+  text-decoration-color: currentColor;
 }
 
 .dashboard-reference-result-link:focus-visible {

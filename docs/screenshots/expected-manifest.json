@@ -5,6 +5,7 @@
     { "name": "auth-register", "hash": "#launch", "auth": false, "dialog": false },
     { "name": "projects", "hash": "#projects", "auth": true, "dialog": false },
     { "name": "dashboard", "hash": "#dashboard", "auth": true, "dialog": false },
+    { "name": "dashboard-trend", "hash": "#dashboard", "auth": true, "dialog": false },
     { "name": "dashboard-owner-groups", "hash": "#dashboard", "auth": true, "dialog": false },
     { "name": "test-cases", "hash": "#case?list=1", "auth": true, "dialog": false },
     { "name": "launches", "hash": "#launch", "auth": true, "dialog": false },

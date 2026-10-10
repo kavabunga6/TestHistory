@@ -67,6 +67,7 @@
 
 .dashboard-reference-head-actions > .dashboard-reference-primary-button {
   flex: 0 0 auto;
+  min-height: 38px;
 }
 
 .dashboard-reference-launch-control {
@@ -89,11 +90,14 @@
 .dashboard-reference-launch-picker select {
   min-width: 0;
   max-width: 320px;
-  height: 34px;
+  height: 38px;
   border: 1px solid #d5dde8;
   border-radius: 6px;
-  padding: 0 32px 0 10px;
-  background: #ffffff;
+  padding: 0 36px 0 12px;
+  appearance: none;
+  background: #ffffff
+    url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27none%27%3E%3Cpath d=%27m3 6 5 5 5-5%27 stroke=%27%23526174%27 stroke-width=%271.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E")
+    no-repeat right 14px center / 12px 12px;
   color: #172033;
   font: inherit;
   font-size: 13px;
@@ -102,6 +106,13 @@
 .dashboard-reference-launch-picker select:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .dashboard-reference-launch-picker select {
+    appearance: auto;
+    background-image: none;
+  }
 }
 
 .dashboard-reference-launch-catalog {

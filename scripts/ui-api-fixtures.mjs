@@ -27,6 +27,66 @@ import {
   createLaunchComparisonFixtureResponse
 } from "./ui-api-fixtures-comparison.mjs";
 
+const dashboardTrendLaunches = [
+  { id: "L-1285", name: "Сменка · UI · Jenkins #13 · прервано (10 из 50)", rate: 0.8 },
+  { id: "L-1286", name: "Сменка · UI · Jenkins #14", rate: 0.9 },
+  {
+    id: "L-1287",
+    name: "Сменка · UI · Jenkins #13 · восстановленный отчёт · прервано (10 из 50)",
+    rate: 0.8
+  },
+  { id: "L-1288", name: "Сменка · UI · Jenkins #15", rate: 0.9 },
+  { id: launch.id, name: "Сменка · UI · Jenkins #16", rate: 0.62 }
+].map((item, index) => ({
+  ...launch,
+  id: item.id,
+  name: item.name,
+  createdAt: `2026-06-0${index + 1}T09:41:00.000Z`,
+  counters:
+    item.id === launch.id
+      ? { ...launch.counters }
+      : {
+          broken: 0,
+          failed: 0,
+          passed: Math.round(item.rate * 100),
+          skipped: 0,
+          unknown: 100 - Math.round(item.rate * 100)
+        }
+}));
+
+function createDashboardTrendFixture() {
+  const base = createProjectLaunchTrend();
+  const statusCounters = Object.fromEntries(
+    Object.keys(launch.counters).map((status) => [
+      status,
+      dashboardTrendLaunches.reduce((sum, item) => sum + item.counters[status], 0)
+    ])
+  );
+  return {
+    ...base,
+    result: {
+      ...base.result,
+      metrics: {
+        ...base.result.metrics,
+        count: dashboardTrendLaunches.length * results.length,
+        statusCounters,
+        passRate: statusCounters.passed / (dashboardTrendLaunches.length * results.length)
+      },
+      series: dashboardTrendLaunches.map((item) => ({
+        id: item.id,
+        name: item.name,
+        createdAt: item.createdAt,
+        metrics: {
+          ...base.result.metrics,
+          count: results.length,
+          statusCounters: item.counters,
+          passRate: item.counters.passed / results.length
+        }
+      }))
+    }
+  };
+}
+
 export function createUiFixtureApiResponse(
   pathname,
   method = "GET",
@@ -45,7 +105,9 @@ export function createUiFixtureApiResponse(
     };
   }
   if (method === "POST" && pathname === "/api/v1/analytics/run") {
-    return createProjectLaunchTrend();
+    return screenName === "dashboard-trend"
+      ? createDashboardTrendFixture()
+      : createProjectLaunchTrend();
   }
   if (method !== "GET") {
     return undefined;
@@ -141,11 +203,13 @@ export function createUiFixtureApiResponse(
   }
   if (pathname === `/api/v1/projects/${project.id}/launches`) {
     const launchItems =
-      screenName === "launch-comparison-matrix"
-        ? [launch, baselineLaunch, earlierLaunch]
-        : screenName === "launch-comparison"
-          ? [launch, baselineLaunch]
-          : [launch];
+      screenName === "dashboard-trend"
+        ? dashboardTrendLaunches.slice().reverse()
+        : screenName === "launch-comparison-matrix"
+          ? [launch, baselineLaunch, earlierLaunch]
+          : screenName === "launch-comparison"
+            ? [launch, baselineLaunch]
+            : [launch];
     return paged("launch-list", launchItems, { projectId: project.id }, search);
   }
   if (pathname === `/api/v1/launches/${launch.id}/results/${result.uuid}`) {

@@ -80,8 +80,18 @@
     white-space: normal;
   }
 
+  .dashboard-reference-table-widget:not(.is-grouped) :is(th, td):first-child {
+    width: 108px;
+  }
+
+  .dashboard-reference-table-widget:not(.is-grouped) :is(th, td):last-child {
+    width: 82px;
+  }
+
   .dashboard-reference-result-link {
     max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
     white-space: normal;
     overflow-wrap: anywhere;
   }

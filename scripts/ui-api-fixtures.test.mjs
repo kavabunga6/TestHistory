@@ -181,6 +181,43 @@ test("UI fixture pagination, analytics and dashboard agree on 100 results", () =
   );
 });
 
+test("dashboard trend screenshot fixture isolates five launches and keeps selected data consistent", () => {
+  const launchList = "/api/v1/projects/project-1/launches";
+  const defaultList = read(launchList, "?limit=100");
+  const dashboardList = createUiFixtureApiResponse(
+    launchList,
+    "GET",
+    null,
+    "?limit=100",
+    "dashboard-trend"
+  );
+  const trend = createUiFixtureApiResponse(
+    "/api/v1/analytics/run",
+    "POST",
+    JSON.stringify({ query: { entity: "results", projectId: "project-1" } }),
+    "",
+    "dashboard-trend"
+  );
+
+  assert.equal(defaultList.page.total, 1);
+  assert.equal(dashboardList.page.total, 5);
+  assert.equal(trend.result.series.length, 5);
+  assert.deepEqual(
+    trend.result.series.map((point) => point.metrics.passRate),
+    [0.8, 0.9, 0.8, 0.9, 0.62]
+  );
+  assert.ok(trend.result.series[2].name.includes("восстановленный отчёт"));
+  assert.ok(trend.result.series[0].name.includes("прервано (10 из 50)"));
+  assert.deepEqual(
+    new Set(dashboardList.items.map((item) => item.id)),
+    new Set(trend.result.series.map((item) => item.id))
+  );
+  assert.equal(dashboardList.items[0].id, launchId);
+  assert.deepEqual(dashboardList.items[0].counters, defaultList.items[0].counters);
+  assert.equal(trend.result.series.at(-1).metrics.count, 100);
+  assert.equal(trend.result.metrics.count, 500);
+});
+
 test("automation screenshot fixtures retain the empty state and populate all review tabs", () => {
   const paths = [
     `${automationBase}/test-plans`,

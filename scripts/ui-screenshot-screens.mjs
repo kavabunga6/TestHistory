@@ -15,6 +15,39 @@ export const screens = [
   { name: "projects", hash: "#projects" },
   { name: "dashboard", hash: "#dashboard" },
   {
+    name: "dashboard-trend",
+    hash: "#dashboard",
+    beforeNavigate: async (page) => {
+      await page.evaluate(() => {
+        sessionStorage.setItem("testhistory.dashboard.selectedLaunch:project-1", "L-1289");
+      });
+    },
+    verify: async (page) => {
+      const points = page.locator(".project-launch-trend.is-compact .project-launch-trend__point");
+      await points.first().waitFor();
+      if ((await points.count()) !== 5) {
+        throw new Error("Dashboard trend screenshot requires five launch points");
+      }
+      const labels = await points.locator(".project-launch-trend__name").allTextContents();
+      if (
+        !labels[2]?.includes("восстановленный отчёт") ||
+        !labels[0]?.includes("прервано (10 из 50)")
+      ) {
+        throw new Error("Dashboard trend screenshot is missing the long launch names");
+      }
+      const selectedId = await page
+        .locator(".dashboard-reference-launch-picker select")
+        .inputValue();
+      if (selectedId !== "L-1289") {
+        throw new Error(`Dashboard trend screenshot selected ${selectedId} instead of L-1289`);
+      }
+      const options = await page.locator(".dashboard-reference-launch-picker option").count();
+      if (options !== 5) {
+        throw new Error(`Dashboard trend screenshot requires five picker options, got ${options}`);
+      }
+    }
+  },
+  {
     name: "dashboard-owner-groups",
     hash: "#dashboard",
     beforeNavigate: seedDashboardOwnerWidgets,

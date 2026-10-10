@@ -54,6 +54,7 @@ it also requires a separate output directory.
 | ----------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
 | `final/projects.png`                | Projects           | Project navigation and project state surface.                                                       |
 | `final/dashboard.png`               | Dashboard          | Launch health summary and default configurable THQL widgets.                                        |
+| `final/dashboard-trend.png`         | Dashboard          | Five launch trend points, long names, selected 100-result launch, and compact chart layout.         |
 | `final/dashboard-owner-groups.png`  | Dashboard          | Saved problem-owner grouping and active-result metric; mobile capture scrolls the widget into view. |
 | `final/test-cases.png`              | Test case list     | Search, selection, and list pagination.                                                             |
 | `final/launches.png`                | Launch list        | Launch table, filters, counters, and lifecycle state.                                               |
