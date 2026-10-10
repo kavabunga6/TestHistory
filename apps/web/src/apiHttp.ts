@@ -25,11 +25,7 @@ export async function requestResponse(url: string, init?: RequestInit): Promise<
 function withDefaultApiHeaders(init?: RequestInit): RequestInit | undefined {
   const headers = new Headers(init?.headers);
   const sessionToken = getStoredSessionToken();
-  if (
-    sessionToken !== undefined &&
-    !headers.has("authorization") &&
-    !headers.has("x-testhistory-actor-id")
-  ) {
+  if (sessionToken !== undefined && !headers.has("authorization")) {
     headers.set("authorization", `Bearer ${sessionToken}`);
   }
 

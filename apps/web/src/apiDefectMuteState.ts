@@ -6,6 +6,7 @@ import type {
 } from "./apiTypes.js";
 import type { ApiProjectReadModel } from "./apiStateModels.js";
 import { getJson } from "./apiHttp.js";
+import { getStoredSessionToken, loadCurrentUser } from "./auth.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
 
 export async function loadDefectMuteProjectionState(
@@ -73,7 +74,8 @@ export async function loadDefectMuteReplayInvariantState(
       };
     }
 
-    const actorId = "qa-api-agent";
+    const actorId =
+      getStoredSessionToken() === undefined ? "qa-api-agent" : (await loadCurrentUser()).email;
     const data = await getJson<DefectMuteReplayInvariantRead>(
       `/api/v1/projects/${encodeURIComponent(
         project.id

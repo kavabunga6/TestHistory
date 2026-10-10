@@ -30,7 +30,7 @@ describe("getJson", () => {
     expect(headers.get("authorization")).toBe("Bearer session-1");
   });
 
-  it("keeps explicit trusted actor reads separate from the user session", async () => {
+  it("uses the genuine session even when legacy actor headers are present", async () => {
     installSessionToken("session-1");
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
     globalThis.fetch = fetchMock;
@@ -43,6 +43,33 @@ describe("getJson", () => {
       }
     });
 
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("authorization")).toBe("Bearer session-1");
+    expect(headers.get("x-testhistory-actor-id")).toBe("diagnostics-ui");
+  });
+
+  it("preserves an explicit Authorization instead of replacing it with the session", async () => {
+    installSessionToken("session-1");
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
+    globalThis.fetch = fetchMock;
+    await getJson("/api/v1/diagnostics", {
+      headers: {
+        Authorization: "Bearer explicit-project-token",
+        "x-testhistory-actor-id": "legacy"
+      }
+    });
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get("authorization")).toBe(
+      "Bearer explicit-project-token"
+    );
+  });
+
+  it("keeps legacy development headers when no session is stored", async () => {
+    Reflect.deleteProperty(globalThis, "localStorage");
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
+    globalThis.fetch = fetchMock;
+    await getJson("/api/v1/diagnostics", {
+      headers: { "x-testhistory-actor-id": "diagnostics-ui" }
+    });
     const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
     expect(headers.get("authorization")).toBeNull();
     expect(headers.get("x-testhistory-actor-id")).toBe("diagnostics-ui");
