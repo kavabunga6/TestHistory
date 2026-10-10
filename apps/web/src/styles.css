@@ -129,14 +129,14 @@ button:disabled {
 .attachment-viewer__actions {
   flex: 0 0 auto;
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
 }
 
 .attachment-viewer__actions button {
   width: auto;
-  min-height: 34px;
-  min-width: 34px;
+  min-height: 40px;
+  min-width: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -150,8 +150,12 @@ button:disabled {
   font-weight: 700;
 }
 
+.attachment-viewer__dialog[role="dialog"] .attachment-viewer__actions button {
+  height: auto;
+}
+
 .attachment-viewer__actions button[aria-label="Закрыть просмотр вложения"] {
-  width: 34px;
+  width: 40px;
   padding: 0;
 }
 
@@ -168,7 +172,7 @@ button:disabled {
 }
 
 .attachment-viewer__actions button:last-child {
-  width: 34px;
+  width: 40px;
   padding: 0;
 }
 
