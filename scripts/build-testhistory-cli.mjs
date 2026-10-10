@@ -12,7 +12,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptPath = fileURLToPath(import.meta.url);
-const sourceDirectory = dirname(scriptPath);
+const sourceDirectory = realpathSync(dirname(scriptPath));
 const sourceNames = ["testhistory-cli-input.mjs", "testhistory-cli.mjs"];
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export function buildStandalone(outputDirectory = join(sourceDirectory, "dist")) {
@@ -88,5 +88,14 @@ export function buildStandalone(outputDirectory = join(sourceDirectory, "dist"))
   );
   return { path, metadata };
 }
-if (process.argv[1] && resolve(process.argv[1]) === scriptPath)
-  console.log(JSON.stringify(buildStandalone().metadata, null, 2));
+function isEntryPoint() {
+  try {
+    return (
+      process.argv[1] !== undefined &&
+      realpathSync(resolve(process.argv[1])) === realpathSync(scriptPath)
+    );
+  } catch {
+    return false;
+  }
+}
+if (isEntryPoint()) console.log(JSON.stringify(buildStandalone().metadata, null, 2));

@@ -493,7 +493,17 @@ export async function runCli(argv, { env = process.env, fetchImpl = fetch } = {}
     scope: "Read-only launch status; full input/evidence matching is performed by upload"
   };
 }
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+function isEntryPoint() {
+  try {
+    return (
+      process.argv[1] !== undefined &&
+      realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+if (isEntryPoint()) {
   runCli(process.argv.slice(2))
     .then((receipt) => console.log(JSON.stringify(receipt, null, 2)))
     .catch((error) => {
