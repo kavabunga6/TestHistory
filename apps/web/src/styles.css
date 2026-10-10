@@ -101,6 +101,10 @@ button:disabled {
   color: #0f172a;
 }
 
+.attachment-viewer__title > div {
+  min-width: 0;
+}
+
 .attachment-viewer__title svg {
   flex: 0 0 auto;
   color: #2563eb;
