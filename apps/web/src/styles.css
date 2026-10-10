@@ -70,6 +70,7 @@ button:disabled {
   max-width: calc(100vw - 40px);
   max-height: min(860px, calc(100vh - 40px));
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid #d6deea;
