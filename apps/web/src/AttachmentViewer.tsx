@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { useModalDialog } from "./AppDialogs.js";
 import { getJson } from "./apiHttp.js";
+import { RemoteImagePreview } from "./RemoteImagePreview.js";
 import type { ResultAttachment } from "./m1Workspace.js";
 
 const text = {
@@ -206,6 +207,8 @@ export function AttachmentViewerContent({ attachment }: { attachment: ResultAtta
   if (mediaType.startsWith("image/")) {
     return attachment.previewUrl !== undefined ? (
       <img alt={attachment.name} className="attachment-viewer__media" src={attachment.previewUrl} />
+    ) : mediaType === "image/png" && attachment.preview !== undefined ? (
+      <RemoteImagePreview name={attachment.name} preview={attachment.preview} />
     ) : (
       <ViewerUnavailable
         title={text.imagePreviewUnavailable}

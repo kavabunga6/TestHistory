@@ -6,6 +6,10 @@ export async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+  return (await (await requestResponse(url, init)).json()) as T;
+}
+
+export async function requestResponse(url: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(url, withDefaultApiHeaders(init));
   if (!response.ok) {
     const denied = await readPermissionDeniedError(response);
@@ -15,7 +19,7 @@ export async function requestJson<T>(url: string, init?: RequestInit): Promise<T
 
     throw new Error(`${url} returned ${response.status}`);
   }
-  return (await response.json()) as T;
+  return response;
 }
 
 function withDefaultApiHeaders(init?: RequestInit): RequestInit | undefined {
