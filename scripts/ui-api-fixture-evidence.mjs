@@ -1,4 +1,62 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+
+export const storedScreenshotArtifactId = "fixture-stored-screenshot";
+export const storedScreenshotImage = readFileSync(
+  new URL("./fixtures/ui-step-screenshot.png", import.meta.url)
+);
+
+export function createStoredScreenshotResultDetails(item, index) {
+  const attachment = {
+    name: "completed.png",
+    type: "image/png",
+    source: `${item.uuid}-completed.png`,
+    size: storedScreenshotImage.byteLength,
+    preview: {
+      id: "fixture-stored-screenshot-preview",
+      artifactId: storedScreenshotArtifactId,
+      kind: "image",
+      flavor: "image",
+      support: "metadata-only",
+      status: "metadata-only",
+      reason: "image-metadata-only",
+      originalBytes: storedScreenshotImage.byteLength,
+      previewBytes: 0,
+      maxPreviewBytes: 3 * 1024 * 1024,
+      contentType: "image/png",
+      sha256: createHash("sha256").update(storedScreenshotImage).digest("hex"),
+      body: {
+        type: "image-metadata",
+        mediaType: "image/png",
+        inline: false,
+        downloadRequired: true
+      },
+      safety: {
+        descriptorVersion: 1,
+        bounded: true,
+        pathIncluded: false,
+        storageKeyIncluded: false,
+        rawPayloadIncluded: false,
+        blobIncluded: false,
+        signedUrlIncluded: false,
+        redactionApplied: false
+      }
+    }
+  };
+  return {
+    ...createResultDetails(item, index),
+    steps: [
+      {
+        name: "Screenshot: completed",
+        status: "passed",
+        start: 0,
+        stop: 538,
+        attachments: [attachment]
+      }
+    ],
+    attachments: [attachment]
+  };
+}
 
 const screenshotSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200" viewBox="0 0 360 200"><rect width="360" height="200" rx="16" fill="#f3f6fa"/><rect width="360" height="42" rx="16" fill="#213447"/><rect y="30" width="360" height="12" fill="#213447"/><circle cx="24" cy="21" r="5" fill="#ed6a5f"/><circle cx="41" cy="21" r="5" fill="#f5bf4f"/><circle cx="58" cy="21" r="5" fill="#62c554"/><rect x="26" y="65" width="170" height="15" rx="6" fill="#587ba0"/><rect x="26" y="97" width="305" height="10" rx="5" fill="#bdccd9"/><rect x="26" y="118" width="252" height="10" rx="5" fill="#bdccd9"/><rect x="26" y="151" width="100" height="26" rx="8" fill="#2d9573"/></svg>`;
 const screenshotPreviewUrl = `data:image/svg+xml;base64,${Buffer.from(screenshotSvg).toString("base64")}`;

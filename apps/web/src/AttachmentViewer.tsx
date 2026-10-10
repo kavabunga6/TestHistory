@@ -1,9 +1,11 @@
 import { Download, Eye, FileText, Image, Paperclip, PlaySquare, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { useModalDialog } from "./AppDialogs.js";
-import { getJson } from "./apiHttp.js";
+import { getBinary, getJson } from "./apiHttp.js";
+import { canDownloadAttachment, useAttachmentImageSource } from "./AttachmentImageSource.js";
 import type { ResultAttachment } from "./m1Workspace.js";
 
 const text = {
@@ -18,12 +20,10 @@ const text = {
     "\u0414\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u0442\u0438\u043f\u0430 \u0444\u0430\u0439\u043b\u0430 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u043c \u0442\u043e\u043b\u044c\u043a\u043e \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u044b\u0435 \u043c\u0435\u0442\u0430\u0434\u0430\u043d\u043d\u044b\u0435.",
   fileTooLarge:
     "\u0424\u0430\u0439\u043b \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u0431\u043e\u043b\u044c\u0448\u043e\u0439 \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435",
-  imageNoInline:
-    "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e \u0431\u0435\u0437 inline-\u043f\u0440\u0435\u0432\u044c\u044e",
+  imageNoInline: "Предпросмотр изображения недоступен",
   imagePreviewUnavailable:
     "\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
-  imagePreviewUnavailableText:
-    "\u0424\u0430\u0439\u043b \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d \u043a\u0430\u043a \u0432\u043b\u043e\u0436\u0435\u043d\u0438\u0435, \u043d\u043e \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0435 \u043f\u0440\u0435\u0432\u044c\u044e \u043d\u0435 \u0431\u044b\u043b\u043e \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u043d\u043e.",
+  imagePreviewUnavailableText: "Не удалось показать изображение. Попробуйте открыть его ещё раз.",
   notSaved: "\u043d\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e",
   open: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c",
   openAttachment:
@@ -83,36 +83,76 @@ export function AttachmentDownloadButton({
   compact?: boolean;
   label?: string;
 }) {
+  const [downloadError, setDownloadError] = useState(false);
+  const available = canDownloadAttachment(attachment);
+
   return (
-    <button
-      aria-label={`${text.downloadAttachment} ${attachment.name}`}
-      className={className}
-      type="button"
-      onClick={() => downloadAttachment(attachment)}
-    >
-      <Download aria-hidden="true" size={compact ? 14 : 15} />
-      {compact ? null : <span>{label}</span>}
-    </button>
+    <>
+      <button
+        aria-label={`${text.downloadAttachment} ${attachment.name}`}
+        className={className}
+        disabled={!available}
+        title={available ? undefined : "Исходный файл недоступен"}
+        type="button"
+        onClick={() => {
+          setDownloadError(false);
+          void downloadAttachment(attachment).catch(() => setDownloadError(true));
+        }}
+      >
+        <Download aria-hidden="true" size={compact ? 14 : 15} />
+        {compact ? null : <span>{label}</span>}
+      </button>
+      {downloadError
+        ? createPortal(
+            <div className="attachment-download-error" role="alert">
+              <span>Не удалось скачать файл. Попробуйте ещё раз.</span>
+              <button
+                aria-label="Закрыть сообщение об ошибке"
+                type="button"
+                onClick={() => setDownloadError(false)}
+              >
+                <X aria-hidden="true" size={16} />
+              </button>
+            </div>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
 
 export function AttachmentPreview({
   attachment,
-  className
+  className,
+  loadRemote = false
 }: {
   attachment: ResultAttachment;
   className?: string;
+  loadRemote?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const mediaType = attachment.mediaType.toLowerCase();
   const isImage = mediaType.startsWith("image/");
   const isVideo = mediaType.startsWith("video/");
+  const imageSource = useAttachmentImageSource(attachment, loadRemote && isImage);
 
   if (!isImage && !isVideo && attachment.preview?.body.type !== "redacted-text") {
     return null;
   }
 
-  const canOpenMedia = (isImage || isVideo) && attachment.previewUrl !== undefined;
+  const canOpenMedia =
+    (isImage && imageSource.url !== undefined) || (isVideo && attachment.previewUrl !== undefined);
+
+  if (isImage && imageSource.url === undefined) {
+    return (
+      <div
+        className="attachment-inline-preview-state"
+        role={imageSource.failed ? "alert" : "status"}
+      >
+        {imageSource.loading ? "Загружаем изображение…" : text.imageNoInline}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -127,20 +167,23 @@ export function AttachmentPreview({
           }
         }}
       >
-        {isImage && attachment.previewUrl !== undefined ? (
-          <img alt={attachment.name} src={attachment.previewUrl} />
+        {isImage && imageSource.url !== undefined ? (
+          <img alt={attachment.name} src={imageSource.url} />
         ) : null}
         {isVideo && attachment.previewUrl !== undefined ? (
           <video muted preload="metadata" src={attachment.previewUrl} />
         ) : null}
-        {isImage && attachment.previewUrl === undefined ? <span>{text.imageNoInline}</span> : null}
         {isVideo && attachment.previewUrl === undefined ? <span>{text.videoNoInline}</span> : null}
         {attachment.preview?.body.type === "redacted-text" && !isImage && !isVideo ? (
           <pre>{attachment.preview.body.value}</pre>
         ) : null}
       </button>
       {isOpen ? (
-        <AttachmentViewerDialog attachment={attachment} onClose={() => setIsOpen(false)} />
+        <AttachmentViewerDialog
+          attachment={attachment}
+          imageUrl={isImage ? imageSource.url : undefined}
+          onClose={() => setIsOpen(false)}
+        />
       ) : null}
     </>
   );
@@ -148,9 +191,11 @@ export function AttachmentPreview({
 
 export function AttachmentViewerDialog({
   attachment,
+  imageUrl,
   onClose
 }: {
   attachment: ResultAttachment;
+  imageUrl?: string | undefined;
   onClose: () => void;
 }) {
   const titleId = useId();
@@ -186,30 +231,50 @@ export function AttachmentViewerDialog({
             </div>
           </div>
           <div className="attachment-viewer__actions">
-            <AttachmentDownloadButton attachment={attachment} label={text.download} />
+            {canDownloadAttachment(attachment) ? (
+              <AttachmentDownloadButton attachment={attachment} label={text.download} />
+            ) : null}
             <button aria-label={text.closeViewer} type="button" onClick={onClose}>
               <X aria-hidden="true" size={17} />
             </button>
           </div>
         </header>
         <div className="attachment-viewer__body">
-          <AttachmentViewerContent attachment={attachment} />
+          <AttachmentViewerContent attachment={attachment} imageUrl={imageUrl} />
         </div>
       </div>
     </div>
   );
 }
 
-export function AttachmentViewerContent({ attachment }: { attachment: ResultAttachment }) {
+export function AttachmentViewerContent({
+  attachment,
+  imageUrl
+}: {
+  attachment: ResultAttachment;
+  imageUrl?: string | undefined;
+}) {
   const mediaType = attachment.mediaType.toLowerCase();
+  const imageSource = useAttachmentImageSource(
+    attachment,
+    mediaType.startsWith("image/") && imageUrl === undefined
+  );
 
   if (mediaType.startsWith("image/")) {
-    return attachment.previewUrl !== undefined ? (
-      <img alt={attachment.name} className="attachment-viewer__media" src={attachment.previewUrl} />
+    return imageUrl !== undefined || imageSource.url !== undefined ? (
+      <img
+        alt={attachment.name}
+        className="attachment-viewer__media"
+        src={imageUrl ?? imageSource.url}
+      />
     ) : (
       <ViewerUnavailable
-        title={text.imagePreviewUnavailable}
-        text={text.imagePreviewUnavailableText}
+        title={imageSource.loading ? "Загружаем изображение…" : text.imagePreviewUnavailable}
+        text={
+          imageSource.loading
+            ? "Подождите, пока файл загрузится."
+            : text.imagePreviewUnavailableText
+        }
       />
     );
   }
@@ -289,7 +354,7 @@ function RemoteTextPreview({ preview }: { preview: NonNullable<ResultAttachment[
     return (
       <ViewerUnavailable
         title={text.fileTooLarge}
-        text={`\u041c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0441\u043c\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044c \u0444\u0430\u0439\u043b\u044b \u0440\u0430\u0437\u043c\u0435\u0440\u043e\u043c \u0434\u043e ${formatPreviewBytes(preview.maxPreviewBytes)}. \u0421\u043a\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043b, \u0447\u0442\u043e\u0431\u044b \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0435\u0433\u043e \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e.`}
+        text={`Предпросмотр доступен для файлов размером до ${formatPreviewBytes(preview.maxPreviewBytes)}.`}
       />
     );
   }
@@ -304,7 +369,7 @@ function RemoteTextPreview({ preview }: { preview: NonNullable<ResultAttachment[
       <strong>{failed ? "Не удалось загрузить предпросмотр" : "Загружаем предпросмотр…"}</strong>
       <span>
         {failed
-          ? "Файл можно скачать и проверить локально."
+          ? "Попробуйте открыть предпросмотр ещё раз."
           : "Будет загружен только ограниченный безопасный фрагмент."}
       </span>
     </div>
@@ -390,9 +455,16 @@ function getAttachmentIcon(attachment: ResultAttachment) {
   return <Paperclip aria-hidden="true" size={18} />;
 }
 
-function downloadAttachment(attachment: ResultAttachment) {
-  const body = getAttachmentDownloadBody(attachment);
-  const blob = new Blob([body], { type: attachment.mediaType || "application/octet-stream" });
+async function downloadAttachment(attachment: ResultAttachment) {
+  if (!canDownloadAttachment(attachment)) return;
+  const blob =
+    attachment.preview?.body.type === "redacted-text"
+      ? new Blob([attachment.preview.body.value], { type: "text/plain;charset=utf-8" })
+      : attachment.previewUrl?.startsWith("data:") === true
+        ? new Blob([dataUrlToArrayBuffer(attachment.previewUrl)], { type: attachment.mediaType })
+        : await getBinary(
+            `/api/v1/artifacts/${encodeURIComponent(attachment.preview!.artifactId)}/content`
+          );
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -401,29 +473,6 @@ function downloadAttachment(attachment: ResultAttachment) {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
-}
-
-function getAttachmentDownloadBody(attachment: ResultAttachment): BlobPart {
-  if (attachment.previewUrl?.startsWith("data:") === true) {
-    return dataUrlToArrayBuffer(attachment.previewUrl);
-  }
-
-  if (attachment.preview?.body.type === "redacted-text") {
-    return attachment.preview.body.value;
-  }
-
-  return JSON.stringify(
-    {
-      name: attachment.name,
-      mediaType: attachment.mediaType,
-      size: attachment.size,
-      source: attachment.source,
-      retained: attachment.retained,
-      preview: attachment.preview ?? null
-    },
-    null,
-    2
-  );
 }
 
 function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {

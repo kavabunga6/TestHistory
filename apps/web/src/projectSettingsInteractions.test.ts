@@ -193,7 +193,7 @@ describe("settings table readability contracts", () => {
     }
   });
 
-  it("keeps launch overview centered with a wide results list and compact side cards", () => {
+  it("lets the launch overview use the available width with a wide results list", () => {
     const overviewStyles = readFileSync(
       new URL("./referenceScreens/LaunchesReferenceOverview.css", import.meta.url),
       "utf8"
@@ -213,12 +213,9 @@ describe("settings table readability contracts", () => {
     expect(overviewBlock).toContain("padding: 24px");
     expect(overviewBlock).toContain("overflow-y: auto");
 
-    const centeredContentBlock = extractExactCssBlock(
-      overviewStyles,
-      ".launches-reference-overview > *"
-    );
-    expect(centeredContentBlock).toContain("max-width: 1600px");
-    expect(centeredContentBlock).toContain("margin-inline: auto");
+    const contentBlock = extractExactCssBlock(overviewStyles, ".launches-reference-overview > *");
+    expect(contentBlock).toContain("width: 100%");
+    expect(contentBlock).not.toContain("max-width:");
 
     const detailColumnsBlock = extractExactCssBlock(
       overviewStyles,

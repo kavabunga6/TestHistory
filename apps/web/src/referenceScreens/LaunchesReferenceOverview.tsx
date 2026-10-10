@@ -183,7 +183,9 @@ export function OverviewTab({
         </div>
       </section>
 
-      <div className="launches-reference-overview-content">
+      <div
+        className={`launches-reference-overview-content${problemTotal === 0 ? " is-clear" : ""}`}
+      >
         <section className="launches-reference-card launches-reference-overview-card-unresolved">
           <OverviewCardTitle
             count={unresolved.length}

@@ -13,6 +13,7 @@ import type {
   RetentionPolicy,
   VisibilityPolicy
 } from "./projectSettingsTypes.js";
+import { fetchForUi, readJsonForUi, requireOkForUi } from "./userFacingErrors.js";
 export type * from "./projectSettingsTypes.js";
 export { roleLabels, tokenScopeLabels } from "./projectSettingsTypes.js";
 export const demoProjectSettings: ProjectSettings = {
@@ -626,10 +627,7 @@ function normalizeTokenExpiry(value: string): string {
 }
 
 async function getProjectSettingsJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  if (!response.ok) {
-    throw new Error(`${url} returned ${response.status}`);
-  }
-
-  return (await response.json()) as T;
+  const response = await fetchForUi(url, init);
+  requireOkForUi(response);
+  return readJsonForUi<T>(response);
 }

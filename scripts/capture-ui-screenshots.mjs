@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { launchChromiumWithFallback } from "./playwright-browser.mjs";
 import { startPreviewServer, stopPreviewServer } from "./preview-server.mjs";
 import { createEmptyUiApiResponse, createUiFixtureApiResponse } from "./ui-api-fixtures.mjs";
+import { storedScreenshotArtifactId, storedScreenshotImage } from "./ui-api-fixture-evidence.mjs";
 import { screens } from "./ui-screenshot-screens.mjs";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -226,6 +227,13 @@ async function installApiMocks(page) {
     const pathname = url.pathname;
     const screenName =
       new URL(request.headers().referer ?? page.url()).searchParams.get("screen") ?? "";
+
+    if (
+      screenName === "launch-result-attachment" &&
+      pathname === `/api/v1/artifacts/${storedScreenshotArtifactId}/content`
+    ) {
+      return route.fulfill({ contentType: "image/png", body: storedScreenshotImage });
+    }
 
     if (pathname === "/api/v1/auth/me") {
       return route.fulfill({

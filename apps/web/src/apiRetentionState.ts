@@ -7,6 +7,7 @@ import type {
 import type { ApiLaunchRetentionReadModel, ApiProjectReadModel } from "./apiStateModels.js";
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
+import { toUserErrorMessage } from "./userFacingErrors.js";
 
 export async function loadAttachmentPreviewRetentionState(
   projectId?: string
@@ -60,7 +61,7 @@ export async function loadAttachmentPreviewRetentionState(
     }
 
     return {
-      message: error instanceof Error ? error.message : String(error),
+      message: toUserErrorMessage(error, "Не удалось загрузить правила хранения вложений."),
       state: "error"
     };
   }
@@ -124,7 +125,7 @@ export async function loadAttachmentPreviewRetentionDryRunScheduleState(
     }
 
     return {
-      message: error instanceof Error ? error.message : String(error),
+      message: toUserErrorMessage(error, "Не удалось загрузить расписание очистки вложений."),
       state: "error"
     };
   }

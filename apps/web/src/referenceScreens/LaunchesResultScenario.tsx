@@ -122,13 +122,15 @@ function ScenarioStepNode({
           <div className="launches-reference-step-branch">
             {failure}
             {childSteps.length > 0 ? (
-              <ScenarioStepTree
-                depth={depth + 1}
-                fallbackPath={fallbackPath}
-                fallbackTrace={fallbackTrace}
-                parentPath={path}
-                steps={childSteps}
-              />
+              <div className="launches-reference-step-children">
+                <ScenarioStepTree
+                  depth={depth + 1}
+                  fallbackPath={fallbackPath}
+                  fallbackTrace={fallbackTrace}
+                  parentPath={path}
+                  steps={childSteps}
+                />
+              </div>
             ) : null}
             {attachments.length > 0 ? (
               <AttachmentList attachments={attachments} compact depth={depth + 1} />

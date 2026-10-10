@@ -5,6 +5,7 @@ import type {
 } from "./apiTypes.js";
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
+import { toUserErrorMessage } from "./userFacingErrors.js";
 
 export async function loadSecurityAuditExportLifecycleInvariantState(
   projectId?: string
@@ -55,7 +56,7 @@ export async function loadSecurityAuditExportLifecycleInvariantState(
     }
 
     return {
-      message: error instanceof Error ? error.message : String(error),
+      message: toUserErrorMessage(error, "Не удалось загрузить проверку журнала безопасности."),
       state: "error"
     };
   }

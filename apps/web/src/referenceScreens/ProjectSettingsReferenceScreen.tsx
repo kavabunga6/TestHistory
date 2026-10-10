@@ -23,6 +23,7 @@ import {
   type ProjectSettings
 } from "../projectSettings.js";
 import { useModalDialog } from "../AppDialogs.js";
+import { toUserErrorMessage } from "../userFacingErrors.js";
 
 import "./ProjectSettingsReferenceScreen.css";
 
@@ -110,8 +111,11 @@ function ProjectSettingsProjectScreen({
         setApiStatus("error");
         setApiMessage(
           error instanceof Error && error.message.startsWith("Нет доступных проектов")
-            ? error.message
-            : "Не удалось получить настройки проекта. Обновите страницу и попробуйте снова."
+            ? "Нет доступных проектов. Сначала создайте проект."
+            : toUserErrorMessage(
+                error,
+                "Не удалось получить настройки проекта. Обновите страницу и попробуйте снова."
+              )
         );
       });
 
@@ -220,7 +224,9 @@ function ProjectSettingsProjectScreen({
       setApiMessage("Личный токен создан");
     } catch (error) {
       setPersonalTokenSecret(undefined);
-      setApiMessage(error instanceof Error ? error.message : "API личных токенов недоступен");
+      setApiMessage(
+        toUserErrorMessage(error, "Не удалось создать личный токен. Попробуйте снова.")
+      );
     }
   };
   const revokeOwnToken = async (id: string) => {
@@ -230,7 +236,7 @@ function ProjectSettingsProjectScreen({
       setApiMessage("Личный токен отозван");
     } catch (error) {
       setApiMessage(
-        error instanceof Error ? error.message : "API отзыва личного токена недоступен"
+        toUserErrorMessage(error, "Не удалось отозвать личный токен. Попробуйте снова.")
       );
     }
   };
@@ -266,7 +272,7 @@ function ProjectSettingsProjectScreen({
     } catch (error) {
       setCreatedSecret(undefined);
       setApiStatus("error");
-      setApiMessage(error instanceof Error ? error.message : "API токенов недоступен");
+      setApiMessage(toUserErrorMessage(error, "Не удалось создать API-токен. Попробуйте снова."));
     }
   };
   const revokeToken = async (id: string) => {
@@ -277,7 +283,7 @@ function ProjectSettingsProjectScreen({
       setApiMessage("Токен отозван через API");
     } catch (error) {
       setApiStatus("error");
-      setApiMessage(error instanceof Error ? error.message : "API отзыва токена недоступен");
+      setApiMessage(toUserErrorMessage(error, "Не удалось отозвать API-токен. Попробуйте снова."));
     }
   };
 
@@ -294,7 +300,9 @@ function ProjectSettingsProjectScreen({
       setApiMessage(message);
     } catch (error) {
       setApiStatus("error");
-      setApiMessage(error instanceof Error ? error.message : "API сохранения настроек недоступен");
+      setApiMessage(
+        toUserErrorMessage(error, "Не удалось сохранить настройки проекта. Попробуйте снова.")
+      );
     }
   };
 
@@ -314,7 +322,9 @@ function ProjectSettingsProjectScreen({
       setApiMessage("Настройки хранения сохранены");
     } catch (error) {
       setApiStatus("error");
-      setApiMessage(error instanceof Error ? error.message : "API сохранения хранения недоступен");
+      setApiMessage(
+        toUserErrorMessage(error, "Не удалось сохранить настройки хранения. Попробуйте снова.")
+      );
     }
   };
 

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { toUserErrorMessage } from "../userFacingErrors.js";
 
 export function useAutomationFormSubmit() {
   const pending = useRef(false);
@@ -15,11 +16,7 @@ export function useAutomationFormSubmit() {
     try {
       await action();
     } catch (nextError) {
-      setError(
-        nextError instanceof Error
-          ? nextError.message
-          : "Не удалось сохранить изменения. Повторите попытку."
-      );
+      setError(toUserErrorMessage(nextError, "Не удалось сохранить изменения. Повторите попытку."));
     } finally {
       pending.current = false;
       setBusy(false);

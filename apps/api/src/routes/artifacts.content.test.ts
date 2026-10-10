@@ -62,6 +62,50 @@ describe("artifact content", () => {
     expect(allowed.headers["x-content-type-options"]).toBe("nosniff");
   });
 
+  it("keeps image bytes behind the same project authorization boundary", async () => {
+    const store = createAppStore();
+    app = await createApiApp(store);
+    const launch = await createLaunch(app);
+    const imageBytes = Buffer.from("89504e470d0a1a0a", "hex");
+    const prepared = prepareArtifact({
+      content: imageBytes,
+      launchId: launch.id,
+      path: "screens/evidence.png",
+      projectId: launch.projectId
+    });
+    const { payload, ...descriptor } = prepared;
+    store.artifacts.set(descriptor.id, descriptor);
+    await store.artifactObjects.putObject({
+      body: payload,
+      compression: descriptor.compression,
+      ...(descriptor.contentType !== undefined ? { contentType: descriptor.contentType } : {}),
+      key: descriptor.storageKey,
+      originalBytes: descriptor.originalBytes,
+      sha256: descriptor.sha256,
+      storedBytes: descriptor.storedBytes
+    });
+    vi.stubEnv("TESTHISTORY_REQUIRE_PROJECT_AUTH", "true");
+
+    const url = `/api/v1/artifacts/${descriptor.id}/content`;
+    const denied = await app.inject({ method: "GET", url });
+    const allowed = await app.inject({
+      method: "GET",
+      url,
+      headers: {
+        "x-testhistory-actor-id": "project-owner",
+        "x-testhistory-project-scope": launch.projectId,
+        "x-testhistory-scopes": "artifacts:read"
+      }
+    });
+
+    expect(denied.statusCode).toBe(403);
+    expect(denied.body).not.toContain(descriptor.storageKey);
+    expect(allowed.statusCode).toBe(200);
+    expect(allowed.rawPayload).toEqual(imageBytes);
+    expect(allowed.headers["content-type"]).toContain("image/png");
+    expect(allowed.headers["x-content-type-options"]).toBe("nosniff");
+  });
+
   it("does not leak storage keys when physical content is missing", async () => {
     const store = createAppStore();
     app = await createApiApp(store);

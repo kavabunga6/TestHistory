@@ -176,7 +176,7 @@ describe("project settings API helpers", () => {
         projectId: "project-1",
         scopes: ["settings:read"]
       })
-    ).rejects.toThrow("/api/v1/projects/project-1/settings/access/tokens returned 403");
+    ).rejects.toThrow("У вас нет прав для этого действия.");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -186,7 +186,7 @@ describe("project settings API helpers", () => {
       .mockResolvedValue(jsonResponse({ message: "denied", redacted: true }, 403));
 
     await expect(revokeProjectSettingsApiToken("project-1", "token-1")).rejects.toThrow(
-      "/api/v1/projects/project-1/settings/access/tokens/token-1 returned 403"
+      "У вас нет прав для этого действия."
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

@@ -4,7 +4,11 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { AttachmentPreview, AttachmentViewerButton } from "./AttachmentViewer.js";
+import {
+  AttachmentDownloadButton,
+  AttachmentPreview,
+  AttachmentViewerButton
+} from "./AttachmentViewer.js";
 import type { ResultAttachment } from "./m1Workspace.js";
 
 describe("AttachmentViewer", () => {
@@ -17,6 +21,96 @@ describe("AttachmentViewer", () => {
     root = undefined;
     container = undefined;
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("loads a stored PNG only after opening the viewer and releases its object URL", async () => {
+    const createObjectURL = vi.fn(() => "blob:stored-screenshot");
+    const revokeObjectURL = vi.fn();
+    stubObjectUrls(createObjectURL, revokeObjectURL);
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]), {
+          headers: { "content-type": "image/png" }
+        })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderViewerButton(storedImage());
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    await openAttachment();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(document.querySelector('[role="dialog"] img')?.getAttribute("src")).toBe(
+          "blob:stored-screenshot"
+        )
+      );
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/artifacts/stored-screenshot/content", {
+      headers: expect.any(Headers),
+      signal: expect.any(AbortSignal)
+    });
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('[aria-label="Закрыть просмотр вложения"]')?.click()
+    );
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:stored-screenshot");
+  });
+
+  it("rejects a stored image when the response is not a raster image", async () => {
+    const createObjectURL = vi.fn(() => "blob:unsafe");
+    stubObjectUrls(createObjectURL, vi.fn());
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("<svg xmlns='http://www.w3.org/2000/svg'></svg>", {
+            headers: { "content-type": "image/svg+xml" }
+          })
+      )
+    );
+    renderViewerButton(storedImage());
+    await openAttachment();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+          "Предпросмотр изображения недоступен"
+        )
+      );
+    });
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"] img')).toBeNull();
+  });
+
+  it("downloads only redacted text even when an inline data URL is present", async () => {
+    const createObjectURL = vi.fn((_blob: Blob) => "blob:redacted");
+    stubObjectUrls(createObjectURL, vi.fn());
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    const attachment: ResultAttachment = {
+      ...storedImage(),
+      mediaType: "text/plain",
+      name: "secret.log",
+      previewUrl: "data:text/plain;base64,c2VjcmV0",
+      preview: {
+        ...storedImage().preview!,
+        kind: "text",
+        body: {
+          type: "redacted-text",
+          value: "[REDACTED]",
+          encoding: "utf8",
+          lineCount: 1,
+          redacted: true,
+          truncated: false
+        }
+      }
+    };
+    act(() => root!.render(<AttachmentDownloadButton attachment={attachment} />));
+    await act(async () => container!.querySelector("button")!.click());
+
+    expect(await createObjectURL.mock.calls[0]![0].text()).toBe("[REDACTED]");
   });
 
   it("opens image attachments in a modal preview", async () => {
@@ -307,4 +401,51 @@ async function openAttachment() {
   await act(async () => {
     button!.click();
   });
+}
+
+function storedImage(): ResultAttachment {
+  return {
+    mediaType: "image/png",
+    name: "Screenshot",
+    retained: true,
+    size: "374 KB",
+    source: "screenshot.png",
+    preview: {
+      id: "preview-screenshot",
+      artifactId: "stored-screenshot",
+      body: {
+        type: "image-metadata",
+        mediaType: "image/png",
+        inline: false,
+        downloadRequired: true
+      },
+      contentType: "image/png",
+      flavor: "image",
+      kind: "image",
+      maxPreviewBytes: 3 * 1024 * 1024,
+      originalBytes: 374 * 1024,
+      previewBytes: 0,
+      reason: "image-metadata-only",
+      safety: {
+        blobIncluded: false,
+        bounded: true,
+        descriptorVersion: 1,
+        pathIncluded: false,
+        rawPayloadIncluded: false,
+        redactionApplied: false,
+        signedUrlIncluded: false,
+        storageKeyIncluded: false
+      },
+      sha256: "image-sha",
+      status: "metadata-only",
+      support: "metadata-only"
+    }
+  };
+}
+
+function stubObjectUrls(
+  createObjectURL: ReturnType<typeof vi.fn>,
+  revokeObjectURL: ReturnType<typeof vi.fn>
+) {
+  vi.stubGlobal("URL", Object.assign(class extends URL {}, { createObjectURL, revokeObjectURL }));
 }

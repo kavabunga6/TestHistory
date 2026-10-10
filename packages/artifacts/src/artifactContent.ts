@@ -29,6 +29,9 @@ export function detectArtifactContentType(
   if (normalizedPath.endsWith(".webp")) {
     return "image/webp";
   }
+  if (normalizedPath.endsWith(".gif")) {
+    return "image/gif";
+  }
   if (normalizedPath.endsWith(".xml")) {
     return "application/xml";
   }

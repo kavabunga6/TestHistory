@@ -15,6 +15,7 @@ type Attachment = {
   source: string;
   type?: string;
   preview?: ArtifactPreviewDescriptor;
+  previewUrl?: string;
 };
 
 type Step = {
@@ -61,22 +62,60 @@ function addAttachmentPreviewReference(
   const normalizedSource = safePath(attachment.source);
   const artifact =
     normalizedSource === undefined ? undefined : artifactsByPath.get(normalizedSource);
-  if (artifact === undefined) return attachment;
+  if (artifact === undefined) return withoutUntrustedPreview(attachment);
+  if (isSvgPath(artifact.path)) return withoutUntrustedPreview(attachment);
 
   const contentType = detectArtifactContentType(
     artifact.path,
     attachment.type ?? artifact.contentType
   );
-  if (contentType === undefined || !isSafeTextPreviewContentType(contentType)) return attachment;
+  if (contentType === undefined) return withoutUntrustedPreview(attachment);
+  if (
+    !isSafeTextPreviewContentType(contentType) &&
+    !isSafeImagePreviewContentType(artifact.path, contentType, artifact.contentType)
+  ) {
+    return withoutUntrustedPreview(attachment);
+  }
 
   return {
-    ...attachment,
+    ...withoutUntrustedPreview(attachment),
     type: contentType,
     preview: createArtifactPreviewDescriptor({
       artifact: { ...artifact, contentType },
       maxPreviewBytes: maxBrowserTextPreviewBytes
     })
   };
+}
+
+const safeImageContentTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
+function isSafeImagePreviewContentType(
+  path: string,
+  contentType: string,
+  storedContentType: string | undefined
+): boolean {
+  if (!safeImageContentTypes.has(contentType)) return false;
+  const pathContentType = detectArtifactContentType(path);
+  if (pathContentType !== undefined && pathContentType !== contentType) return false;
+  return (
+    storedContentType === undefined ||
+    safeImageContentTypes.has(detectArtifactContentType(path, storedContentType) ?? "")
+  );
+}
+
+function isSvgPath(path: string): boolean {
+  const normalizedPath = path.toLowerCase();
+  return normalizedPath.endsWith(".svg") || normalizedPath.endsWith(".svgz");
+}
+
+function withoutUntrustedPreview(attachment: Attachment): Attachment {
+  if (attachment.preview === undefined && attachment.previewUrl === undefined) {
+    return attachment;
+  }
+  const safeAttachment = { ...attachment };
+  delete safeAttachment.preview;
+  delete safeAttachment.previewUrl;
+  return safeAttachment;
 }
 
 function safePath(path: string): string | undefined {

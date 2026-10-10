@@ -10,7 +10,10 @@ import {
   defect,
   defects
 } from "./ui-api-fixture-data.mjs";
-import { createResultDetails } from "./ui-api-fixture-evidence.mjs";
+import {
+  createResultDetails,
+  createStoredScreenshotResultDetails
+} from "./ui-api-fixture-evidence.mjs";
 import { createLaunchErrorSummaryFixture } from "./ui-api-fixture-errors.mjs";
 import {
   createAnalyticsItem,
@@ -194,7 +197,10 @@ export function createUiFixtureApiResponse(
       pathname.slice(`/api/v1/launches/${launch.id}/results/`.length)
     );
     const index = results.findIndex((item) => item.uuid === resultId);
-    return index < 0 ? undefined : createResultDetails(results[index], index);
+    if (index < 0) return undefined;
+    return screenName === "launch-result-attachment"
+      ? createStoredScreenshotResultDetails(results[index], index)
+      : createResultDetails(results[index], index);
   }
   if (pathname === "/api/v1/analytics/results") {
     const query = new URLSearchParams(search).get("q")?.trim().toLowerCase() ?? "";

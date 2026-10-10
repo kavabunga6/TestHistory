@@ -10,6 +10,7 @@ import {
   type EnterpriseRole,
   type OidcProviderInput
 } from "../enterpriseAccessApi.js";
+import { toUserErrorMessage } from "../userFacingErrors.js";
 import { Badge } from "./ProjectSettingsReferenceCommon.js";
 
 const roleLabels: Record<EnterpriseRole, string> = {
@@ -69,7 +70,9 @@ function EnterpriseAccessProjectPanel({
       return true;
     } catch (error) {
       if (!active.current || sequence !== requestSequence.current) return false;
-      setMessage(error instanceof Error ? error.message : "Enterprise API недоступен");
+      setMessage(
+        toUserErrorMessage(error, "Не удалось загрузить настройки SSO и SCIM. Попробуйте снова.")
+      );
       return false;
     } finally {
       if (active.current && sequence === requestSequence.current) setLoading(false);
@@ -96,7 +99,9 @@ function EnterpriseAccessProjectPanel({
       }
     } catch (error) {
       if (active.current) {
-        setMessage(error instanceof Error ? error.message : "Не удалось добавить OIDC-провайдер");
+        setMessage(
+          toUserErrorMessage(error, "Не удалось добавить OIDC-провайдер. Попробуйте снова.")
+        );
       }
     }
   };
@@ -115,7 +120,7 @@ function EnterpriseAccessProjectPanel({
     } catch (error) {
       if (active.current) {
         setScimSecret(undefined);
-        setMessage(error instanceof Error ? error.message : "Не удалось создать SCIM-токен");
+        setMessage(toUserErrorMessage(error, "Не удалось создать SCIM-токен. Попробуйте снова."));
       }
     } finally {
       rotationPending.current = false;
@@ -132,7 +137,9 @@ function EnterpriseAccessProjectPanel({
       }
     } catch (error) {
       if (active.current) {
-        setMessage(error instanceof Error ? error.message : "Не удалось изменить провайдер");
+        setMessage(
+          toUserErrorMessage(error, "Не удалось изменить OIDC-провайдер. Попробуйте снова.")
+        );
       }
     }
   };
@@ -232,7 +239,12 @@ function EnterpriseAccessProjectPanel({
                     })
                     .catch((error: unknown) => {
                       if (active.current) {
-                        setMessage(error instanceof Error ? error.message : "Discovery недоступен");
+                        setMessage(
+                          toUserErrorMessage(
+                            error,
+                            "Не удалось проверить OIDC discovery. Попробуйте снова."
+                          )
+                        );
                       }
                     })
                 }

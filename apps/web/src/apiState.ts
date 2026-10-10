@@ -14,6 +14,7 @@ import {
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError } from "./apiPermissions.js";
 import { loadSecurityAuditExportLifecycleInvariantState } from "./apiSecurityAuditState.js";
+import { toUserErrorMessage } from "./userFacingErrors.js";
 
 export async function loadApiState(projectId?: string): Promise<ApiState> {
   try {
@@ -50,7 +51,7 @@ export async function loadApiState(projectId?: string): Promise<ApiState> {
 
     return {
       loading: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: toUserErrorMessage(error, "Не удалось загрузить данные.")
     };
   }
 }

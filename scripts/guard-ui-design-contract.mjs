@@ -256,8 +256,11 @@ for (const snippet of [
 }
 
 for (const snippet of [
-  "max-width: 1600px;",
+  ".launches-reference-overview > *",
+  "width: 100%;",
   ".launches-reference-overview-content",
+  ".launches-reference-overview-content.is-clear",
+  "grid-template-columns: repeat(3, minmax(0, 1fr));",
   "grid-template-columns: minmax(0, 1.65fr) minmax(350px, 0.9fr);",
   ".launches-reference-overview-side",
   "gap: 18px;",
@@ -267,6 +270,10 @@ for (const snippet of [
 ]) {
   expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceOverview.css", snippet);
 }
+expectNoSnippet(
+  "apps/web/src/referenceScreens/LaunchesReferenceOverview.css",
+  "max-width: 1600px;"
+);
 
 for (const snippet of [
   "background: #f8fafc;",
@@ -350,7 +357,8 @@ expectNoSnippet(
 expectNoSnippet("apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx", 'empty="Нет ');
 expectNoSnippet("apps/web/src/referenceScreens/TestCaseDetailReferenceScreen.tsx", 'empty="Нет ');
 
-expectSnippet("apps/web/src/AuthPanel.tsx", "API авторизации недоступен");
+expectSnippet("apps/web/src/AuthPanel.tsx", "Не удалось войти. Проверьте данные для входа.");
+expectNoSnippet("apps/web/src/AuthPanel.tsx", "error.message");
 expectSnippet(
   "apps/web/src/WorkspaceSurface.tsx",
   "Открыть #case и выбрать кейс со сравнением истории."

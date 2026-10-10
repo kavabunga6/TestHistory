@@ -1,6 +1,7 @@
 import { ChevronDown, FileText, Image, Paperclip } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
+import { canDownloadAttachment, canPreviewImage } from "../AttachmentImageSource.js";
 import type { ResultAttachment, TestResult } from "../m1Workspace.js";
 import {
   AttachmentDownloadButton,
@@ -59,19 +60,21 @@ export function AttachmentList({
 }
 
 function AttachmentRow({ attachment }: { attachment: ResultAttachment }) {
-  return (
-    <details className="launches-reference-attachment">
-      <summary title={`Показать или скрыть превью вложения «${attachment.name}»`}>
-        <span className="launches-reference-attachment-icon">
-          {getAttachmentRowIcon(attachment)}
-        </span>
-        <span className="launches-reference-attachment-name">
-          <strong>{attachment.name}</strong>
-          <small>
-            {attachment.mediaType} {"\u00b7"} {attachment.size}
-          </small>
-        </span>
-        <span className="launches-reference-attachment-tools">
+  const [isOpen, setIsOpen] = useState(false);
+  const hasPreview = hasInlinePreview(attachment);
+  const canDownload = canDownloadAttachment(attachment);
+  const canOpen = hasPreview || hasRemoteTextPreview(attachment);
+  const heading = (
+    <>
+      <span className="launches-reference-attachment-icon">{getAttachmentRowIcon(attachment)}</span>
+      <span className="launches-reference-attachment-name">
+        <strong>{attachment.name}</strong>
+        <small>
+          {attachment.mediaType} {"\u00b7"} {attachment.size}
+        </small>
+      </span>
+      <span className="launches-reference-attachment-tools">
+        {canOpen || canDownload ? (
           <span
             className="launches-reference-attachment-actions"
             onClick={(event) => {
@@ -79,35 +82,69 @@ function AttachmentRow({ attachment }: { attachment: ResultAttachment }) {
               event.stopPropagation();
             }}
           >
-            <span title={`Открыть вложение «${attachment.name}»`}>
-              <AttachmentViewerButton attachment={attachment} label="Открыть" />
-            </span>
-            <span title={`Скачать вложение «${attachment.name}»`}>
-              <AttachmentDownloadButton attachment={attachment} label="Скачать" />
-            </span>
+            {canOpen ? (
+              <span title={`Открыть вложение «${attachment.name}»`}>
+                <AttachmentViewerButton attachment={attachment} label="Открыть" />
+              </span>
+            ) : null}
+            {canDownload ? (
+              <span title={`Скачать вложение «${attachment.name}»`}>
+                <AttachmentDownloadButton attachment={attachment} label="Скачать" />
+              </span>
+            ) : null}
           </span>
-          <span className="launches-reference-attachment-toggle-label">Превью</span>
-          <ChevronDown aria-hidden="true" size={16} />
-        </span>
-      </summary>
-      <div className="launches-reference-attachment-body">
-        {hasInlinePreview(attachment) ? (
-          <AttachmentInlinePreview attachment={attachment} />
         ) : (
-          <p className="launches-reference-muted">
-            Превью для этого типа файла недоступно — откройте или скачайте вложение.
-          </p>
+          <span className="launches-reference-attachment-unavailable">Просмотр недоступен</span>
         )}
+        {hasPreview ? (
+          <>
+            <span className="launches-reference-attachment-toggle-label">Превью</span>
+            <ChevronDown aria-hidden="true" size={16} />
+          </>
+        ) : null}
+      </span>
+    </>
+  );
+
+  if (!hasPreview) {
+    return (
+      <div className="launches-reference-attachment">
+        <div className="launches-reference-attachment-heading">{heading}</div>
       </div>
+    );
+  }
+
+  return (
+    <details
+      className="launches-reference-attachment"
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+    >
+      <summary title={`Показать или скрыть превью вложения «${attachment.name}»`}>
+        {heading}
+      </summary>
+      {isOpen ? (
+        <div className="launches-reference-attachment-body">
+          <AttachmentInlinePreview attachment={attachment} loadRemote />
+        </div>
+      ) : null}
     </details>
   );
 }
 
 function hasInlinePreview(attachment: ResultAttachment): boolean {
   const mediaType = attachment.mediaType.toLowerCase();
-  const isMedia = mediaType.startsWith("image/") || mediaType.startsWith("video/");
+  return (
+    canPreviewImage(attachment) ||
+    (mediaType.startsWith("video/") && attachment.previewUrl !== undefined) ||
+    attachment.preview?.body.type === "redacted-text"
+  );
+}
 
-  return isMedia || attachment.preview?.body.type === "redacted-text";
+function hasRemoteTextPreview(attachment: ResultAttachment): boolean {
+  const kind = attachment.preview?.kind;
+  return Boolean(
+    attachment.preview?.artifactId && (kind === "text" || kind === "json" || kind === "xml")
+  );
 }
 
 function getAttachmentRowIcon(attachment: ResultAttachment) {

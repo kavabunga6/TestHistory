@@ -2,7 +2,7 @@
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthPanel } from "./AuthPanel.js";
 
@@ -23,6 +23,7 @@ describe("AuthPanel", () => {
     act(() => root.unmount());
     container.remove();
     window.localStorage.clear();
+    vi.unstubAllGlobals();
   });
 
   it("starts with empty credentials and can reveal the password without submitting", () => {
@@ -80,4 +81,62 @@ describe("AuthPanel", () => {
     expect(document.activeElement).toBe(login);
     expect(container.querySelector("#auth-name")).toBeNull();
   });
+
+  it("explains a rejected login without exposing the endpoint or status", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("InternalException", { status: 401 }))
+    );
+    await act(async () => {
+      root.render(<AuthPanel />);
+    });
+
+    await submitForm(container);
+
+    const feedback = container.querySelector<HTMLElement>(".auth-login__feedback");
+    expect(feedback?.textContent).toContain("Проверьте данные для входа");
+    expect(feedback?.getAttribute("role")).toBe("alert");
+    expect(feedback?.textContent).not.toMatch(/\/api\/|401|InternalException|returned/);
+  });
+
+  it("gives a recovery action for a duplicate registration without server details", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("DuplicateKeyError", { status: 409 }))
+    );
+    await act(async () => {
+      root.render(<AuthPanel />);
+    });
+    act(() => container.querySelector<HTMLButtonElement>("#auth-register-tab")?.click());
+
+    await submitForm(container);
+
+    const feedback = container.querySelector<HTMLElement>(".auth-login__feedback");
+    expect(feedback?.textContent).toContain("Войдите или укажите другой email");
+    expect(feedback?.textContent).not.toMatch(/\/api\/|409|DuplicateKeyError/);
+  });
+
+  it("hides network exception text and explains how to retry", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("TypeError: /api/v1/auth/login failed"))
+    );
+    await act(async () => {
+      root.render(<AuthPanel />);
+    });
+
+    await submitForm(container);
+
+    const feedback = container.querySelector<HTMLElement>(".auth-login__feedback");
+    expect(feedback?.textContent).toContain("Проверьте подключение и попробуйте ещё раз");
+    expect(feedback?.textContent).not.toMatch(/\/api\/|TypeError/);
+  });
 });
+
+async function submitForm(container: HTMLElement): Promise<void> {
+  await act(async () => {
+    container
+      .querySelector<HTMLFormElement>("#auth-form-panel")
+      ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  });
+}

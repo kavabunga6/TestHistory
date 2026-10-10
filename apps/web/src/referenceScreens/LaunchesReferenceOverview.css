@@ -13,8 +13,6 @@
 
 .launches-reference-overview > * {
   width: 100%;
-  max-width: 1600px;
-  margin-inline: auto;
 }
 
 .launches-reference-overview .launches-reference-card {
@@ -60,7 +58,7 @@
   padding: 0;
   background: none;
   color: #16263e;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.25;
   white-space: normal;
@@ -80,7 +78,7 @@
   background: transparent;
   color: #285fc6;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -211,7 +209,7 @@
 
 .launches-reference-overview-score-copy > span {
   color: #66758a;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -232,7 +230,7 @@
 .launches-reference-overview-score-copy p {
   margin: 2px 0 0;
   color: #758399;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .launches-reference-overview-breakdown {
@@ -320,7 +318,7 @@
   min-width: 0;
   grid-area: label;
   color: #637186;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -338,7 +336,7 @@
   grid-area: share;
   align-self: end;
   color: #7a889b;
-  font-size: 11px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
@@ -349,6 +347,14 @@
   grid-template-columns: minmax(0, 1.65fr) minmax(350px, 0.9fr);
   align-items: start;
   gap: 18px;
+}
+
+.launches-reference-overview-content.is-clear {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.launches-reference-overview-content.is-clear .launches-reference-overview-side {
+  display: contents;
 }
 
 .launches-reference-overview-side {
@@ -380,7 +386,7 @@
   padding: 0;
   background: transparent;
   color: #1d2d44;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.25;
   text-overflow: ellipsis;
@@ -397,7 +403,7 @@
   padding: 0 7px;
   background: #eef2f7;
   color: #66758a;
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -406,7 +412,7 @@
 .launches-reference-overview-card-heading > small {
   min-width: 0;
   color: #8a97a8;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
@@ -425,7 +431,7 @@
   gap: 6px 12px;
   padding: 9px 20px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -462,7 +468,7 @@
   margin: 0;
   padding: 9px 20px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
@@ -473,7 +479,7 @@
   padding: 0 20px;
   background: #f8fafc;
   color: #8290a1;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.045em;
 }
@@ -500,18 +506,18 @@
 
 .launches-reference-overview .launches-reference-compact-result-copy strong {
   color: #25354b;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .launches-reference-overview .launches-reference-compact-result-copy small {
   color: #8793a4;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .launches-reference-overview .launches-reference-compact-result-duration {
   color: #65758b;
-  font-size: 11px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -519,7 +525,7 @@
   min-height: 25px;
   border-radius: 6px;
   padding: 0 7px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: none;
 }
@@ -580,13 +586,13 @@
 
 .launches-reference-defects-empty-copy strong {
   color: #324257;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .launches-reference-defects-empty-copy small {
   color: #8190a2;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -615,11 +621,21 @@
 
 .launches-reference-overview .launches-reference-variables dt,
 .launches-reference-overview .launches-reference-variables dd {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .launches-reference-overview .launches-reference-variables dd {
   color: #5e6d82;
+}
+
+@media (max-width: 1700px) {
+  .launches-reference-overview-content.is-clear {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .launches-reference-overview-content.is-clear .launches-reference-overview-card-variables {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 1250px) {
@@ -718,6 +734,14 @@
   .launches-reference-overview-side {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+  }
+
+  .launches-reference-overview-content.is-clear {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .launches-reference-overview-content.is-clear .launches-reference-overview-card-variables {
+    grid-column: auto;
   }
 
   .launches-reference-overview .launches-reference-card-content {

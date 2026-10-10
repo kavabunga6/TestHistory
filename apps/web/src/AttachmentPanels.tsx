@@ -24,7 +24,8 @@ import {
   ProjectionStateMessage,
   ReadOnlyAction
 } from "./workspaceCommon.js";
-import { getSafeProjectionDeniedMessage, sanitizeSafeText } from "./workspaceSanitizers.js";
+import { getSafeDeniedMessage } from "./apiPermissions.js";
+import { sanitizeSafeText } from "./workspaceSanitizers.js";
 export function AttachmentPreviewRetentionPanel({
   apiState,
   compact = false,
@@ -381,7 +382,7 @@ function getAttachmentPreviewRetentionState(
   }
   if (apiState.denied !== undefined) {
     return {
-      message: getSafeProjectionDeniedMessage(apiState.denied.message),
+      message: getSafeDeniedMessage(apiState.denied),
       state: "denied"
     };
   }

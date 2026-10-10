@@ -17,7 +17,8 @@ import type {
   RuntimeUiState
 } from "./api.js";
 import { EmptyState, ProjectionStateMessage, ReadOnlyAction } from "./workspaceCommon.js";
-import { getSafeProjectionDeniedMessage, sanitizeProjectionText } from "./workspaceSanitizers.js";
+import { getSafeDeniedMessage } from "./apiPermissions.js";
+import { sanitizeProjectionText } from "./workspaceSanitizers.js";
 export function DefectMuteProjectionPanel({
   apiState,
   context
@@ -394,7 +395,7 @@ function getDefectMuteProjectionState(apiState: ApiState): DefectMuteProjectionA
   }
   if (apiState.denied !== undefined) {
     return {
-      message: getSafeProjectionDeniedMessage(apiState.denied.message),
+      message: getSafeDeniedMessage(apiState.denied),
       state: "denied"
     };
   }

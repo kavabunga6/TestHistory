@@ -3551,6 +3551,8 @@ body.launches-reference-is-resizing * {
 }
 
 .launches-reference-attachments.compact .launches-reference-attachment {
+  position: relative;
+  z-index: 1;
   border: 0;
   border-bottom: 1px solid #e8ebef;
   border-radius: 0;
@@ -3578,7 +3580,8 @@ body.launches-reference-is-resizing * {
   border-color: #d5deeb;
 }
 
-.launches-reference-attachment > summary {
+.launches-reference-attachment > summary,
+.launches-reference-attachment > .launches-reference-attachment-heading {
   min-width: 0;
   min-height: 48px;
   display: grid;
@@ -3594,6 +3597,18 @@ body.launches-reference-is-resizing * {
 
 .launches-reference-attachment > summary:hover {
   background: #f7f9fc;
+}
+
+.launches-reference-attachment > .launches-reference-attachment-heading {
+  cursor: default;
+}
+
+.launches-reference-attachment-unavailable {
+  min-width: 0;
+  color: #758194;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 
 .launches-reference-attachment-icon {
@@ -3690,6 +3705,15 @@ body.launches-reference-is-resizing * {
   width: 100%;
   max-width: 100%;
   margin: 0;
+}
+
+.launches-reference-attachment-body .attachment-inline-preview-state {
+  margin: 0;
+  border: 0;
+  padding: 4px 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
 }
 
 .launches-reference-attachment-body .attachment-inline-preview:has(img),

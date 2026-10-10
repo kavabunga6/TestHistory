@@ -25,8 +25,8 @@ export const onlineApiState: ApiState = {
 export const apiStates: Record<string, ApiState> = {
   demo: onlineApiState,
   loading: { loading: true },
-  error: { loading: false, error: "/api/v1/capabilities returned 500" },
-  offline: { loading: false, error: "Failed to fetch" }
+  error: { loading: false, error: "Не удалось загрузить данные. Попробуйте позже." },
+  offline: { loading: false, error: "Нет соединения. Проверьте сеть и попробуйте снова." }
 };
 
 export const archiveReadyApiState: ApiState = {

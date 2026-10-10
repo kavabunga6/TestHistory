@@ -266,7 +266,9 @@ it("shows a save error in the plan form and enables retry", async () => {
     issueTrackers: [],
     deliveries: []
   });
-  vi.mocked(createTestPlan).mockRejectedValueOnce(new Error("Некорректный THQL"));
+  vi.mocked(createTestPlan).mockRejectedValueOnce(
+    new Error("InternalException: /api/v1/test-plans returned 400")
+  );
   await act(async () => root.render(<AutomationReferenceScreen projectId="project-1" />));
   await act(async () => {
     container
@@ -282,7 +284,12 @@ it("shows a save error in the plan form and enables retry", async () => {
   await act(async () => {
     form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   });
-  expect(container.querySelector('[role="alert"]')?.textContent).toContain("Некорректный THQL");
+  expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+    "Не удалось сохранить изменения. Повторите попытку."
+  );
+  expect(container.querySelector('[role="alert"]')?.textContent).not.toMatch(
+    /InternalException|\/api\/|400/
+  );
   expect(form?.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
 });
 

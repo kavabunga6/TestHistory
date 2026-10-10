@@ -1,5 +1,6 @@
 import { getStoredSessionToken } from "./auth.js";
 import type { ThqlFilterEntity, ThqlFilterScope, ThqlSavedFilter } from "./thqlSavedFilters.js";
+import { fetchForUi, readJsonForUi, requireOkForUi } from "./userFacingErrors.js";
 
 type ThqlFilterListResponse = {
   kind: "thql-filter-list";
@@ -101,9 +102,7 @@ function thqlHeaders(input: {
 }
 
 async function thqlJson<T>(url: string, init: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  if (!response.ok) {
-    throw new Error(`${url} returned ${response.status}`);
-  }
-  return (await response.json()) as T;
+  const response = await fetchForUi(url, init);
+  requireOkForUi(response);
+  return readJsonForUi<T>(response);
 }

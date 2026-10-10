@@ -9,6 +9,7 @@ import {
   storeSessionToken,
   type CurrentUser
 } from "./auth.js";
+import { UserFacingRequestError, toUserErrorMessage } from "./userFacingErrors.js";
 import "./AuthPanel.css";
 
 type AuthMode = "login" | "register";
@@ -84,7 +85,7 @@ export function AuthPanel({
     } catch (error) {
       setMessage({
         kind: "error",
-        text: error instanceof Error ? error.message : "API авторизации недоступен"
+        text: authErrorMessage(error, mode)
       });
     } finally {
       setSubmitting(false);
@@ -304,4 +305,33 @@ function getUserInitials(value: string): string {
     .join("");
 
   return initials || "U";
+}
+
+function authErrorMessage(error: unknown, mode: AuthMode): string {
+  if (error instanceof UserFacingRequestError && error.kind === "http") {
+    if (mode === "login" && error.status === 401) {
+      return "Не удалось войти. Проверьте данные для входа. Если они верны, обратитесь к администратору.";
+    }
+    if (mode === "register" && error.status === 409) {
+      return "Учётная запись уже существует. Войдите или укажите другой email.";
+    }
+    if (mode === "register" && error.status === 403) {
+      return "Регистрация недоступна. Обратитесь к администратору.";
+    }
+    if (mode === "register" && error.status === 400) {
+      return "Проверьте имя, email и пароль и попробуйте снова.";
+    }
+    if (error.status !== undefined && error.status >= 500) {
+      return mode === "login"
+        ? "Не удалось выполнить вход. Попробуйте позже."
+        : "Не удалось создать учётную запись. Попробуйте позже.";
+    }
+  }
+
+  return toUserErrorMessage(
+    error,
+    mode === "login"
+      ? "Не удалось выполнить вход. Попробуйте ещё раз."
+      : "Не удалось создать учётную запись. Попробуйте ещё раз."
+  );
 }

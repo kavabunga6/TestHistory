@@ -9,6 +9,7 @@ import {
   rotateScimToken,
   type EnterpriseAccessRead
 } from "../enterpriseAccessApi.js";
+import { UserFacingRequestError } from "../userFacingErrors.js";
 import { EnterpriseAccessPanel } from "./ProjectSettingsEnterpriseAccess.js";
 
 vi.mock("../enterpriseAccessApi.js", async (importOriginal) => {
@@ -76,6 +77,45 @@ it("does not reveal a previous project's one-time SCIM secret after switching pr
   expect(container.textContent).toContain("Provider project-b");
   expect(container.textContent).not.toContain("secret-from-project-a");
   expect(loadEnterpriseAccess).toHaveBeenCalledTimes(2);
+});
+
+it("shows a safe message when enterprise settings fail to load", async () => {
+  vi.mocked(loadEnterpriseAccess).mockRejectedValue(
+    new Error("/api/v1/projects/project-a/enterprise-access returned 503: internal exception")
+  );
+
+  await act(async () => root.render(<EnterpriseAccessPanel canEdit projectId="project-a" />));
+
+  expect(container.textContent).toContain("Не удалось загрузить настройки SSO и SCIM");
+  expect(container.textContent).not.toContain("/api/v1/projects/");
+  expect(container.textContent).not.toContain("503");
+  expect(container.textContent).not.toContain("internal exception");
+});
+
+it("keeps the access guidance for a forbidden enterprise request", async () => {
+  vi.mocked(loadEnterpriseAccess).mockRejectedValue(new UserFacingRequestError("http", 403));
+
+  await act(async () => root.render(<EnterpriseAccessPanel canEdit projectId="project-a" />));
+
+  expect(container.textContent).toContain("У вас нет прав для этого действия.");
+});
+
+it("does not expose failed SCIM rotation details or a previous secret", async () => {
+  vi.mocked(loadEnterpriseAccess).mockResolvedValue(enterpriseRead("project-a"));
+  vi.mocked(rotateScimToken).mockRejectedValue(
+    new Error("/api/v1/projects/project-a/enterprise-access/scim/token returned 500: secret=value")
+  );
+
+  await act(async () => root.render(<EnterpriseAccessPanel canEdit projectId="project-a" />));
+  const rotateButton = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+    (button) => button.textContent?.includes("Создать токен")
+  );
+  await act(async () => rotateButton?.click());
+
+  expect(container.textContent).toContain("Не удалось создать SCIM-токен");
+  expect(container.textContent).not.toContain("/api/v1/projects/");
+  expect(container.textContent).not.toContain("500");
+  expect(container.textContent).not.toContain("secret=value");
 });
 
 function enterpriseRead(projectId: string): EnterpriseAccessRead {

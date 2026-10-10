@@ -1,3 +1,10 @@
+import {
+  UserFacingRequestError,
+  fetchForUi,
+  readJsonForUi,
+  requireOkForUi
+} from "./userFacingErrors.js";
+
 export type CurrentUser = {
   id: string;
   email: string;
@@ -73,7 +80,7 @@ export async function loginUser(input: {
 
 export async function loadCurrentUser(token = getStoredSessionToken()): Promise<CurrentUser> {
   if (token === undefined) {
-    throw new Error("Session token is missing");
+    throw new UserFacingRequestError("http", 401);
   }
   const payload = await authJson<CurrentUserResponse>("/api/v1/auth/me", {
     headers: authHeaders(token)
@@ -99,7 +106,7 @@ export async function createPersonalToken(input: {
 }): Promise<{ secret: string; token: PersonalApiToken }> {
   const token = getStoredSessionToken();
   if (token === undefined) {
-    throw new Error("Session token is missing");
+    throw new UserFacingRequestError("http", 401);
   }
   return authJson<{ secret: string; token: PersonalApiToken }>("/api/v1/auth/tokens", {
     body: JSON.stringify(input),
@@ -114,7 +121,7 @@ export async function createPersonalToken(input: {
 export async function revokePersonalToken(tokenId: string): Promise<PersonalApiToken> {
   const token = getStoredSessionToken();
   if (token === undefined) {
-    throw new Error("Session token is missing");
+    throw new UserFacingRequestError("http", 401);
   }
   const payload = await authJson<{ token: PersonalApiToken }>(
     `/api/v1/auth/tokens/${encodeURIComponent(tokenId)}`,
@@ -131,9 +138,7 @@ function authHeaders(token: string) {
 }
 
 async function authJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  if (!response.ok) {
-    throw new Error(`${url} returned ${response.status}`);
-  }
-  return (await response.json()) as T;
+  const response = await fetchForUi(url, init);
+  requireOkForUi(response);
+  return readJsonForUi<T>(response);
 }

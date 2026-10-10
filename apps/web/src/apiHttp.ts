@@ -1,21 +1,44 @@
 import { PermissionDeniedHttpError, readPermissionDeniedError } from "./apiPermissions.js";
 import { getStoredSessionToken } from "./auth.js";
+import {
+  UserFacingRequestError,
+  fetchForUi,
+  readJsonForUi,
+  requireOkForUi
+} from "./userFacingErrors.js";
 
 export async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   return requestJson<T>(url, init);
 }
 
+export async function getBinary(url: string, init?: RequestInit): Promise<Blob> {
+  const response = await requestResponse(url, init);
+  try {
+    return await response.blob();
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+    throw new UserFacingRequestError("invalid-response");
+  }
+}
+
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, withDefaultApiHeaders(init));
+  const response = await requestResponse(url, init);
+  return readJsonForUi<T>(response);
+}
+
+async function requestResponse(url: string, init?: RequestInit): Promise<Response> {
+  const response = await fetchForUi(url, withDefaultApiHeaders(init));
   if (!response.ok) {
     const denied = await readPermissionDeniedError(response);
     if (denied !== undefined) {
       throw new PermissionDeniedHttpError(denied);
     }
 
-    throw new Error(`${url} returned ${response.status}`);
+    requireOkForUi(response);
   }
-  return (await response.json()) as T;
+  return response;
 }
 
 function withDefaultApiHeaders(init?: RequestInit): RequestInit | undefined {

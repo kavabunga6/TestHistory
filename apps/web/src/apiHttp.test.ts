@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getJson } from "./apiHttp.js";
+import { getBinary, getJson } from "./apiHttp.js";
 
 const originalFetch = globalThis.fetch;
 const originalLocalStorage = globalThis.localStorage;
@@ -46,6 +46,36 @@ describe("getJson", () => {
     const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
     expect(headers.get("authorization")).toBeNull();
     expect(headers.get("x-testhistory-actor-id")).toBe("diagnostics-ui");
+  });
+});
+
+describe("getBinary", () => {
+  it("retrieves image bytes with the same session as JSON requests", async () => {
+    installSessionToken("session-1");
+    const imageBytes = new Uint8Array([137, 80, 78, 71]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(imageBytes, {
+        headers: { "content-type": "image/png" },
+        status: 200
+      })
+    );
+    globalThis.fetch = fetchMock;
+
+    const image = await getBinary("/api/v1/artifacts/image-1/content");
+
+    expect(Array.from(new Uint8Array(await image.arrayBuffer()))).toEqual(Array.from(imageBytes));
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get("authorization")).toBe(
+      "Bearer session-1"
+    );
+  });
+
+  it("does not expose an API path or status in a binary request error", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 404 }));
+    globalThis.fetch = fetchMock;
+
+    await expect(getBinary("/api/v1/artifacts/secret/content")).rejects.toThrow(
+      "Данные не найдены. Обновите страницу и попробуйте ещё раз."
+    );
   });
 });
 

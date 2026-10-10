@@ -30,6 +30,7 @@ import {
   type AutomationJobReadModel,
   type AutomationWorkspaceData
 } from "../automationApi.js";
+import { toUserErrorMessage } from "../userFacingErrors.js";
 import { AutomationPlanForm } from "./AutomationPlanForm.js";
 import { useAutomationFormSubmit } from "./useAutomationFormSubmit.js";
 
@@ -96,7 +97,7 @@ export function AutomationReferenceScreen({ projectId }: { projectId?: string | 
       }
     } catch (nextError) {
       if (sequence === requestSequence.current) {
-        setError(nextError instanceof Error ? nextError.message : String(nextError));
+        setError(toUserErrorMessage(nextError, "Не удалось загрузить автоматизацию."));
       }
     } finally {
       if (sequence === requestSequence.current) {
@@ -275,7 +276,7 @@ function IntegrationsPanel({
       await setOutboundIntegrationEnabled(data.projectId, kind, id, enabled);
       await onChanged();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Не удалось изменить интеграцию");
+      setActionError(toUserErrorMessage(error, "Не удалось изменить интеграцию."));
     } finally {
       setPendingIntegrationId(undefined);
     }
@@ -803,7 +804,7 @@ function JobsPanel({ data, creating, setCreating, onChanged }: PanelProps) {
         await updateAutomationJobStatus(data.projectId, job.id, next);
         await onChanged();
       } catch (error) {
-        setActionError(error instanceof Error ? error.message : "Не удалось обновить CI-задачу");
+        setActionError(toUserErrorMessage(error, "Не удалось обновить CI-задачу."));
       } finally {
         setPendingJobId(undefined);
       }

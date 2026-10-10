@@ -11,6 +11,12 @@
     { "name": "launch-detail", "hash": "#launch/L-1289", "auth": true, "dialog": false },
     { "name": "launch-results", "hash": "#launch/L-1289/results", "auth": true, "dialog": false },
     {
+      "name": "launch-result-attachment",
+      "hash": "#launch/L-1289/result/API-0002/overview",
+      "auth": true,
+      "dialog": false
+    },
+    {
       "name": "launch-result-history",
       "hash": "#launch/L-1289/result/PAY-1042/history",
       "auth": true,

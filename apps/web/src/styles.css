@@ -332,6 +332,58 @@ video.attachment-viewer__media {
   background: #eef4ff;
 }
 
+.attachment-inline-preview-state {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.attachment-download-error {
+  position: fixed;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  z-index: 1100;
+  right: 16px;
+  bottom: 16px;
+  width: min(320px, calc(100vw - 32px));
+  box-sizing: border-box;
+  border: 1px solid #f5bbb6;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff7f6;
+  box-shadow: 0 8px 24px rgb(45 30 28 / 14%);
+  color: #9d2e25;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.attachment-download-error > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-download-error > button {
+  display: grid;
+  flex: 0 0 24px;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -3px -4px -3px 0;
+  border: 0;
+  border-radius: 5px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.attachment-download-error > button:hover,
+.attachment-download-error > button:focus-visible {
+  background: #fce4e1;
+  outline: 2px solid #c45146;
+  outline-offset: 1px;
+}
+
 .attachment-inline-preview img,
 .attachment-inline-preview video {
   max-width: min(100%, 320px);

@@ -49,11 +49,7 @@ export function getDeniedUiModel(denied: PermissionDeniedError): DeniedUiModel {
 }
 
 export function getSafeDeniedMessage(denied: PermissionDeniedError): string {
-  if (containsAuthDetail(denied.message)) {
-    return deniedCopyForReason(denied.reason);
-  }
-
-  return denied.message;
+  return deniedCopyForReason(denied.reason);
 }
 
 function deniedCopyForReason(reason: PermissionDeniedReason): string {
@@ -102,12 +98,6 @@ function formatDeniedResource(resource: string): string {
   }
 
   return "ресурс";
-}
-
-function containsAuthDetail(value: string): boolean {
-  return (
-    /\b(token|bearer|scope|secret)\b/i.test(value) || /[a-z-]+:(read|write|evaluate)\b/i.test(value)
-  );
 }
 
 export async function readPermissionDeniedError(
@@ -208,7 +198,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export class PermissionDeniedHttpError extends Error {
   constructor(readonly denied: PermissionDeniedError) {
-    super(denied.message);
+    super(getSafeDeniedMessage(denied));
     this.name = "PermissionDeniedHttpError";
   }
 }

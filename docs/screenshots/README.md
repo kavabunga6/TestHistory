@@ -71,6 +71,7 @@ The capture script also records deeper route and dialog states for design review
 - `final/auth-login.png`
 - `final/auth-register.png`
 - `final/launch-results.png` shows the 100-result launch with a 25-row first page and test detail.
+- `final/launch-result-attachment.png` shows a stored PNG preview inside an expanded result step.
 - `final/launch-result-history.png`
 - `final/launch-result-defects.png`
 - `final/launch-errors.png` shows grouped failures and their selected result.

@@ -88,6 +88,50 @@ export const screens = [
       }
     }
   },
+  {
+    name: "launch-result-attachment",
+    hash: "#launch/L-1289/result/API-0002/overview",
+    interact: async (page) => {
+      await page
+        .locator(".launches-reference-step-tree .launches-reference-step-node > details > summary")
+        .first()
+        .click();
+      await page
+        .locator(".launches-reference-attachment > summary .launches-reference-attachment-name")
+        .first()
+        .click();
+      const preview = page.locator(".launches-reference-attachment-body img").first();
+      await preview.waitFor();
+      if ((page.viewportSize()?.width ?? 1440) <= 600) {
+        await preview.evaluate((image) =>
+          image.scrollIntoView({ block: "center", inline: "nearest" })
+        );
+      }
+    },
+    verify: async (page) => {
+      const evidence = await page
+        .locator(".launches-reference-attachment-body img")
+        .first()
+        .evaluate((image) => ({
+          loaded: image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
+          source: image.getAttribute("src")
+        }));
+      if (!evidence.loaded || !evidence.source?.startsWith("blob:")) {
+        throw new Error("Stored screenshot did not render from the binary fixture");
+      }
+      const lineOverPreview = await page
+        .locator(".launches-reference-step-branch")
+        .first()
+        .evaluate((branch) => getComputedStyle(branch, "::before").content !== "none");
+      if (lineOverPreview) {
+        throw new Error("Step guide crosses the attachment preview");
+      }
+      const hasOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth + 1
+      );
+      if (hasOverflow) throw new Error("Attachment preview overflows the viewport");
+    }
+  },
   { name: "launch-result-history", hash: "#launch/L-1289/result/PAY-1042/history" },
   { name: "launch-result-defects", hash: "#launch/L-1289/result/PAY-1042/defects" },
   {

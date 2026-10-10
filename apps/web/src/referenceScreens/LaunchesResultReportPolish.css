@@ -569,12 +569,13 @@
   --launches-step-branch-color: #b9c1cc;
 }
 
-.launches-reference-result-report .launches-reference-step-branch {
+.launches-reference-result-report .launches-reference-step-branch,
+.launches-reference-result-report .launches-reference-step-children {
   position: relative;
   min-width: 0;
 }
 
-.launches-reference-result-report .launches-reference-step-branch::before {
+.launches-reference-result-report .launches-reference-step-children::before {
   position: absolute;
   top: 0;
   bottom: 6px;
@@ -718,7 +719,7 @@
     --launches-step-indent-unit: 16px;
   }
 
-  .launches-reference-result-report .launches-reference-step-branch::before {
+  .launches-reference-result-report .launches-reference-step-children::before {
     left: calc(21px + var(--launches-step-indent, 0px));
   }
 

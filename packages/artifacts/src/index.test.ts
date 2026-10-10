@@ -58,6 +58,7 @@ describe("artifacts", () => {
   it("detects content types for common Allure attachments", () => {
     expect(detectArtifactContentType("hierarchy-attachment.xml")).toBe("application/xml");
     expect(detectArtifactContentType("failure-screenshot-attachment.png")).toBe("image/png");
+    expect(detectArtifactContentType("animated-attachment.gif")).toBe("image/gif");
     expect(detectArtifactContentType("logcat-attachment.txt", "application/text")).toBe(
       "text/plain"
     );

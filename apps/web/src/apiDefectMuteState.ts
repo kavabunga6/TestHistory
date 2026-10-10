@@ -7,6 +7,7 @@ import type {
 import type { ApiProjectReadModel } from "./apiStateModels.js";
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
+import { toUserErrorMessage } from "./userFacingErrors.js";
 
 export async function loadDefectMuteProjectionState(
   projectId?: string
@@ -52,7 +53,7 @@ export async function loadDefectMuteProjectionState(
     }
 
     return {
-      message: error instanceof Error ? error.message : String(error),
+      message: toUserErrorMessage(error, "Не удалось загрузить состояние карантина дефектов."),
       state: "error"
     };
   }
@@ -111,7 +112,7 @@ export async function loadDefectMuteReplayInvariantState(
     }
 
     return {
-      message: error instanceof Error ? error.message : String(error),
+      message: toUserErrorMessage(error, "Не удалось проверить историю карантина дефектов."),
       state: "error"
     };
   }

@@ -18,6 +18,7 @@ import {
 } from "./m1Workspace.js";
 import type { ResultStatus } from "./m1Workspace.js";
 import { isLikelyThqlQuery } from "./thqlQueryDetection.js";
+import { toUserErrorMessage } from "./userFacingErrors.js";
 import type { WorkspaceRoute } from "./workspaceRouting.js";
 
 export type RefreshWorkspaceOptions = {
@@ -299,7 +300,7 @@ export function useWorkspaceData(
         setSelectedId("");
         setApiState({
           loading: false,
-          error: error instanceof Error ? error.message : String(error)
+          error: toUserErrorMessage(error, "Не удалось обновить рабочую область.")
         });
       } finally {
         if (refreshSequence === refreshSequenceRef.current) {
@@ -431,7 +432,7 @@ export function useWorkspaceData(
         }
         setApiState({
           loading: false,
-          error: error instanceof Error ? error.message : String(error)
+          error: toUserErrorMessage(error, "Не удалось загрузить подробности результата.")
         });
       });
     return () => {

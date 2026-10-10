@@ -81,13 +81,19 @@ it("hides the previous project's settings and access panel until the new project
 
 it("lets the user retry a failed settings load for the selected project", async () => {
   vi.mocked(loadProjectSettingsFromApi)
-    .mockRejectedValueOnce(new Error("Connection unavailable"))
+    .mockRejectedValueOnce(
+      new Error("/api/v1/projects/project-b/settings/access returned 503: internal exception")
+    )
     .mockResolvedValue(settingsFor("project-b", "Project Beta"));
 
   await act(async () =>
     root.render(<ProjectSettingsReferenceScreen projectId="project-b" routeTab="access" />)
   );
   expect(container.textContent).toContain("Настройки недоступны");
+  expect(container.textContent).toContain("Не удалось получить настройки проекта");
+  expect(container.textContent).not.toContain("/api/v1/projects/");
+  expect(container.textContent).not.toContain("503");
+  expect(container.textContent).not.toContain("internal exception");
   expect(container.textContent).not.toContain("Web Sandbox");
 
   const retry = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((button) =>
@@ -99,6 +105,18 @@ it("lets the user retry a failed settings load for the selected project", async 
   expect(loadProjectSettingsFromApi).toHaveBeenCalledTimes(2);
   expect(container.textContent).toContain("Project Beta");
   expect(container.textContent).not.toContain("Не удалось выполнить запрос");
+});
+
+it("keeps the no-project guidance without rendering arbitrary exception details", async () => {
+  vi.mocked(loadProjectSettingsFromApi).mockRejectedValue(
+    new Error("Нет доступных проектов. Сначала создайте проект. /api/v1/internal returned 500")
+  );
+
+  await act(async () => root.render(<ProjectSettingsReferenceScreen routeTab="access" />));
+
+  expect(container.textContent).toContain("Нет доступных проектов. Сначала создайте проект.");
+  expect(container.textContent).not.toContain("/api/v1/internal");
+  expect(container.textContent).not.toContain("500");
 });
 
 it("enables saving visibility only after the user changes a policy", async () => {

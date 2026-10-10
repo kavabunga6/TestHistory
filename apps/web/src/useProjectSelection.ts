@@ -8,6 +8,7 @@ import {
   saveSelectedProjectId,
   type ProjectSelection
 } from "./projectSelection.js";
+import { toUserErrorMessage } from "./userFacingErrors.js";
 
 const initialSelection: ProjectSelection = { projects: [], status: "idle" };
 type OwnedSelection = { userId?: string | undefined; selection: ProjectSelection };
@@ -51,7 +52,7 @@ export function useProjectSelection(userId?: string) {
               ? {
                   userId,
                   selection: {
-                    error: error instanceof Error ? error.message : String(error),
+                    error: toUserErrorMessage(error, "Не удалось загрузить проекты."),
                     projects: [],
                     status: "error"
                   }

@@ -8,6 +8,7 @@ import type {
 import type { ApiLaunchRetentionReadModel, ApiProjectReadModel } from "./apiStateModels.js";
 import { getJson } from "./apiHttp.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
+import { toUserErrorMessage } from "./userFacingErrors.js";
 
 export async function loadArchiveDiagnosticReplayFixtureState(
   projectId?: string
@@ -55,7 +56,7 @@ export async function loadArchiveDiagnosticReplayFixtureState(
     }
 
     return {
-      message: error instanceof Error ? error.message : String(error),
+      message: toUserErrorMessage(error, "Не удалось загрузить диагностические записи архива."),
       state: "error"
     };
   }
@@ -122,7 +123,7 @@ export async function loadArchiveUploadStatusState(
     }
 
     return {
-      message: error instanceof Error ? error.message : String(error),
+      message: toUserErrorMessage(error, "Не удалось загрузить состояние архивных загрузок."),
       state: "error"
     };
   }
