@@ -54,11 +54,19 @@ export function identifier(value) {
 export function safeRelativePath(value) {
   requireTrue(
     text(value, 1024) &&
+      Buffer.byteLength(value, "utf8") <= 512 &&
       !/[\\:%?#]/.test(value) &&
       !isAbsolute(value) &&
       value
         .split("/")
-        .every((part) => part && part !== "." && part !== ".." && part.trim() === part),
+        .every(
+          (part) =>
+            part &&
+            part !== "." &&
+            part !== ".." &&
+            part.trim() === part &&
+            Buffer.byteLength(part, "utf8") <= 255
+        ),
     "UNSAFE_ARTIFACT_PATH"
   );
   return value;

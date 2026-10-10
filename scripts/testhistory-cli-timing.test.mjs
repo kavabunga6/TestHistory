@@ -144,6 +144,17 @@ if (existsSync(apiModule))
     const { createFileBackedAppStore } = await import(
       pathToFileURL(join(dirname(apiModule), "storeFilePersistence.js")).href
     );
+    const nativeName =
+      "MainActivitySmokeTest-firstLaunch_completesOnboardingAndKeepsItCompletedAfterRecreate-onboarding-completed-pass-b1c3105d9db7aa53.png";
+    for (const [index, name] of [nativeName, `${"я".repeat(125)}a.png`].entries()) {
+      const attachment = f.results[index].steps[0].attachments[0];
+      writeFileSync(join(f.root, name), readFileSync(join(f.root, attachment.source)));
+      attachment.source = name;
+      writeFileSync(
+        join(f.root, f.results[index].uuid + "-result.json"),
+        JSON.stringify(f.results[index])
+      );
+    }
     f.results[0].attachments = [f.results[0].steps[0].attachments[0]];
     f.results[0].parameters = [{ name: "elapsedRealtimeNanos", value: "75000000" }];
     writeFileSync(join(f.root, "native-0-result.json"), JSON.stringify(f.results[0]));
@@ -205,6 +216,26 @@ if (existsSync(apiModule))
             : response.rawPayload;
         return new Response(bytes, { status: response.statusCode, headers: response.headers });
       };
+      const rejectedLaunch = await call(
+        "POST",
+        `/api/v1/projects/${project.id}/launches`,
+        { name: "Rejected UTF-8 artifact boundary" },
+        token.secret
+      );
+      for (const path of [`${"я".repeat(126)}.png`, `${"a".repeat(252)}.png`]) {
+        const response = await app.inject({
+          method: "POST",
+          url: `/api/v1/launches/${rejectedLaunch.id}/results/json`,
+          headers: { authorization: `Bearer ${token.secret}` },
+          payload: { files: [{ path, content: png().toString("base64"), encoding: "base64" }] }
+        });
+        assert.equal(response.statusCode, 207);
+        const body = response.json();
+        assert.equal(body.job.importedResults, 0);
+        assert.equal(body.job.storedArtifacts, 0);
+        assert.equal(body.job.status, "completed_with_errors");
+        assert.match(JSON.stringify(body.job.errors), /segment exceeds 255 bytes/);
+      }
       const receipt = await upload(f.options, { env: actualEnv, fetchImpl });
       assert.equal(receipt.verifiedResults, 2);
       assert.equal(receipt.verifiedAttachments, 2);
@@ -219,9 +250,7 @@ if (existsSync(apiModule))
       delete unfinished.stop;
       delete unfinished.parameters;
       unfinished.steps = [];
-      unfinished.attachments = [
-        { name: "Last checkpoint", source: "images/native-0.png", type: "image/png" }
-      ];
+      unfinished.attachments = [{ name: "Last checkpoint", source: nativeName, type: "image/png" }];
       const ignored = f.results[1];
       ignored.status = "skipped";
       ignored.stage = "finished";

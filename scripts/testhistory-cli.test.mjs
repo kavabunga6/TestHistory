@@ -134,6 +134,29 @@ test("missing, traversal, encoded, Windows and absolute references fail before a
     assert.equal(called, 0);
   }
 });
+test("artifact source byte limits reject unsupported UTF-8 paths before creating a launch", async (t) => {
+  assert.equal(safeRelativePath(`${"я".repeat(125)}a.png`), `${"я".repeat(125)}a.png`);
+  for (const source of [
+    `${"я".repeat(126)}.png`,
+    `${"a".repeat(252)}.png`,
+    `${"a".repeat(255)}/${"b".repeat(255)}/c`
+  ]) {
+    const f = fixture(t);
+    f.results[0].steps[0].attachments[0].source = source;
+    writeFileSync(join(f.root, "native-0-result.json"), JSON.stringify(f.results[0]));
+    let called = 0;
+    await rejected(
+      upload(f.options, {
+        env,
+        fetchImpl: async () => {
+          called++;
+        }
+      }),
+      "UNSAFE_ARTIFACT_PATH"
+    );
+    assert.equal(called, 0);
+  }
+});
 test("input identity, statuses, labels, screenshot count and nonpositive timing are rejected without a launch", async (t) => {
   for (const change of [
     (result) => (result.uuid = "../bad"),

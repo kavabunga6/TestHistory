@@ -458,11 +458,11 @@ describe("artifacts", () => {
     expect(() =>
       prepareArtifact({
         launchId: "launch-1",
-        path: `${"a".repeat(129)}.txt`,
+        path: `${"a".repeat(252)}.txt`,
         content: "synthetic",
         policy
       })
-    ).toThrow(/segment exceeds 128 bytes/);
+    ).toThrow(/segment exceeds 255 bytes/);
 
     expect(() =>
       prepareArtifact({
@@ -473,6 +473,29 @@ describe("artifacts", () => {
         policy
       })
     ).toThrow(/content type exceeds 255 bytes/);
+  });
+
+  it("keeps native screenshot names and bounds source segments by UTF-8 bytes", () => {
+    const nativeName =
+      "MainActivitySmokeTest-firstLaunch_completesOnboardingAndKeepsItCompletedAfterRecreate-onboarding-completed-pass-b1c3105d9db7aa53.png";
+    for (const path of [nativeName, `${"я".repeat(125)}a.png`]) {
+      const artifact = prepareArtifact({
+        launchId: "launch-1",
+        path,
+        content: "synthetic",
+        policy
+      });
+      expect(artifact.path).toBe(path);
+      expect(artifact.storageKey).toBe(`launch-1/unknown/${artifact.id}`);
+      expect(artifact.storageKey).not.toContain(path);
+    }
+    expect(Buffer.byteLength(`${"я".repeat(125)}a.png`, "utf8")).toBe(255);
+    expect(() => normalizeArtifactSourcePath(`${"я".repeat(126)}.png`)).toThrow(
+      "Artifact source path segment exceeds 255 bytes"
+    );
+    expect(() =>
+      createArtifactStorageKey({ launchId: "x".repeat(129), kind: "unknown", artifactId: "id" })
+    ).toThrow("Artifact storage key launchId exceeds 128 characters");
   });
 
   it("detects duplicate checksums without serializing source paths", () => {
