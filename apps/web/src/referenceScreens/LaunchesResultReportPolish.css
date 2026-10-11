@@ -1,4 +1,10 @@
 .launches-reference-result-report {
+  --result-header-chip-height: max(
+    26px,
+    calc(var(--th-font-body) + 10px),
+    calc(var(--th-font-meta) + 10px)
+  );
+
   background: #ffffff;
 }
 
@@ -34,6 +40,23 @@
   flex: 0 0 auto;
   min-height: 30px;
   padding: 0 10px;
+}
+
+.launches-reference-result-report
+  :is(
+    .launches-reference-result-status-pill,
+    .launches-reference-result-duration,
+    .launches-reference-result-case-link,
+    .launches-reference-result-fields-link,
+    .launches-reference-result-context > span,
+    .reference-result-id-copy button
+  ) {
+  min-height: var(--result-header-chip-height);
+  box-sizing: border-box;
+  align-items: center;
+  padding-block: 0;
+  padding-inline: 7px;
+  line-height: 1.2;
 }
 
 .launches-reference-result-report .launches-reference-result-action:not(.is-muted) {
@@ -72,8 +95,6 @@
 }
 
 .launches-reference-result-headline .launches-reference-result-status-pill {
-  min-height: 23px;
-  padding: 0 8px;
   font-size: 11px;
   white-space: nowrap;
 }
@@ -83,7 +104,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 12px;
+  gap: 6px 8px;
 }
 
 .launches-reference-result-identifiers .reference-result-id-copy {
@@ -91,8 +112,6 @@
 }
 
 .launches-reference-result-identifiers .reference-result-id-copy button {
-  min-height: 24px;
-  padding: 0 6px;
   background: #ffffff;
   font-size: 11px;
 }
@@ -117,14 +136,12 @@
 }
 
 .launches-reference-result-case-link {
-  min-height: 26px;
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 3px 5px;
   border: 1px solid #cfddf0;
   border-radius: 5px;
-  padding: 3px 7px;
   background: #f5f8ff;
   color: #2255a4;
   cursor: pointer;
@@ -153,9 +170,7 @@
 }
 
 .launches-reference-result-report .launches-reference-result-duration {
-  min-height: 24px;
   border-radius: 4px;
-  padding: 0 8px;
   font-size: 12px;
 }
 
@@ -168,12 +183,10 @@
 }
 
 .launches-reference-result-context > span {
-  min-height: 23px;
   display: inline-flex;
   align-items: center;
   border: 1px solid #e4eaf2;
   border-radius: 4px;
-  padding: 2px 7px;
   background: #f7f9fc;
   color: #53647b;
   font-size: 11px;
@@ -182,13 +195,11 @@
 }
 
 .launches-reference-result-fields-link {
-  min-height: 24px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
   border: 1px solid #cfddf0;
   border-radius: 5px;
-  padding: 2px 7px;
   background: #f5f8ff;
   color: #2255a4;
   cursor: pointer;

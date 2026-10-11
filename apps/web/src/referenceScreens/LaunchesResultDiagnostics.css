@@ -8,9 +8,7 @@
 
 .launches-reference-result-report .launches-reference-result-duration {
   flex: 0 0 auto;
-  min-height: 23px;
   border: 1px solid #e1e8f1;
-  padding-inline: 7px;
   background: #f8fafc;
   color: #59687b;
   font-weight: 600;

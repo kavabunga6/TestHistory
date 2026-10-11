@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T22:59:56.485Z",
+  "generatedAt": "2026-10-11T00:41:20.774Z",
   "viewport": {
     "width": 1440,
     "height": 1000
@@ -72,35 +72,35 @@
     {
       "file": "launch-results.png",
       "hash": "#launch/L-1289/results",
-      "bytes": 258597,
+      "bytes": 257308,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-result-attachment.png",
       "hash": "#launch/L-1289/result/API-0002/overview",
-      "bytes": 229365,
+      "bytes": 229574,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-result-history.png",
       "hash": "#launch/L-1289/result/PAY-1042/history",
-      "bytes": 215747,
+      "bytes": 216048,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-result-defects.png",
       "hash": "#launch/L-1289/result/PAY-1042/defects",
-      "bytes": 209608,
+      "bytes": 210010,
       "auth": true,
       "dialog": false
     },
     {
       "file": "launch-errors.png",
       "hash": "#launch/L-1289/errors",
-      "bytes": 253720,
+      "bytes": 253591,
       "auth": true,
       "dialog": false
     },
