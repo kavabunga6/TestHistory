@@ -160,6 +160,28 @@ try {
       directResultQueries.every((query) => query === 'status = "passed"'),
     `Direct result links fetched an unfiltered page before applying the URL filter: ${JSON.stringify(directResultQueries)}`
   );
+  await directPage.goto(`${baseUrl}/#launch/L-1289/overview`, { waitUntil: "domcontentloaded" });
+  await directPage.locator(".launches-reference-overview-legend-item.is-passed").click();
+  await directPage.waitForFunction(() =>
+    window.location.hash.includes("/results?query=status+%3D+%22passed%22")
+  );
+  await directPage
+    .locator(
+      ".launches-reference-result-table > button .launches-reference-result-table-status.is-passed"
+    )
+    .first()
+    .waitFor();
+  await directPage.locator(".launches-reference-result-table > button").first().click();
+  await directPage.waitForFunction(
+    () =>
+      window.location.hash.includes("/result/") &&
+      window.location.hash.includes("query=status+%3D+%22passed%22")
+  );
+  await directPage.locator(".launches-reference-result-report").waitFor({ state: "visible" });
+  assert(
+    !(await directPage.locator(".launches-reference-results-pane").isVisible()),
+    "Overview status filter left the result hidden below the list"
+  );
   await directPage.close();
 
   console.log("Launch result navigation guard passed at 1440, 1024, and 390 px plus direct links");

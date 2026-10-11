@@ -395,11 +395,13 @@ export function LaunchesReferenceScreen({
   };
 
   const openResultsByStatus = (status: ResultStatus) => {
+    const statusQuery = `status = ${JSON.stringify(status)}`;
     const firstMatchingResult = launchResults.find((result) => matchesStatusFilter(result, status));
-    setStatusFilter(status);
-    setQuery("");
+    setStatusFilter(undefined);
+    setQuery(statusQuery);
+    setActiveResultFilterId(undefined);
     setActiveTab("results");
-    onOpenTab?.("results", "");
+    onOpenTab?.("results", statusQuery);
 
     if (firstMatchingResult !== undefined) {
       setLocalSelectedResultId(firstMatchingResult.id);
