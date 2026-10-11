@@ -22,7 +22,6 @@ import {
   hasLoadingScope,
   launchStateLabels,
   launchTabs,
-  matchesStatusFilter,
   parseLaunchMetadata,
   parseLaunchTab,
   type LaunchesReferenceLoadingScope,
@@ -391,22 +390,16 @@ export function LaunchesReferenceScreen({
     setLocalSelectedResultId(id);
     setActiveTab(tab);
     onSelectResult?.(id);
-    onOpenResult?.(id);
+    onOpenResult?.(id, selectedLaunch?.id);
   };
 
   const openResultsByStatus = (status: ResultStatus) => {
     const statusQuery = `status = ${JSON.stringify(status)}`;
-    const firstMatchingResult = launchResults.find((result) => matchesStatusFilter(result, status));
     setStatusFilter(undefined);
     setQuery(statusQuery);
     setActiveResultFilterId(undefined);
     setActiveTab("results");
     onOpenTab?.("results", statusQuery);
-
-    if (firstMatchingResult !== undefined) {
-      setLocalSelectedResultId(firstMatchingResult.id);
-      onSelectResult?.(firstMatchingResult.id);
-    }
   };
 
   const openAllProblemResults = () => {

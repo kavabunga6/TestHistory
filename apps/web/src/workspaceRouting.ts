@@ -247,6 +247,7 @@ export function findLaunchIdForResult(
 
   const result = results.find((item) => item.id === resultId);
   return (
+    result?.launchId ??
     result?.historyCompare?.to.launchId ??
     result?.historyCompare?.from.launchId ??
     result?.historyPoints?.[0]?.launchId

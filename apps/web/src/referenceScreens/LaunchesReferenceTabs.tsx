@@ -342,12 +342,6 @@ export function ResultsTab({
                   }
                   onQueryChange("");
                   onStatusFilterChange(status);
-                  const firstMatchingResult = results.find((result) =>
-                    matchesStatusFilter(result, status)
-                  );
-                  if (firstMatchingResult !== undefined) {
-                    onSelectResult(firstMatchingResult.id);
-                  }
                 }}
               >
                 <option value="">Все статусы</option>

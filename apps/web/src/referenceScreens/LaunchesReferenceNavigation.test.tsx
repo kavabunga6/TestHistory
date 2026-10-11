@@ -62,6 +62,57 @@ describe("launch results navigation", () => {
     );
   });
 
+  it("keeps the filtered result list open when the selected status has matches", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const onOpenResult = vi.fn();
+    const onResultStatusFilterChange = vi.fn();
+    const launchId = demoM1Workspace.launchItems[0]!.id;
+    const result = { ...demoM1Workspace.results[0]!, launchId, status: "passed" as const };
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={demoM1Workspace.launchItems}
+          onOpenResult={onOpenResult}
+          onResultStatusFilterChange={onResultStatusFilterChange}
+          projectId="project-sandbox"
+          results={[result]}
+          routeLaunchId={launchId}
+          routeLaunchTab="results"
+        />
+      )
+    );
+
+    const statusFilter = container.querySelector<HTMLSelectElement>(
+      'select[aria-label="Фильтр по статусу"]'
+    );
+    await act(async () => {
+      statusFilter!.value = "passed";
+      statusFilter!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    expect(onResultStatusFilterChange).toHaveBeenCalledWith("passed");
+    expect(onOpenResult).not.toHaveBeenCalled();
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={demoM1Workspace.launchItems}
+          onOpenResult={onOpenResult}
+          onResultStatusFilterChange={onResultStatusFilterChange}
+          projectId="project-sandbox"
+          resultStatusFilter="passed"
+          results={[result]}
+          routeLaunchId={launchId}
+          routeLaunchTab="results"
+        />
+      )
+    );
+    expect(container.querySelectorAll(".launches-reference-result-table > button")).toHaveLength(1);
+  });
+
   it("shows a status opened from the launch bar in the picker and clears its route query", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -174,12 +225,14 @@ describe("launch results navigation", () => {
     } as Response);
     const onOpenTab = vi.fn();
     const onResultQueryChange = vi.fn();
+    const onOpenResult = vi.fn();
 
     await act(async () =>
       root.render(
         <LaunchesReferenceScreen
           launchItems={demoM1Workspace.launchItems}
           onOpenTab={onOpenTab}
+          onOpenResult={onOpenResult}
           onResultQueryChange={onResultQueryChange}
           projectId="project-sandbox"
           results={demoM1Workspace.results}
@@ -196,6 +249,35 @@ describe("launch results navigation", () => {
     );
     expect(onOpenTab).toHaveBeenCalledWith("results", 'status = "passed"');
     expect(onResultQueryChange).toHaveBeenCalledWith('status = "passed"');
+    expect(onOpenResult).not.toHaveBeenCalled();
+  });
+
+  it("opens a selected result in the launch currently being viewed", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ kind: "thql-filter-list", items: [] })
+    } as Response);
+    const onOpenResult = vi.fn();
+    const launchId = demoM1Workspace.launchItems[0]!.id;
+    const result = { ...demoM1Workspace.results[0]!, launchId };
+
+    await act(async () =>
+      root.render(
+        <LaunchesReferenceScreen
+          launchItems={demoM1Workspace.launchItems}
+          onOpenResult={onOpenResult}
+          projectId="project-sandbox"
+          results={[result]}
+          routeLaunchId={launchId}
+          routeLaunchTab="results"
+        />
+      )
+    );
+
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>(".launches-reference-result-table > button")!.click()
+    );
+    expect(onOpenResult).toHaveBeenCalledExactlyOnceWith(result.id, launchId);
   });
 
   it("clears a routed status query when browser navigation returns to unfiltered results", async () => {

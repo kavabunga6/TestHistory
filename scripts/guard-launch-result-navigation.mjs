@@ -135,6 +135,27 @@ try {
       `${width}px: clearing the filter left results in a loading state`
     );
 
+    const passedResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        url.pathname === "/api/v1/launches/L-1289/results" &&
+        url.searchParams.get("status") === "passed"
+      );
+    });
+    await page.locator('select[aria-label="Фильтр по статусу"]').selectOption("passed");
+    await passedResponse;
+    await page
+      .locator(
+        ".launches-reference-result-table > button .launches-reference-result-table-status.is-passed"
+      )
+      .first()
+      .waitFor();
+    assert(
+      new URL(page.url()).hash.endsWith("/results") &&
+        (await page.locator(".launches-reference-results-pane").isVisible()),
+      `${width}px: changing the status opened a result instead of keeping the filtered list visible`
+    );
+
     await page.close();
   }
 

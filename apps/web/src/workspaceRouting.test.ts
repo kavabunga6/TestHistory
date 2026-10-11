@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { getHashFromRoute, getRouteFromHash } from "./workspaceRouting.js";
+import { demoM1Workspace } from "./m1Workspace.js";
+import { findLaunchIdForResult, getHashFromRoute, getRouteFromHash } from "./workspaceRouting.js";
 
 describe("workspace launch search routing", () => {
   it("round-trips a current-launch tag query", () => {
@@ -32,5 +33,25 @@ describe("workspace launch search routing", () => {
       resultId: "result-1",
       resultTab: "overview"
     });
+  });
+
+  it("opens a result in its own launch even when its history points to another launch", () => {
+    const result = {
+      ...demoM1Workspace.results[0]!,
+      launchId: "current-launch",
+      historyPoints: [{
+        attempt: 1,
+        duration: "1s",
+        flaky: false,
+        launchId: "previous-launch",
+        launchName: "Previous launch",
+        resultUuid: "previous-result",
+        retry: false,
+        startedAt: "2026-01-01T00:00:00Z",
+        status: "passed" as const
+      }]
+    };
+
+    expect(findLaunchIdForResult([result], result.id)).toBe("current-launch");
   });
 });
