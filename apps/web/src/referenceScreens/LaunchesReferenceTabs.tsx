@@ -41,7 +41,7 @@ const launchSplitListMaxWidth = 1080;
 const launchResultDetailMinWidth = 500;
 const launchSplitListDefaultRatio = 0.43;
 const launchSplitListWidthKey = "testhistory:launch-detail-list-width-v3";
-const mobileLaunchViewport = "(max-width: 760px)";
+const mobileLaunchViewport = "(max-width: 1150px)";
 
 function useMobileLaunchViewport(): boolean {
   const [mobile, setMobile] = useState(
@@ -410,7 +410,7 @@ export function ResultsTab({
               )}
             </div>
           ) : (
-            filteredResults.map((result) => (
+            (!loading ? filteredResults : []).map((result) => (
               <button
                 className={
                   selectedResult?.id === result.id && (!mobile || requestedResultId !== undefined)

@@ -204,7 +204,7 @@ export function AttachmentViewerDialog({
   const dialogRef = useModalDialog<HTMLDivElement>(onClose);
   const isTextPreview = isTextPreviewAttachment(attachment);
 
-  return (
+  return createPortal(
     <div
       className="attachment-viewer"
       role="presentation"
@@ -228,7 +228,7 @@ export function AttachmentViewerDialog({
             <div>
               <h3 id={titleId}>{attachment.name}</h3>
               <p>
-                {attachment.mediaType} {"\u00b7"} {attachment.size}
+                {attachment.mediaType} {"\u00b7"} <span>{attachment.size}</span>
               </p>
             </div>
           </div>
@@ -245,7 +245,8 @@ export function AttachmentViewerDialog({
           <AttachmentViewerContent attachment={attachment} imageUrl={imageUrl} />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

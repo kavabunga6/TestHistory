@@ -127,6 +127,31 @@ describe("AttachmentViewer", () => {
     expect(dialog?.querySelector("img")?.getAttribute("src")).toContain("data:image/png");
   });
 
+  it("keeps the attachment dialog above the result layout and restores focus on close", async () => {
+    renderViewerButton({
+      mediaType: "image/png",
+      name: "Скриншот",
+      previewUrl: "data:image/png;base64,iVBORw0KGgo="
+    });
+    const opener = container!.querySelector<HTMLButtonElement>("button")!;
+    opener.focus();
+
+    await openAttachment();
+
+    const overlay = document.querySelector<HTMLElement>(".attachment-viewer");
+    const dialog = overlay?.querySelector<HTMLElement>('[role="dialog"]');
+    expect(overlay?.parentElement).toBe(document.body);
+    expect(container!.contains(overlay)).toBe(false);
+    expect(document.activeElement).toBe(dialog);
+
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" }));
+    });
+
+    expect(document.querySelector(".attachment-viewer")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
   it("opens video attachments in a modal player", async () => {
     renderViewerButton({
       mediaType: "video/mp4",

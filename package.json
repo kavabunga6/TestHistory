@@ -47,7 +47,7 @@
     "guard:frontend-perf": "node scripts/guard-frontend-performance-contract.mjs",
     "guard:module-size": "node scripts/guard-module-size.mjs",
     "guard:ui-design": "node scripts/guard-ui-design-contract.mjs",
-    "guard:ui-interactions": "npm run build -w @testhistory/web && node scripts/guard-ui-interactions.mjs",
+    "guard:ui-interactions": "npm run build -w @testhistory/web && node scripts/guard-ui-interactions.mjs && node scripts/guard-launch-result-navigation.mjs",
     "api:docs:catalog": "node scripts/update-api-docs-catalog.mjs",
     "openapi:check": "npm run build -w @testhistory/contracts && npm run build -w @testhistory/artifacts && npm run build -w @testhistory/allure-parser && npm run build -w @testhistory/domain && npm run build -w @testhistory/api && node scripts/guard-openapi-valid.mjs && node scripts/guard-openapi-parity.mjs",
     "guard:sensitive": "node scripts/guard-sensitive-artifacts.mjs",

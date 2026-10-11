@@ -56,7 +56,7 @@ describe("launch results navigation", () => {
       statusFilter!.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
-    expect(onOpenTab).toHaveBeenCalledWith("results");
+    expect(onOpenTab).toHaveBeenCalledWith("results", "");
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain(
       "/api/v1/thql/filters?entity=launchResults&projectId=project-sandbox"
     );
@@ -98,7 +98,7 @@ describe("launch results navigation", () => {
 
     expect(query?.value).toBe("");
     expect(statusFilter?.value).toBe("");
-    expect(onOpenTab).toHaveBeenCalledWith("results");
+    expect(onOpenTab).toHaveBeenCalledWith("results", "");
   });
 
   it("opens a test case from a selected launch result with the exact case ID", async () => {
@@ -158,7 +158,7 @@ describe("launch results navigation", () => {
         .querySelector<HTMLButtonElement>(".launches-reference-overview-scope > button")!
         .click()
     );
-    expect(onOpenTab).toHaveBeenCalledWith("results");
+    expect(onOpenTab).toHaveBeenCalledWith("results", 'status in ["failed", "broken"]');
     expect(onResultQueryChange).toHaveBeenCalledWith('status in ["failed", "broken"]');
     expect(
       container.querySelector<HTMLInputElement>(

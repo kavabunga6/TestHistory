@@ -98,6 +98,7 @@ export function WorkspaceSurface({
   listQuery,
   resultPageIndex,
   resultPageSize,
+  resultFilterPending = false,
   resultQuery,
   resultStatusFilter,
   testCaseRouteId,
@@ -151,6 +152,7 @@ export function WorkspaceSurface({
   listQuery?: string | undefined;
   resultPageIndex?: number | undefined;
   resultPageSize?: number | undefined;
+  resultFilterPending?: boolean | undefined;
   resultQuery?: string | undefined;
   resultStatusFilter?: ResultStatus | undefined;
   testCaseRouteId?: string | undefined;
@@ -166,7 +168,7 @@ export function WorkspaceSurface({
   onOpenLaunchResult?: ((id: string, launchId?: string, testCaseId?: string) => void) | undefined;
   onOpenLaunchResultsByTag?: ((tag: string, resultId: string) => void) | undefined;
   onOpenLaunchResultTab?: ((tab: string) => void) | undefined;
-  onOpenLaunchTab?: ((tab: string) => void) | undefined;
+  onOpenLaunchTab?: ((tab: string, queryOverride?: string) => void) | undefined;
   onOpenDefect?: ((id: string) => void) | undefined;
   onOpenSettingsTab?: ((tab: string) => void) | undefined;
   onOpenTypographySettings?: (() => void) | undefined;
@@ -353,6 +355,7 @@ export function WorkspaceSurface({
                 resultPage={workspace.resultPage}
                 resultPageIndex={resultPageIndex}
                 resultPageSize={resultPageSize}
+                resultFilterPending={resultFilterPending}
                 resultQuery={resultQuery}
                 resultStatusFilter={resultStatusFilter}
                 resultPartial={

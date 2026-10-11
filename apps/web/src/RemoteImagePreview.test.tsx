@@ -86,14 +86,14 @@ describe("production PNG viewer", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     await act(async () => container.querySelector<HTMLButtonElement>("button")!.click());
     await tick();
-    expect(container.querySelector("img")?.src).toBe("blob:fixture-image");
+    expect(document.querySelector(".attachment-viewer img")?.getAttribute("src")).toBe(
+      "blob:fixture-image"
+    );
     expect(createUrl).toHaveBeenCalledOnce();
     const blob = createUrl.mock.calls[0]![0] as Blob;
     expect(blob.size).toBe(png.length);
     await act(async () =>
-      container
-        .querySelector<HTMLButtonElement>('[aria-label="Закрыть просмотр вложения"]')!
-        .click()
+      document.querySelector<HTMLButtonElement>('[aria-label="Закрыть просмотр вложения"]')!.click()
     );
     expect(revokeUrl).toHaveBeenCalledExactlyOnceWith("blob:fixture-image");
   });

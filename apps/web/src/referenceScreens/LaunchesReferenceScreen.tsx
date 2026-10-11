@@ -99,6 +99,7 @@ export function LaunchesReferenceScreen({
   resultPage,
   resultPageIndex = 0,
   resultPageSize = 25,
+  resultFilterPending = false,
   resultQuery,
   resultStatusFilter,
   results,
@@ -128,7 +129,7 @@ export function LaunchesReferenceScreen({
   onOpenResult?: ((id: string, launchId?: string) => void) | undefined;
   onOpenResultTab?: ((tab: string) => void) | undefined;
   onOpenTestCase?: ((testCaseId: string) => void) | undefined;
-  onOpenTab?: ((tab: string) => void) | undefined;
+  onOpenTab?: ((tab: string, queryOverride?: string) => void) | undefined;
   onRefresh?: (() => void) | undefined;
   onResultPageIndexChange?: ((index: number) => void) | undefined;
   onResultPageSizeChange?: ((size: number) => void) | undefined;
@@ -147,6 +148,7 @@ export function LaunchesReferenceScreen({
   resultPage?: LaunchResultPage | undefined;
   resultPageIndex?: number | undefined;
   resultPageSize?: number | undefined;
+  resultFilterPending?: boolean | undefined;
   resultQuery?: string | undefined;
   resultStatusFilter?: ResultStatus | undefined;
   resultPartial?: LaunchesReferencePartialState | undefined;
@@ -158,6 +160,9 @@ export function LaunchesReferenceScreen({
     routeResultId !== undefined ? "results" : parseLaunchTab(routeLaunchTab)
   );
   const [query, setQuery] = useState(routeQuery ?? "");
+  const queryRef = useRef(query);
+  queryRef.current = query;
+  const previousRouteLaunchIdRef = useRef(routeLaunchId);
   const [launchQuery, setLaunchQuery] = useState("");
   const [activeLaunchFilterId, setActiveLaunchFilterId] = useState<string | undefined>();
   const [activeResultFilterId, setActiveResultFilterId] = useState<string | undefined>();
@@ -235,6 +240,11 @@ export function LaunchesReferenceScreen({
     (routeResultId === undefined
       ? (findMostUsefulLaunchResult(launchResults) ?? launchResults[0])
       : undefined);
+  const resultsUpdating =
+    resultFilterPending ||
+    (routeQuery !== undefined && routeQuery !== query) ||
+    (resultQuery ?? "") !== query ||
+    resultStatusFilter !== statusFilter;
   const isLaunchListLoading = launchListLoading || hasLoadingScope(loadingScope, "launch-list");
   const isLaunchDetailLoading =
     launchDetailLoading || hasLoadingScope(loadingScope, "launch-detail");
@@ -351,9 +361,13 @@ export function LaunchesReferenceScreen({
   }, [routeLaunchTab, routeResultId]);
 
   useEffect(() => {
-    setQuery(routeQuery ?? "");
-    setStatusFilter(undefined);
-    setActiveResultFilterId(undefined);
+    const launchChanged = previousRouteLaunchIdRef.current !== routeLaunchId;
+    previousRouteLaunchIdRef.current = routeLaunchId;
+    if (launchChanged || queryRef.current !== (routeQuery ?? "")) {
+      setQuery(routeQuery ?? "");
+      setStatusFilter(undefined);
+      setActiveResultFilterId(undefined);
+    }
     if (routeQuery !== undefined) {
       setActiveTab("results");
     }
@@ -385,7 +399,7 @@ export function LaunchesReferenceScreen({
     setStatusFilter(status);
     setQuery("");
     setActiveTab("results");
-    onOpenTab?.("results");
+    onOpenTab?.("results", "");
 
     if (firstMatchingResult !== undefined) {
       setLocalSelectedResultId(firstMatchingResult.id);
@@ -394,11 +408,12 @@ export function LaunchesReferenceScreen({
   };
 
   const openAllProblemResults = () => {
-    setQuery('status in ["failed", "broken"]');
+    const problemQuery = 'status in ["failed", "broken"]';
+    setQuery(problemQuery);
     setStatusFilter(undefined);
     setActiveResultFilterId(undefined);
     setActiveTab("results");
-    onOpenTab?.("results");
+    onOpenTab?.("results", problemQuery);
   };
 
   const openResultsByTag = (tag: string) => {
@@ -408,7 +423,7 @@ export function LaunchesReferenceScreen({
     setStatusFilter(undefined);
     setActiveResultFilterId(undefined);
     setActiveTab("results");
-    onOpenTab?.("results");
+    onOpenTab?.("results", tagQuery);
 
     if (firstMatchingResult !== undefined) {
       setLocalSelectedResultId(firstMatchingResult.id);
@@ -420,7 +435,7 @@ export function LaunchesReferenceScreen({
     setStatusFilter(undefined);
     setQuery("");
     setActiveTab("results");
-    onOpenTab?.("results");
+    onOpenTab?.("results", "");
   };
 
   const changeResultPageIndex = (index: number) => {
@@ -435,7 +450,7 @@ export function LaunchesReferenceScreen({
     }
     setQuery(nextQuery);
     if (routeResultId !== undefined || routeQuery !== undefined) {
-      onOpenTab?.("results");
+      onOpenTab?.("results", nextQuery);
     }
   };
 
@@ -444,8 +459,8 @@ export function LaunchesReferenceScreen({
       return;
     }
     setStatusFilter(status);
-    if (routeResultId !== undefined) {
-      onOpenTab?.("results");
+    if (routeResultId !== undefined || routeQuery !== undefined) {
+      onOpenTab?.("results", "");
     }
   };
 
@@ -732,7 +747,7 @@ export function LaunchesReferenceScreen({
               projectId={projectId}
               filteredResults={filteredResults}
               launchCounters={selectedLaunch.counters}
-              loading={isResultLoading || isLaunchDetailLoading}
+              loading={isResultLoading || isLaunchDetailLoading || resultsUpdating}
               onActiveFilterChange={setActiveResultFilterId}
               onClearStatusFilter={() => changeResultStatusFilter(undefined)}
               onQueryChange={changeResultQuery}

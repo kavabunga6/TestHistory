@@ -52,8 +52,9 @@ export function useWorkspaceData(
     scope: string;
     query: string;
     status?: ResultStatus;
-  }>({ scope: paginationScope, query: "" });
-  const resultQuery = resultFilter.scope === paginationScope ? resultFilter.query : "";
+  }>({ scope: paginationScope, query: route.launchQuery ?? "" });
+  const resultQuery =
+    resultFilter.scope === paginationScope ? resultFilter.query : (route.launchQuery ?? "");
   const resultStatusFilter =
     resultFilter.scope === paginationScope ? resultFilter.status : undefined;
   const listScope = `${projectId ?? ""}:${route.mode}`;
@@ -72,10 +73,12 @@ export function useWorkspaceData(
     debouncedListFilter.scope === listScope ? debouncedListFilter.query : "";
   const [debouncedQueryState, setDebouncedQueryState] = useState({
     scope: paginationScope,
-    query: ""
+    query: route.launchQuery ?? ""
   });
   const debouncedResultQuery =
-    debouncedQueryState.scope === paginationScope ? debouncedQueryState.query : "";
+    debouncedQueryState.scope === paginationScope
+      ? debouncedQueryState.query
+      : (route.launchQuery ?? "");
 
   useEffect(() => {
     if (debouncedResultQuery === resultQuery) {
@@ -139,6 +142,7 @@ export function useWorkspaceData(
       if (size === resultPageSize) {
         return;
       }
+      setWorkspaceLoading(true);
       setResultPagination({ index: 0, scope: paginationScope, size });
     },
     [paginationScope, resultPageSize]
@@ -152,6 +156,7 @@ export function useWorkspaceData(
       if (index === resultPageIndex) {
         return;
       }
+      setWorkspaceLoading(true);
       setResultPagination((current) => ({ ...current, index, scope: paginationScope }));
     },
     [paginationScope, resultPageIndex]
@@ -162,6 +167,7 @@ export function useWorkspaceData(
       if (query === resultQuery) {
         return;
       }
+      setWorkspaceLoading(true);
       setResultFilter((current) => ({
         scope: paginationScope,
         query,
@@ -180,6 +186,7 @@ export function useWorkspaceData(
       if (status === resultStatusFilter) {
         return;
       }
+      setWorkspaceLoading(true);
       setResultFilter((current) => ({
         scope: paginationScope,
         query: current.scope === paginationScope ? current.query : "",
@@ -447,6 +454,7 @@ export function useWorkspaceData(
     refreshWorkspace,
     resultPageIndex,
     resultPageSize,
+    resultFilterPending: route.mode === "launch" && resultQuery !== debouncedResultQuery,
     resultQuery,
     resultStatusFilter,
     selectedId,

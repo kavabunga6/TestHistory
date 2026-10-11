@@ -91,6 +91,7 @@ function App() {
     refreshWorkspace,
     resultPageIndex,
     resultPageSize,
+    resultFilterPending,
     resultQuery,
     resultStatusFilter,
     selectedId,
@@ -515,6 +516,7 @@ function App() {
           listQuery={listQuery}
           resultPageIndex={resultPageIndex}
           resultPageSize={resultPageSize}
+          resultFilterPending={resultFilterPending}
           resultQuery={resultQuery}
           resultStatusFilter={resultStatusFilter}
           workspace={
@@ -573,19 +575,25 @@ function App() {
             if (launchId === undefined || launchId === "") {
               return;
             }
-            const resolvedResultIdPromise =
-              targetTestCaseId === undefined
-                ? Promise.resolve(id)
-                : resolveLaunchResultId(launchId, id, targetTestCaseId).catch(() => id);
-            void resolvedResultIdPromise.then((resolvedResultId) => {
+            const openResult = (resolvedResultId: string) => {
               setSelectedId(resolvedResultId);
               setRoute({
                 launchId,
+                ...(route.mode === "launch" && route.launchId === launchId
+                  ? { launchQuery: route.launchQuery }
+                  : {}),
                 mode: "launch",
                 resultId: resolvedResultId,
                 resultTab: "overview"
               });
-            });
+            };
+            if (targetTestCaseId === undefined) {
+              openResult(id);
+              return;
+            }
+            void resolveLaunchResultId(launchId, id, targetTestCaseId)
+              .catch(() => id)
+              .then(openResult);
           }}
           onOpenLaunchResultsByTag={(tag, resultId) => {
             const launchId =
@@ -600,9 +608,11 @@ function App() {
               mode: "launch"
             });
           }}
-          onOpenLaunchTab={(tab) =>
+          onOpenLaunchTab={(tab, queryOverride) =>
             setRoute({
               launchId: route.launchId ?? workspace.launchItems[0]?.id,
+              launchQuery:
+                queryOverride === undefined ? route.launchQuery : queryOverride || undefined,
               launchTab: tab,
               mode: "launch"
             })
@@ -613,6 +623,7 @@ function App() {
             }
             setRoute({
               launchId: route.launchId ?? findLaunchIdForResult(workspace.results, route.resultId),
+              launchQuery: route.launchQuery,
               mode: "launch",
               resultId: route.resultId,
               resultTab: tab

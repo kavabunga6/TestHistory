@@ -131,6 +131,10 @@ button:disabled {
   font-size: 12px;
 }
 
+.attachment-viewer__title p span {
+  white-space: nowrap;
+}
+
 .attachment-viewer__actions {
   flex: 0 0 auto;
   display: inline-flex;
@@ -7078,6 +7082,13 @@ h3 {
   .confirm-delete-dialog header,
   .quarantine-dialog header {
     align-items: flex-start;
+  }
+
+  .attachment-viewer__title p {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .attachment-viewer__actions button,
