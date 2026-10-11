@@ -28,7 +28,7 @@ export async function requestJson<T>(url: string, init?: RequestInit): Promise<T
   return readJsonForUi<T>(response);
 }
 
-async function requestResponse(url: string, init?: RequestInit): Promise<Response> {
+export async function requestResponse(url: string, init?: RequestInit): Promise<Response> {
   const response = await fetchForUi(url, withDefaultApiHeaders(init));
   if (!response.ok) {
     const denied = await readPermissionDeniedError(response);
@@ -44,11 +44,7 @@ async function requestResponse(url: string, init?: RequestInit): Promise<Respons
 function withDefaultApiHeaders(init?: RequestInit): RequestInit | undefined {
   const headers = new Headers(init?.headers);
   const sessionToken = getStoredSessionToken();
-  if (
-    sessionToken !== undefined &&
-    !headers.has("authorization") &&
-    !headers.has("x-testhistory-actor-id")
-  ) {
+  if (sessionToken !== undefined && !headers.has("authorization")) {
     headers.set("authorization", `Bearer ${sessionToken}`);
   }
 

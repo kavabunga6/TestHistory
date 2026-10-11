@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 import { useModalDialog } from "./AppDialogs.js";
 import { getBinary, getJson } from "./apiHttp.js";
 import { canDownloadAttachment, useAttachmentImageSource } from "./AttachmentImageSource.js";
+import { RemoteImagePreview } from "./RemoteImagePreview.js";
+import { maxArtifactPngBytes } from "./artifactPng.js";
 import type { ResultAttachment } from "./m1Workspace.js";
 
 const text = {
@@ -255,12 +257,23 @@ export function AttachmentViewerContent({
   imageUrl?: string | undefined;
 }) {
   const mediaType = attachment.mediaType.toLowerCase();
+  const useBoundedPngLoader =
+    mediaType === "image/png" &&
+    imageUrl === undefined &&
+    attachment.previewUrl === undefined &&
+    attachment.preview?.contentType?.toLowerCase() === "image/png" &&
+    /^[a-f0-9]{64}$/.test(attachment.preview.artifactId) &&
+    attachment.preview.originalBytes >= 8 &&
+    attachment.preview.originalBytes <= maxArtifactPngBytes;
   const imageSource = useAttachmentImageSource(
     attachment,
-    mediaType.startsWith("image/") && imageUrl === undefined
+    mediaType.startsWith("image/") && imageUrl === undefined && !useBoundedPngLoader
   );
 
   if (mediaType.startsWith("image/")) {
+    if (useBoundedPngLoader && attachment.preview !== undefined) {
+      return <RemoteImagePreview name={attachment.name} preview={attachment.preview} />;
+    }
     return imageUrl !== undefined || imageSource.url !== undefined ? (
       <img
         alt={attachment.name}

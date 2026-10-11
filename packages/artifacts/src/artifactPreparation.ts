@@ -17,7 +17,7 @@ import type {
 } from "./types.js";
 
 const maxArtifactPathBytes = 512;
-const maxArtifactPathSegmentBytes = 128;
+const maxArtifactPathSegmentBytes = 255;
 const maxArtifactContentTypeBytes = 255;
 
 export function prepareArtifact(input: {

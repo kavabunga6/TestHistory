@@ -4,6 +4,7 @@ import type {
   SecurityAuditExportLifecycleReplayInvariantRead
 } from "./apiTypes.js";
 import { getJson } from "./apiHttp.js";
+import { getStoredSessionToken, loadCurrentUser } from "./auth.js";
 import { PermissionDeniedHttpError, getSafeDeniedMessage } from "./apiPermissions.js";
 import { toUserErrorMessage } from "./userFacingErrors.js";
 
@@ -22,7 +23,10 @@ export async function loadSecurityAuditExportLifecycleInvariantState(
       };
     }
 
-    const actorId = "security-audit-actor";
+    const actorId =
+      getStoredSessionToken() === undefined
+        ? "security-audit-actor"
+        : (await loadCurrentUser()).email;
     const data = await getJson<SecurityAuditExportLifecycleReplayInvariantRead>(
       `/api/v1/projects/${encodeURIComponent(
         project.id
