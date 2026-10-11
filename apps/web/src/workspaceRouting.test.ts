@@ -39,17 +39,19 @@ describe("workspace launch search routing", () => {
     const result = {
       ...demoM1Workspace.results[0]!,
       launchId: "current-launch",
-      historyPoints: [{
-        attempt: 1,
-        duration: "1s",
-        flaky: false,
-        launchId: "previous-launch",
-        launchName: "Previous launch",
-        resultUuid: "previous-result",
-        retry: false,
-        startedAt: "2026-01-01T00:00:00Z",
-        status: "passed" as const
-      }]
+      historyPoints: [
+        {
+          attempt: 1,
+          duration: "1s",
+          flaky: false,
+          launchId: "previous-launch",
+          launchName: "Previous launch",
+          resultUuid: "previous-result",
+          retry: false,
+          startedAt: "2026-01-01T00:00:00Z",
+          status: "passed" as const
+        }
+      ]
     };
 
     expect(findLaunchIdForResult([result], result.id)).toBe("current-launch");

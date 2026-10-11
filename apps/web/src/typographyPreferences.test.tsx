@@ -103,6 +103,10 @@ describe("typography preferences", () => {
       new URL("./referenceScreens/LaunchesReferenceScreen.css", import.meta.url),
       "utf8"
     );
+    const summaryStyles = readFileSync(
+      new URL("./referenceScreens/LaunchesReferenceSummary.css", import.meta.url),
+      "utf8"
+    );
     const settingsStyles = readFileSync(
       new URL("./referenceScreens/ProjectSettingsReferenceScreen.css", import.meta.url),
       "utf8"
@@ -113,7 +117,8 @@ describe("typography preferences", () => {
     );
 
     expect(typographyStyles).toContain("--th-font-body-delta");
-    expect(typographyStyles).toContain(".launches-reference-overview-donut-center strong");
+    expect(summaryStyles).toContain(".launches-reference-overview-score-value");
+    expect(summaryStyles).toContain("font-size: clamp(50px");
     expect(typographyStyles).toContain('[class*="__count"]');
     expect(typographyStyles).toContain(".launches-reference-result-tabs");
     expect(typographyStyles).toContain(".auth-login__switch");
@@ -121,7 +126,7 @@ describe("typography preferences", () => {
     expect(typographyStyles).toContain("font-size: var(--th-font-body) !important;");
     expect(typographyStyles).toContain(":is(button, input, select, textarea)");
     expect(typographyStyles).toContain("button:not(:has(> svg:only-child))");
-    expect(launchesStyles).not.toContain("@keyframes launches-reference-donut-reveal");
+    expect(summaryStyles).not.toContain("launches-reference-overview-donut");
     expect(launchesStyles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(launchesStyles).toContain(
       "min-height: calc(70px + var(--th-font-body-delta) + var(--th-font-meta-delta))"

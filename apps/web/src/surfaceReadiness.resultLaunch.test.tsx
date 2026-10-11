@@ -362,7 +362,7 @@ describe("result and launch surface readiness", () => {
     expect(markup).toContain("launches-reference-card-scroll");
   });
 
-  it("renders an accessible result donut with clickable segments and legend filters", () => {
+  it("renders a clickable success KPI and accessible status filters", () => {
     const launch = demoM1Workspace.launchItems[0]!;
     const results = demoM1Workspace.results;
     const markup = renderToStaticMarkup(
@@ -375,13 +375,15 @@ describe("result and launch surface readiness", () => {
       />
     );
 
-    expect(markup).toContain("launches-reference-overview-donut");
-    expect(markup).toContain('role="button"');
-    expect(markup).toContain('tabindex="0"');
+    expect(markup).toContain('class="launches-reference-overview-score"');
+    expect(markup).toContain('aria-label="Успешные:');
+    expect(markup).toContain("Открыть успешные результаты");
+    expect(markup).toContain('aria-label="Распределение результатов по статусам"');
     expect(markup).toContain('aria-label="Фильтры по статусу"');
     for (const status of ["passed", "failed", "broken", "unknown", "skipped"] as const) {
       expect(markup).toContain(`launches-reference-overview-legend-item is-${status}`);
     }
+    expect(markup).not.toContain("launches-reference-overview-donut");
     expect(markup).toContain("Открыть результаты с этим статусом");
   });
 

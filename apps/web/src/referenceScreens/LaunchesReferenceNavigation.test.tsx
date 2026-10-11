@@ -206,7 +206,7 @@ describe("launch results navigation", () => {
 
     await act(async () =>
       container
-        .querySelector<HTMLButtonElement>(".launches-reference-overview-scope > button")!
+        .querySelector<HTMLButtonElement>(".launches-reference-overview-card-action button")!
         .click()
     );
     expect(onOpenTab).toHaveBeenCalledWith("results", 'status in ["failed", "broken"]');
@@ -275,7 +275,9 @@ describe("launch results navigation", () => {
     );
 
     await act(async () =>
-      container.querySelector<HTMLButtonElement>(".launches-reference-result-table > button")!.click()
+      container
+        .querySelector<HTMLButtonElement>(".launches-reference-result-table > button")!
+        .click()
     );
     expect(onOpenResult).toHaveBeenCalledExactlyOnceWith(result.id, launchId);
   });

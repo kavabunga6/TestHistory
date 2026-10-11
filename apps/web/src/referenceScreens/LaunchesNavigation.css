@@ -123,3 +123,18 @@
     padding-left: 8px;
   }
 }
+
+@media (max-width: 480px) {
+  .launches-reference-crumbs {
+    grid-template-areas:
+      "crumb"
+      "actions"
+      "heading";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .launches-reference-status-tools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}

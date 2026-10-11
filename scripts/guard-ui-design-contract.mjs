@@ -34,6 +34,10 @@ const sources = new Map([
     read("apps/web/src/referenceScreens/LaunchesReferenceOverview.css")
   ],
   [
+    "apps/web/src/referenceScreens/LaunchesReferenceSummary.css",
+    read("apps/web/src/referenceScreens/LaunchesReferenceSummary.css")
+  ],
+  [
     "apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx",
     read("apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx")
   ],
@@ -259,20 +263,38 @@ for (const snippet of [
   ".launches-reference-overview > *",
   "width: 100%;",
   ".launches-reference-overview-content",
-  ".launches-reference-overview-content.is-clear",
-  "grid-template-columns: repeat(3, minmax(0, 1fr));",
-  "grid-template-columns: minmax(0, 1.65fr) minmax(350px, 0.9fr);",
+  "grid-template-columns: minmax(0, 980px) minmax(360px, 1fr);",
+  '"summary defects"',
+  '"problems variables"',
   ".launches-reference-overview-side",
-  "gap: 18px;",
-  ".launches-reference-overview-summary-main",
-  ".launches-reference-overview-donut",
-  ".launches-reference-overview-legend"
+  "display: contents;",
+  "@media (max-width: 1350px)"
 ]) {
   expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceOverview.css", snippet);
 }
+for (const snippet of [
+  ".launches-reference-overview-summary-main",
+  ".launches-reference-overview-score-value",
+  ".launches-reference-overview-breakdown",
+  ".launches-reference-overview-distribution button",
+  ".launches-reference-overview-distribution button.is-narrow span",
+  ".launches-reference-overview-legend-item",
+  "grid-template-columns: minmax(0, 250px) minmax(0, 1fr);",
+  "max-width: 840px;",
+  "@container (max-width: 700px)",
+  "@container (max-width: 480px)",
+  "@media (prefers-reduced-motion: reduce)"
+]) {
+  expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceSummary.css", snippet);
+}
+expectNoSnippet("apps/web/src/referenceScreens/LaunchesReferenceSummary.css", "overview-donut");
 expectNoSnippet(
   "apps/web/src/referenceScreens/LaunchesReferenceOverview.css",
   "max-width: 1600px;"
+);
+expectNoSnippet(
+  "apps/web/src/referenceScreens/LaunchesReferenceOverview.css",
+  ".launches-reference-overview-content.is-clear"
 );
 
 for (const snippet of [
@@ -287,7 +309,8 @@ for (const snippet of [
 
 for (const snippet of [
   "launches-reference-overview-summary",
-  "launches-reference-overview-donut-segment",
+  "launches-reference-overview-score-value",
+  "launches-reference-overview-distribution",
   "launches-reference-overview-legend-item",
   "Переменные окружения",
   "overviewStatusOrder",
@@ -295,6 +318,11 @@ for (const snippet of [
 ]) {
   expectSnippet("apps/web/src/referenceScreens/LaunchesReferenceOverview.tsx", snippet);
 }
+expectNoSnippet("apps/web/src/referenceScreens/LaunchesReferenceOverview.tsx", "overview-donut");
+expectSnippet(
+  "apps/web/src/referenceScreens/LaunchesReferenceScreen.tsx",
+  'import "./LaunchesReferenceSummary.css";'
+);
 expectSnippet("apps/web/src/referenceScreens/resultStatusPresentation.ts", "resultStatusOrder");
 
 for (const snippet of [

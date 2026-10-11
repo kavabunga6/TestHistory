@@ -118,10 +118,6 @@ html[data-testhistory-typography="enabled"] body .launches-reference-quick-stats
   font-size: calc(var(--th-font-body) + 2px) !important;
 }
 
-html[data-testhistory-typography="enabled"] body .launches-reference-overview-donut-center strong {
-  font-size: calc(var(--th-font-body) + 12px) !important;
-}
-
 html[data-testhistory-typography="enabled"] body :is(small, caption, time, th, em),
 html[data-testhistory-typography="enabled"] body :is(small, caption, time, th, em) *,
 html[data-testhistory-typography="enabled"] body .typography-role-meta,

@@ -193,7 +193,7 @@ describe("settings table readability contracts", () => {
     }
   });
 
-  it("lets the launch overview use the available width with a wide results list", () => {
+  it("keeps the launch overview in aligned columns with a compact summary", () => {
     const overviewStyles = readFileSync(
       new URL("./referenceScreens/LaunchesReferenceOverview.css", import.meta.url),
       "utf8"
@@ -208,7 +208,9 @@ describe("settings table readability contracts", () => {
       ".launches-reference-overview",
       "gap:"
     );
-    expect(overviewBlock).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(overviewBlock).toContain("grid-template-columns: minmax(0, 980px) minmax(360px, 1fr)");
+    expect(overviewBlock).toContain('"summary defects"');
+    expect(overviewBlock).toContain('"problems variables"');
     expect(overviewBlock).toContain("gap: 18px");
     expect(overviewBlock).toContain("padding: 24px");
     expect(overviewBlock).toContain("overflow-y: auto");
@@ -221,9 +223,8 @@ describe("settings table readability contracts", () => {
       overviewStyles,
       ".launches-reference-overview-content"
     );
-    expect(detailColumnsBlock).toContain(
-      "grid-template-columns: minmax(0, 1.65fr) minmax(350px, 0.9fr)"
-    );
+    expect(detailColumnsBlock).toContain("display: contents");
+    expect(overviewStyles).toContain("@media (max-width: 1350px)");
 
     const cardBlock = extractCssBlockContaining(
       sharedStyles,

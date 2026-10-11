@@ -31,6 +31,7 @@ import {
 
 import { ReferenceRouteState } from "./LaunchesReferenceRouteState.js";
 import { ReferenceListPagination, useReferenceListPagination } from "./ReferenceListPagination.js";
+import { ResultIdCopy } from "./ResultIdCopy.js";
 import { LaunchComparisonScreen, type LaunchComparisonSession } from "./LaunchComparisonCard.js";
 import {
   ChartsTab,
@@ -43,6 +44,7 @@ import { ThqlSearchPanel } from "./ThqlSearchPanel.js";
 
 import "./LaunchesReferenceScreen.css";
 import "./LaunchesReferenceOverview.css";
+import "./LaunchesReferenceSummary.css";
 import "./LaunchesResultPagination.css";
 import "./LaunchesNavigation.css";
 
@@ -635,12 +637,24 @@ export function LaunchesReferenceScreen({
 
         <div className="launches-reference-heading-row">
           <div className="launches-reference-heading">
-            <h1 title={selectedLaunch.name}>{selectedLaunch.name}</h1>
-            <div className="launches-reference-heading-meta">
+            <div className="launches-reference-heading-title">
+              <h1 title={selectedLaunch.name}>{selectedLaunch.name}</h1>
               <span className={`launches-reference-state state-${selectedLaunch.state}`}>
                 {launchStateLabels[selectedLaunch.state] ?? selectedLaunch.state}
               </span>
-              <span className="launches-reference-heading-id">ID {selectedLaunch.id}</span>
+            </div>
+            <div className="launches-reference-heading-meta">
+              <ResultIdCopy label="ID" resultId={selectedLaunch.id} />
+              {selectedLaunch.createdAt ? (
+                <>
+                  <span className="launches-reference-heading-separator" aria-hidden="true">
+                    ·
+                  </span>
+                  <time dateTime={selectedLaunch.createdAt}>
+                    Создан: {formatHistoryDate(selectedLaunch.createdAt)}
+                  </time>
+                </>
+              ) : null}
             </div>
           </div>
 

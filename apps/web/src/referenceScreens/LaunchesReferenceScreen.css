@@ -39,10 +39,10 @@
   min-width: 0;
   display: grid;
   align-content: center;
-  gap: 5px;
-  border-bottom: 1px solid #dce5f0;
-  padding: 9px 24px 10px;
-  background: #fbfcff;
+  gap: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 24px 14px;
+  background: #ffffff;
   color: #64748b;
 }
 
@@ -55,6 +55,8 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 9px;
 }
 
 .launches-reference-crumbs-nav > svg {
@@ -88,45 +90,89 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
 }
 
 .launches-reference-heading {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 6px;
+}
+
+.launches-reference-heading-title {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
 }
 
 .launches-reference-heading h1 {
   min-width: 0;
-  max-width: min(860px, 55vw);
-  overflow: hidden;
   margin: 0;
-  color: #172338;
-  font-size: clamp(18px, 1.35vw, 22px);
+  color: #0f172a;
+  font-size: clamp(20px, 1.4vw, 23px);
   font-weight: 700;
   letter-spacing: -0.025em;
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .launches-reference-heading-meta {
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px 10px;
   flex-wrap: wrap;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.launches-reference-heading-meta .reference-result-id-copy {
+  gap: 6px;
+  font-size: 12px;
+}
+
+.launches-reference-heading-meta .reference-result-id-copy code {
+  max-width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  padding: 3px 6px;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.launches-reference-heading-meta .reference-result-id-copy button {
+  min-height: 25px;
+  border-color: transparent;
+  background: transparent;
+  color: #2563eb;
+  font-size: 12px;
+}
+
+.launches-reference-heading-meta .reference-result-id-copy button:hover,
+.launches-reference-heading-meta .reference-result-id-copy button:focus-visible {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.launches-reference-heading-meta time {
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.launches-reference-heading-separator {
+  color: #cbd5e1;
 }
 
 .launches-reference-state {
-  min-height: 24px;
+  min-height: 22px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   border: 1px solid #d7e6f2;
   border-radius: 999px;
-  padding: 0 9px;
+  padding: 0 8px;
   background: #edf5fb;
   color: #37627d;
   font-size: 11px;
@@ -146,13 +192,6 @@
   border-color: #dce3ed;
   background: #f0f3f7;
   color: #66768b;
-}
-
-.launches-reference-heading-id {
-  color: #8a96a8;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
 }
 
 .launches-reference-frame {
@@ -610,7 +649,7 @@
 .launches-reference-status-tools .launches-reference-secondary-action {
   width: auto;
   height: auto;
-  min-height: 34px;
+  min-height: 36px;
   min-width: 0;
   max-width: none;
   border: 1px solid #d6e0ed;
@@ -866,7 +905,7 @@
 
 .launches-reference-section-bar {
   min-width: 0;
-  min-height: calc(46px + var(--th-font-heading-delta));
+  min-height: calc(44px + var(--th-font-heading-delta));
   display: flex;
   align-items: stretch;
   border-bottom: 1px solid #dce5f0;
@@ -876,17 +915,18 @@
 
 .launches-reference-tabs--top {
   width: 100%;
-  min-height: calc(46px + var(--th-font-heading-delta));
-  flex-wrap: wrap;
-  column-gap: 26px;
+  min-height: calc(44px + var(--th-font-heading-delta));
+  flex-wrap: nowrap;
+  column-gap: 24px;
   row-gap: 0;
   border-bottom: 0;
   padding: 0;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .launches-reference-tabs--top button {
-  min-height: calc(46px + var(--th-font-heading-delta));
+  min-height: calc(44px + var(--th-font-heading-delta));
   color: #65738a;
   font-size: 13px;
   font-weight: 600;
@@ -898,8 +938,8 @@
 }
 
 .launches-reference-tabs--top button[aria-current="page"]::after {
-  height: 3px;
-  border-radius: 3px 3px 0 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
   background: #2b65dc;
 }
 

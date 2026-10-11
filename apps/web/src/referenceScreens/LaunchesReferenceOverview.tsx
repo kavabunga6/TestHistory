@@ -1,10 +1,15 @@
-import { ArrowUpRight, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight, Link2Off } from "lucide-react";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 
-import type { LaunchListItem, ResultParameter, ResultStatus, TestResult } from "../m1Workspace.js";
+import type {
+  LaunchListItem,
+  ResultParameter,
+  ResultStatus,
+  TestResult,
+  WorkspaceListPage
+} from "../m1Workspace.js";
 import { formatStatus } from "./LaunchesReferenceFormatters.js";
 import {
-  collectDefectItems,
   collectLaunchParameters,
   defaultOverviewListPageSize,
   getLaunchTotal,
@@ -13,17 +18,18 @@ import {
 } from "./LaunchesReferenceModel.js";
 import { formatResultDuration } from "./LaunchesResultDuration.js";
 import { resultStatusGroupLabels, resultStatusOrder } from "./resultStatusPresentation.js";
+import { useLaunchLinkedIssues } from "./useLaunchLinkedIssues.js";
 
 const overviewStatusOrder: ResultStatus[] = resultStatusOrder.filter(
   (status) => status !== "muted"
 );
 const overviewStatusColors: Record<ResultStatus, string> = {
-  broken: "#d18b2c",
-  failed: "#d95f57",
+  broken: "#f59e0b",
+  failed: "#ef4444",
   muted: "#64748b",
-  passed: "#48a568",
-  skipped: "#8793a3",
-  unknown: "#7c75ad"
+  passed: "#10b981",
+  skipped: "#94a3b8",
+  unknown: "#6366f1"
 };
 
 export function OverviewTab({
@@ -46,119 +52,79 @@ export function OverviewTab({
     (result) => result.status === "failed" || result.status === "broken"
   );
   const problemTotal = launch.counters.failed + launch.counters.broken;
-  const defectItems = collectDefectItems(results);
+  const linkedIssues = useLaunchLinkedIssues(launch);
+  const linkedIssuePage =
+    linkedIssues.state.status === "ready" ? linkedIssues.state.data : undefined;
+  const defectItems: DefectOverviewItem[] =
+    linkedIssuePage?.items.map((issue) => ({
+      id: issue.id,
+      resultId: issue.resultUuid,
+      subtitle: "",
+      title: issue.resultName
+    })) ?? [];
   const hasUnloadedResults = total > results.length;
   const parameters = collectLaunchParameters(launch, results);
   const passRate = total > 0 ? Math.round((launch.counters.passed / total) * 100) : 0;
-  const activeStatusCount = overviewStatusOrder.filter(
-    (status) => launch.counters[status] > 0
-  ).length;
-  let chartOffset = 0;
   const chartSegments = overviewStatusOrder.map((status) => {
     const count = launch.counters[status];
     const percent = total > 0 ? (count / total) * 100 : 0;
-    const gap = activeStatusCount > 1 && count > 0 ? Math.min(1.25, percent * 0.2) : 0;
-    const segment = {
-      count,
-      dash: Math.max(0, percent - gap),
-      offset: -(chartOffset + gap / 2),
-      percent,
-      status
-    };
-    chartOffset += percent;
-    return segment;
+    return { count, percent, status };
   });
 
   return (
     <div className="launches-reference-overview">
       <section className="launches-reference-card launches-reference-overview-summary">
         <div className="launches-reference-overview-summary-heading">
-          <span className="launches-reference-overview-eyebrow">Итог запуска</span>
-          <h2>Распределение результатов</h2>
+          <h2>Результаты запуска</h2>
           <button type="button" onClick={onSelectAll}>
             Все результаты
             <ArrowUpRight aria-hidden="true" size={16} />
           </button>
         </div>
         <div className="launches-reference-overview-summary-main">
-          <div className="launches-reference-overview-score">
-            <div className="launches-reference-overview-donut-wrap">
-              <svg
-                aria-label={`Результаты запуска: ${total.toLocaleString("ru-RU")} тестов`}
-                className="launches-reference-overview-donut"
-                role="group"
-                viewBox="0 0 180 180"
-              >
-                <circle
-                  className="launches-reference-overview-donut-track"
-                  cx="90"
-                  cy="90"
-                  r="68"
-                />
-                {chartSegments.map((segment) =>
-                  segment.count > 0 ? (
-                    <circle
-                      aria-label={`${resultStatusGroupLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")}`}
-                      className={`launches-reference-overview-donut-segment is-${segment.status}`}
-                      cx="90"
-                      cy="90"
-                      key={segment.status}
-                      pathLength="100"
-                      r="68"
-                      role="button"
-                      style={
-                        {
-                          stroke: overviewStatusColors[segment.status],
-                          strokeDasharray: `${segment.dash} ${100 - segment.dash}`,
-                          strokeDashoffset: segment.offset
-                        } as CSSProperties
-                      }
-                      tabIndex={0}
-                      onClick={() => onSelectStatus(segment.status)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          onSelectStatus(segment.status);
-                        }
-                      }}
-                    />
-                  ) : null
-                )}
-              </svg>
-              <button
-                aria-label={`Показать все ${total.toLocaleString("ru-RU")} результатов`}
-                className="launches-reference-overview-donut-center"
-                type="button"
-                onClick={onSelectAll}
-              >
-                <strong>
-                  {passRate}
-                  <span>%</span>
-                </strong>
-                <span>успех</span>
-              </button>
-            </div>
-            <div className="launches-reference-overview-score-copy">
-              <span>Успешные тесты</span>
-              <strong>
-                {launch.counters.passed.toLocaleString("ru-RU")}
-                <small> / {total.toLocaleString("ru-RU")}</small>
-              </strong>
-              <p>результатов запуска</p>
-            </div>
-          </div>
+          <button
+            aria-label={`Успешные: ${launch.counters.passed.toLocaleString("ru-RU")} из ${total.toLocaleString("ru-RU")} (${passRate}%). Открыть успешные результаты`}
+            className="launches-reference-overview-score"
+            type="button"
+            onClick={() => onSelectStatus("passed")}
+          >
+            <strong className="launches-reference-overview-score-value">
+              {passRate}
+              <span>%</span>
+            </strong>
+            <span className="launches-reference-overview-score-copy">
+              <strong>Успешно</strong>
+              <span>
+                {launch.counters.passed.toLocaleString("ru-RU")} из {total.toLocaleString("ru-RU")}{" "}
+                тестов
+              </span>
+            </span>
+          </button>
 
           <div className="launches-reference-overview-breakdown">
-            <div className="launches-reference-overview-distribution" aria-hidden="true">
+            <div
+              aria-label="Распределение результатов по статусам"
+              className="launches-reference-overview-distribution"
+              role="group"
+            >
               {chartSegments.map((segment) =>
                 segment.count > 0 ? (
-                  <span
+                  <button
+                    aria-label={`${resultStatusGroupLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")} (${Math.round(segment.percent)}%). Открыть результаты с этим статусом`}
+                    className={`is-${segment.status}${segment.percent < 8 ? " is-narrow" : ""}`}
                     key={segment.status}
-                    style={{
-                      backgroundColor: overviewStatusColors[segment.status],
-                      flexGrow: segment.count
-                    }}
-                  />
+                    style={
+                      {
+                        "--segment-color": overviewStatusColors[segment.status],
+                        flexGrow: segment.count
+                      } as CSSProperties
+                    }
+                    title={`${resultStatusGroupLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")} (${Math.round(segment.percent)}%)`}
+                    type="button"
+                    onClick={() => onSelectStatus(segment.status)}
+                  >
+                    <span aria-hidden="true">{segment.count.toLocaleString("ru-RU")}</span>
+                  </button>
                 ) : null
               )}
             </div>
@@ -167,14 +133,13 @@ export function OverviewTab({
                 <li key={segment.status}>
                   <button
                     aria-label={`${resultStatusGroupLabels[segment.status]}: ${segment.count.toLocaleString("ru-RU")}. Открыть результаты с этим статусом`}
-                    className={`launches-reference-overview-legend-item is-${segment.status}`}
+                    className={`launches-reference-overview-legend-item is-${segment.status}${segment.count === 0 ? " is-empty" : ""}`}
                     type="button"
                     onClick={() => onSelectStatus(segment.status)}
                   >
                     <i style={{ backgroundColor: overviewStatusColors[segment.status] }} />
                     <span>{resultStatusGroupLabels[segment.status]}</span>
                     <strong>{segment.count.toLocaleString("ru-RU")}</strong>
-                    <small>{Math.round(segment.percent)}%</small>
                   </button>
                 </li>
               ))}
@@ -183,13 +148,18 @@ export function OverviewTab({
         </div>
       </section>
 
-      <div
-        className={`launches-reference-overview-content${problemTotal === 0 ? " is-clear" : ""}`}
-      >
+      <div className="launches-reference-overview-content">
         <section className="launches-reference-card launches-reference-overview-card-unresolved">
           <OverviewCardTitle
-            count={unresolved.length}
-            note={hasUnloadedResults ? `из ${problemTotal} во всём запуске` : "во всём запуске"}
+            action={
+              onSelectProblemResults !== undefined ? (
+                <button type="button" onClick={onSelectProblemResults}>
+                  Все проблемные <ArrowUpRight aria-hidden="true" size={15} />
+                </button>
+              ) : undefined
+            }
+            count={hasUnloadedResults ? problemTotal : unresolved.length}
+            note={hasUnloadedResults ? `из них ${unresolved.length} загружено` : "во всём запуске"}
             tone="attention"
           >
             Проблемные результаты
@@ -199,11 +169,6 @@ export function OverviewTab({
               Проваленные и сломанные тесты
               {hasUnloadedResults ? ` среди ${results.length} загруженных результатов.` : "."}
             </span>
-            {onSelectProblemResults !== undefined ? (
-              <button type="button" onClick={onSelectProblemResults}>
-                Все проблемные <ArrowUpRight aria-hidden="true" size={15} />
-              </button>
-            ) : null}
           </div>
           <PagedResultList
             emptyText={
@@ -218,27 +183,33 @@ export function OverviewTab({
 
         <div className="launches-reference-overview-side">
           <section className="launches-reference-card launches-reference-overview-card-defects">
-            <OverviewCardTitle
-              count={defectItems.length}
-              note={hasUnloadedResults ? "среди загруженных" : "во всём запуске"}
-            >
+            <OverviewCardTitle count={linkedIssuePage?.page.total}>
               Связанные дефекты
             </OverviewCardTitle>
             <p className="launches-reference-overview-scope-copy">
-              Уникальные ID дефектов, связанные с результатами
-              {hasUnloadedResults
-                ? " на загруженной странице. Остальные страницы не учтены."
-                : " запуска."}
+              ID дефектов, указанные в результатах запуска.
             </p>
-            <PagedDefectList
-              emptyText={
-                hasUnloadedResults
-                  ? "На загруженной странице нет дефектов."
-                  : "Нет дефектов в этом запуске"
-              }
-              items={defectItems}
-              onSelectResult={onSelectResult}
-            />
+            {linkedIssues.state.status === "loading" ? (
+              <div className="launches-reference-centered" role="status">
+                Загружаем связанные дефекты…
+              </div>
+            ) : linkedIssues.state.status === "error" ? (
+              <div className="launches-reference-overview-defects-error" role="alert">
+                <span>Не удалось загрузить связанные дефекты.</span>
+                <button type="button" onClick={linkedIssues.retry}>
+                  Повторить
+                </button>
+              </div>
+            ) : (
+              <PagedDefectList
+                emptyText="В запуске нет связанных дефектов."
+                items={defectItems}
+                page={linkedIssuePage?.page}
+                onPageIndexChange={linkedIssues.setPageIndex}
+                onPageSizeChange={linkedIssues.setPageSize}
+                onSelectResult={onSelectResult}
+              />
+            )}
           </section>
 
           <section className="launches-reference-card launches-reference-overview-card-variables">
@@ -252,21 +223,24 @@ export function OverviewTab({
 }
 
 function OverviewCardTitle({
+  action,
   children,
   count,
   note,
   tone
 }: {
+  action?: ReactNode;
   children: ReactNode;
-  count: number;
+  count?: number | undefined;
   note?: string;
   tone?: "attention";
 }) {
   return (
     <div className={`launches-reference-overview-card-heading${tone ? ` is-${tone}` : ""}`}>
       <h2>{children}</h2>
-      <em>{count.toLocaleString("ru-RU")}</em>
+      {count !== undefined ? <em>{count.toLocaleString("ru-RU")}</em> : null}
       {note ? <small>{note}</small> : null}
+      {action ? <div className="launches-reference-overview-card-action">{action}</div> : null}
     </div>
   );
 }
@@ -320,23 +294,43 @@ export function PagedResultList({
 export function PagedDefectList({
   emptyText,
   items,
-  onSelectResult
+  onPageIndexChange,
+  onPageSizeChange,
+  onSelectResult,
+  page
 }: {
   emptyText: string;
   items: DefectOverviewItem[];
+  onPageIndexChange?: (index: number) => void;
+  onPageSizeChange?: (size: number) => void;
   onSelectResult: (id: string) => void;
+  page?: WorkspaceListPage | undefined;
 }) {
-  const pager = usePagedItems(items);
+  const localPager = usePagedItems(items);
+  const pager: PagedItems<DefectOverviewItem> =
+    page === undefined
+      ? localPager
+      : {
+          currentPage: Math.floor(page.offset / page.limit),
+          endIndex: page.offset + page.returned,
+          goToNextPage: () => onPageIndexChange?.(Math.floor(page.offset / page.limit) + 1),
+          goToPreviousPage: () => onPageIndexChange?.(Math.floor(page.offset / page.limit) - 1),
+          pageCount: Math.max(1, Math.ceil(page.total / page.limit)),
+          pageSize: page.limit,
+          setPageSize: (size) => onPageSizeChange?.(size),
+          startIndex: page.offset,
+          totalItems: page.total,
+          visibleItems: items
+        };
 
   if (items.length === 0) {
     return (
       <div className="launches-reference-centered launches-reference-defects-empty" role="status">
         <span className="launches-reference-defects-empty-icon">
-          <CheckCircle2 aria-hidden="true" />
+          <Link2Off aria-hidden="true" />
         </span>
         <span className="launches-reference-defects-empty-copy">
           <strong>{emptyText}</strong>
-          <small>Связанные с результатами дефекты появятся здесь.</small>
         </span>
       </div>
     );
@@ -357,7 +351,7 @@ export function PagedDefectList({
           >
             <span>
               <strong>{item.title}</strong>
-              <small>{item.subtitle}</small>
+              {item.subtitle ? <small>{item.subtitle}</small> : null}
             </span>
             <em>{item.id}</em>
           </button>

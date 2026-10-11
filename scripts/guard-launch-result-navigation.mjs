@@ -203,6 +203,17 @@ try {
     !(await directPage.locator(".launches-reference-results-pane").isVisible()),
     "Overview status filter left the result hidden below the list"
   );
+  await directPage.goto(`${baseUrl}/#launch/L-1289/overview`, { waitUntil: "domcontentloaded" });
+  const failedSegment = directPage
+    .locator(".launches-reference-overview-distribution button")
+    .first();
+  await failedSegment.waitFor();
+  const segmentBounds = await failedSegment.boundingBox();
+  assert(segmentBounds !== null, "Overview status segment is not visible");
+  await directPage.mouse.click(segmentBounds.x + segmentBounds.width / 2, segmentBounds.y + 4);
+  await directPage.waitForFunction(() =>
+    window.location.hash.includes("/results?query=status+%3D+%22failed%22")
+  );
   await directPage.close();
 
   console.log("Launch result navigation guard passed at 1440, 1024, and 390 px plus direct links");
