@@ -89,7 +89,9 @@ export const screens = [
     hash: "#launch/L-1289",
     verify: async (page) => {
       await page
-        .locator('.launches-reference-overview-donut[aria-label="Результаты запуска: 100 тестов"]')
+        .getByRole("button", {
+          name: "Успешные: 62 из 100 (62%). Открыть успешные результаты"
+        })
         .waitFor();
       for (const [status, count] of [
         ["passed", "62"],

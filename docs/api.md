@@ -639,6 +639,7 @@ Regenerate it with `npm run api:docs:catalog` after changing paths, tags, or ope
 - `GET /api/v1/launches/{launchId}/charts/duration` - `getLaunchDurationChart`
 - `POST /api/v1/launches/{launchId}/close` - `closeLaunch`
 - `GET /api/v1/launches/{launchId}/errors/summary` - `getLaunchErrorSummary`
+- `GET /api/v1/launches/{launchId}/linked-issues` - `listLaunchLinkedIssues`
 - `GET /api/v1/launches/{launchId}/results` - `listLaunchResults`
 - `GET /api/v1/launches/{launchId}/results/{resultUuid}` - `getLaunchResultDetails`
 - `GET /api/v1/projects/{projectId}/launches` - `listProjectLaunches`

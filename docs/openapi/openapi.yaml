@@ -1645,6 +1645,62 @@ paths:
                 $ref: "#/components/schemas/PermissionDeniedError"
         "404":
           description: Launch not found
+  /api/v1/launches/{launchId}/linked-issues:
+    get:
+      tags: [launches]
+      operationId: listLaunchLinkedIssues
+      description: Returns unique issue IDs linked to results across the complete launch, sorted by ID. Each item identifies the first associated result; pagination applies after deduplication.
+      parameters:
+        - name: launchId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Paginated issue IDs linked to results in the launch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaunchLinkedIssueList"
+        "400":
+          description: Invalid pagination controls
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaunchPaginationValidationError"
+        "403":
+          description: Missing launch read scope or project visibility membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermissionDeniedError"
+        "404":
+          description: Launch or project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimpleError"
   /api/v1/launches/{launchId}/results/{resultUuid}:
     get:
       tags: [launches]
@@ -6554,6 +6610,33 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LaunchResultSummary"
+    LaunchLinkedIssueList:
+      type: object
+      additionalProperties: false
+      required: [kind, launchId, page, items]
+      properties:
+        kind:
+          type: string
+          enum: [launch-linked-issues]
+        launchId:
+          type: string
+        page:
+          $ref: "#/components/schemas/PageMetadata"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LaunchLinkedIssue"
+    LaunchLinkedIssue:
+      type: object
+      additionalProperties: false
+      required: [id, resultUuid, resultName]
+      properties:
+        id:
+          type: string
+        resultUuid:
+          type: string
+        resultName:
+          type: string
     LaunchClosePendingUpload:
       type: object
       required: [kind, id, status]
